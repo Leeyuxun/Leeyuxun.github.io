@@ -1,4 +1,647 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=2"><meta name="theme-color" content="#222"><meta name="generator" content="Hexo 5.4.0"><link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png"><link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png"><link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png"><link rel="mask-icon" href="/images/logo.svg" color="#222"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"><link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css"><script id="hexo-configurations">var NexT=window.NexT||{},CONFIG={hostname:"www.leeyuxun.github.io",root:"/",scheme:"Gemini",version:"7.8.0",exturl:!1,sidebar:{position:"left",display:"post",padding:18,offset:12,onmobile:!1},copycode:{enable:!0,show_result:!0,style:"mac"},back2top:{enable:!0,sidebar:!0,scrollpercent:!0},bookmark:{enable:!1,color:"#222",save:"auto"},fancybox:!0,mediumzoom:!1,lazyload:!1,pangu:!1,comments:{style:"tabs",active:null,storage:!0,lazyload:!1,nav:null},algolia:{hits:{per_page:10},labels:{input_placeholder:"Search for Posts",hits_empty:"We didn't find any results for the search: ${query}",hits_stats:"${hits} results found in ${time} ms"}},localsearch:{enable:!0,trigger:"auto",top_n_per_article:1,unescape:!1,preload:!1},motion:{enable:!0,async:!1,transition:{post_block:"fadeIn",post_header:"slideDownIn",post_body:"slideDownIn",coll_header:"slideLeftIn",sidebar:"slideUpIn"}},path:"./public/search.xml"}</script><meta name="description" content="堆结构堆是供程序使用的虚拟空间之一"><meta property="og:type" content="article"><meta property="og:title" content="二进制-堆漏洞"><meta property="og:url" content="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html"><meta property="og:site_name" content="Leeyuxun の blog"><meta property="og:description" content="堆结构堆是供程序使用的虚拟空间之一"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226134049.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226135129.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226140139.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226135708.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226140036.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302101923.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302102125.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302103933.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104443.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104627.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104627.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302110052.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302110235.png"><meta property="article:published_time" content="2021-02-26T03:38:05.000Z"><meta property="article:modified_time" content="2021-03-02T03:51:25.774Z"><meta property="article:author" content="李钰璕"><meta property="article:tag" content="堆溢出漏洞"><meta property="article:tag" content="释放后重用漏洞"><meta property="article:tag" content="重复释放漏洞"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226134049.png"><link rel="canonical" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html"><script id="page-configurations">CONFIG.page={sidebar:"",isHome:!1,isPost:!0,lang:"zh-CN"}</script><title>二进制-堆漏洞 | Leeyuxun の blog</title><script>function sendPageView(){if(CONFIG.hostname===location.hostname){var e=localStorage.getItem("uid")||Math.random()+"."+Math.random();localStorage.setItem("uid",e),navigator.sendBeacon("https://www.google-analytics.com/collect",new URLSearchParams({v:1,tid:"UA-163555158-1",cid:e,t:"pageview",dp:encodeURIComponent(location.pathname)}))}}document.addEventListener("pjax:complete",sendPageView),sendPageView()</script><noscript><style>.sidebar-inner,.use-motion .brand,.use-motion .collection-header,.use-motion .comments,.use-motion .menu-item,.use-motion .pagination,.use-motion .post-block,.use-motion .post-body,.use-motion .post-header{opacity:initial}.use-motion .site-subtitle,.use-motion .site-title{opacity:initial;top:initial}.use-motion .logo-line-before i{left:initial}.use-motion .logo-line-after i{right:initial}</style></noscript></head><body itemscope itemtype="http://schema.org/WebPage"><div class="container use-motion"><div class="headband"></div><header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="header-inner"><div class="site-brand-container"><div class="site-nav-toggle"><div class="toggle" aria-label="切换导航栏"><span class="toggle-line toggle-line-first"></span> <span class="toggle-line toggle-line-middle"></span> <span class="toggle-line toggle-line-last"></span></div></div><div class="site-meta"><a href="/" class="brand" rel="start"><span class="logo-line-before"><i></i></span><h1 class="site-title">Leeyuxun の blog</h1><span class="logo-line-after"><i></i></span></a><p class="site-subtitle" itemprop="description">BUPT | SCSS</p></div><div class="site-nav-right"><div class="toggle popup-trigger"><i class="fa fa-search fa-fw fa-lg"></i></div></div></div><nav class="site-nav"><ul id="menu" class="menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-links"><a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a></li><li class="menu-item menu-item-search"><a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索</a></li></ul></nav><div class="search-pop-overlay"><div class="popup search-popup"><div class="search-header"><span class="search-icon"><i class="fa fa-search"></i></span><div class="search-input-container"><input autocomplete="off" autocapitalize="off" placeholder="搜索..." spellcheck="false" type="search" class="search-input"></div><span class="popup-btn-close"><i class="fa fa-times-circle"></i></span></div><div id="search-result"><div id="no-result"><i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i></div></div></div></div></div></header><main class="main"><div class="main-inner"><div class="content-wrap"><div class="content post posts-expand"><article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN"><link itemprop="mainEntityOfPage" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html"><span hidden itemprop="author" itemscope itemtype="http://schema.org/Person"><meta itemprop="image" content="/images/avatar.png"><meta itemprop="name" content="李钰璕"><meta itemprop="description" content="从0开始学习网络安全"></span><span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization"><meta itemprop="name" content="Leeyuxun の blog"></span><header class="post-header"><h1 class="post-title" itemprop="name headline">二进制-堆漏洞</h1><div class="post-meta"><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-calendar"></i> </span><span class="post-meta-item-text">发表于</span> <time title="创建时间：2021-02-26 11:38:05" itemprop="dateCreated datePublished" datetime="2021-02-26T11:38:05+08:00">2021-02-26</time> </span><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-calendar-check"></i> </span><span class="post-meta-item-text">更新于</span> <time title="修改时间：2021-03-02 11:51:25" itemprop="dateModified" datetime="2021-03-02T11:51:25+08:00">2021-03-02</time> </span><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-folder"></i> </span><span class="post-meta-item-text">分类于</span> <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a> </span></span><span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display:none"><span class="post-meta-item-icon"><i class="fa fa-eye"></i> </span><span class="post-meta-item-text">阅读次数：</span> <span id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body" itemprop="articleBody"><h1 id="堆结构"><a href="#堆结构" class="headerlink" title="堆结构"></a>堆结构</h1><ul><li><p>堆是供程序使用的虚拟空间之一<a id="more"></a></p><ul><li><p>程序未运行时，并不知道需要多少的虚拟空间来运行程序；</p></li><li><p>在程序运行过程中，往往伴随着大量申请和释放内存的操作，为了更好的管理内存空间的使用和提高程序运行效率，需要专门对内存进行管理；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226134049.png" style="zoom:40%"></p></li><li><p>常见的内存管理库有：</p><ul><li>tcmalloc:谷歌开源的内存管理库</li><li>jemalloc:FreeBSD开发人员所开发</li><li>ptmalloc&amp;ptmalloc 2:基于dlmalloc 2.7.x开发</li></ul></li><li><p>ptmalloc中，实现了malloc()、free()和其他函数以对内存进行管理；</p></li><li><p>glibc使用ptmalloc对内存空间进行管理，在2.3.x版本后集成了ptmalloc 2；</p></li></ul></li><li><p>ptmalloc中用户请求的空间由chunk这一数据结构来表示：</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span> &#123;</span></span><br><span class="line">    <span class="comment">/* #define INTERNAL_SIZE_T size_t */</span></span><br><span class="line">    INTERNAL_SIZE_T prev_size; <span class="comment">/* Size of previous chunk (if free). */</span></span><br><span class="line">    INTERNAL_SIZE_T <span class="built_in">size</span>; overhead. <span class="comment">/* Size in bytes, including overhead */</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd</span>;</span> <span class="comment">/* forward， backward ，这两个指针只在free chunk中存在*/</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk</span>;</span></span><br><span class="line">    <span class="comment">/* Only used for large blocks: pointer to next larger size. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd_nextsize</span>;</span> <span class="comment">/* double links -- used only if free. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk_nextsize</span>;</span> </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><ul><li><p>一个chunk(未分配的)中的信息从上往下依次是：</p><ul><li>前一个chunk的大小</li><li>本chunk的大小(最低位，图中P表示前一个chunk是否处于使用中)</li><li>链表中前一个chunk的地址</li><li>链表中后一个chunk的地址</li></ul></li><li><p>chunk指针指向的是chunk的起始位置</p><ul><li>这个位置并不是用户能够写入或读取的起始位置</li><li>在已分配的chunk中，用户实际使用的区域从mem 指针指向的区域开始</li></ul><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226135129.png" style="zoom:50%"></p></li><li><p>在ptmalloc中，为了节省空间，对chunk进行了空间复用</p><ul><li>当一个chunk处于使用中时，它的下一个chunk的第一个域(即用于记录前一个chunk的大小的区域)是无效的，这个域可以被当前的chunk所使用；</li></ul></li><li><p>在用户申请内存空间时，会对用户所需的空间大小进行处理后，再进行空间分配；</p><ul><li>ptmalloc依赖平台对size_t的定义进行地址对齐；</li><li>32位平台size_t长度为4字节；</li><li>64位平台的size_t长度可能是4字节，也可能是8字节；<ul><li>64位Linux平台size_t长度为8字节；</li></ul></li></ul></li></ul></li></ul><h1 id="堆管理方式"><a href="#堆管理方式" class="headerlink" title="堆管理方式"></a>堆管理方式</h1><h3 id="bin"><a href="#bin" class="headerlink" title="bin"></a>bin</h3><ul><li><p>ptmalloc采用bin来对空闲的chunk进行管理</p><ul><li><p>bin是一种记录空闲chunk的链表数据结构，是一个将chunk连接起来的链表，它根据chunk的大小进行管理，共四类：</p><ul><li>fast bin</li><li>unsorted bin</li><li>small bin</li><li>large bin</li></ul></li><li><p>当chunk被释放时，ptmalloc会将所属chunk根据一定的规则放入相应的bin中；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226140139.png" style="zoom:50%"></p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226135708.png" style="zoom:50%"></p></li></ul></li><li><p>在glibc中用于记录bin的数据结构有两种：</p><ul><li><p>fastbinsY: 这是一个数组，用于记录并维护所有的fast bins；</p></li><li><p>bins: 这也是一个数组，用于记录并维护除fast bins之外的所有bins，一共有126个bins；</p><ul><li>bins[1]为unsorted bin；</li><li>bins[2-63]为small bin；</li><li><p>bins[64-126]为large bin；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226140036.png" style="zoom:40%"></p></li></ul></li><li><p><strong>这些bin都位于libc中，因此可以利用链表的结构在特定条件下泄漏libc地址</strong>；</p></li></ul></li></ul><h3 id="main-arena"><a href="#main-arena" class="headerlink" title="main_arena"></a>main_arena</h3><ul><li>主分配区</li><li>每个进程只有一个主分配区，可有多个非主分配区；<ul><li>程序每次申请内存时，都要对主分配区加锁，在多线程环境下，对主分配区的竞争可能会非常激烈，因此在ptmalloc中加入了非主分配区来提高malloc的效率；</li></ul></li><li>主分配区能够访问进程的heap和mmap区域并向操作系统申请虚拟内存，而非主分配区只 能访问mmap区域；</li></ul><h3 id="fast-bin"><a href="#fast-bin" class="headerlink" title="fast bin"></a>fast bin</h3><ul><li>单向链表，通过chunk的size进行索引；</li><li>fast bin主要用于提高小内存申请的分配效率；<ul><li>默认情况下，对于SIZE_SZ为4B的平台，小于64B的chunk分配请求，首先查找fast bins，对于SIZE_SZ为8B的平台，小于128B的chunk分配请求，首先查找fast bins；</li><li>首先会查找fast bins中是否有所需大小的chunk存在(精确匹配)，如果存在，属于fast bin中的chunk被释放后，这个chunk将会被加入到对应索引值idx的fast bin链表中；</li><li>当用户申请了一个大小属于fast bin的chunk，ptmalloc通过chunk大小获得索引值idx，进而获得对应的链表来寻找符合条件的chunk；</li></ul></li><li>fast bin使用LIFO和大小完全匹配的规则<ul><li>添加操作(free内存)就是将新的fast chunk加入链表尾，删除操作(malloc内存)就是将链表尾部的fast chunk删除；</li><li>每个fast bin都是一个单链表(只使用fd指针)。因为在fast bin中无论是添加还是移除fast chunk，都是对“链表尾”进行操作，而不会对某个中间的fast chunk进行操作；</li></ul></li><li>在进行分配时，除去原子性方面的安全检查，只对chunk的size域检查；</li></ul><h3 id="small-bin"><a href="#small-bin" class="headerlink" title="small bin"></a>small bin</h3><ul><li>双向链表结构，chunk大小范围为:16-504B(SIZE_SZ=4B，以8Byte为公差的等差数列)或32-1008B(SIZE_SZ=8B，以16Byte为公差的等差数列)；</li><li>在分配chunk时，对双向链表进行安全检查；</li><li>如果small bin还未初始化，会调用相关函数对fast bin中的chunk进行合并并放到unsorted bin中；</li></ul><h3 id="large-bin"><a href="#large-bin" class="headerlink" title="large bin"></a>large bin</h3><ul><li>chunk大小范围为:大于512B(SIZE_SZ=4B)或1024B(SIZE_SZ=8B)；</li><li>large bin将它的63个bin按照每组的个数32、16、8、4、2、1分为6组，每组组内的各bin的chunk大小符合等差数列；</li><li>在分配的过程中，会寻找最小的符合申请大小的chunk，对合适的chunk进行分割后，剩余的部分将会被放到unsorted bin中；</li></ul><h3 id="unsorted-bin"><a href="#unsorted-bin" class="headerlink" title="unsorted bin"></a>unsorted bin</h3><ul><li>unsortedbin的chunk链表头存放在bins[1]中；</li><li>双向链表，可看作是small bin和large bin的缓存；</li><li>进行分配的时候，如果当前选择的unsorted bin中的chunk不符合条件，则该chunk会被放入到相应的bin中，然后继续查找；</li><li>如果unsorted bin中存在上一次分割剩下的chunk，则先匹配该chunk；</li><li>分配过程中，会对size进行检查；</li></ul><h3 id="各分配区对比"><a href="#各分配区对比" class="headerlink" title="各分配区对比"></a>各分配区对比</h3><ul><li>fast bins是小内存块的高速缓存，当一些大小小于64字节的chunk被回收时，首先会放入fast bins中，在分配小内存时，首先会查看fast bins中是否有合适的内存块，如果存在，则直接返回fast bins中的内存块，以加快分配速度；</li><li>usorted bin只有一个，回收的chunk块必须先放到unsorted bin中，分配内存时会查看unsorted bin中是否有合适的chunk，如果找到满足条件的chunk，则直接返回给用户，否则将unsorted bin的所有chunk放入small bins或是large bins中；</li><li>small bins用于存放固定大小的chunk，共64个bin，最小的chunk大小为16字节或32字节，每个bin的大小相差8字节或是16字节，当分配小内存时，采用精确匹配的方式从small bins中查找合适的chunk；</li><li>large bins用于存储大于等于512B或1024B的空闲chunk，这些chunk使用双向链表的形式按大小顺序排序，分配内存时按最近匹配方式从large bins中分配chunk；</li></ul><h3 id="malloc函数"><a href="#malloc函数" class="headerlink" title="malloc函数"></a>malloc函数</h3><ul><li><p>在ptmalloc中具体由_int_malloc实现；</p></li><li><p>实际申请空间计算方法：</p><ul><li>用户申请的空间加上chunk信息所需空间；</li><li>再减去后一个chunk的复用空间；</li><li>地址以2 * SIZE_SZ进行对齐；</li></ul></li><li><p>如果计算结果小于MIN_CHUNK_SIZE，则按系统规定的最小值进行申请；</p></li><li><p>申请时按照以下顺序查找空闲chunk：</p><ul><li>(tcache)(注:glibc 2.27新加入的机制)</li><li>fast bin</li><li>small bin</li><li>unsorted bin</li><li>large bin</li><li>top chunk</li></ul><p>备注：当malloc从fast bin、small bin、unsorted bin、 large bin中都无法找到合适或足够大的空闲chunk进行分配或分割时，若top chunk足够大，将会从top chunk中进行分配；</p></li></ul><h3 id="free函数"><a href="#free函数" class="headerlink" title="free函数"></a>free函数</h3><ul><li>在用户释放一个堆块的时候，程序会根据堆块的大小，以及堆块位置的不同，做出不同的操作；<ul><li>先判断当前这个块大小是否小于fast bin的最大值，如果小于fast bin的最大值，并且不临近top chunk的时候，就将这个块链入到fast bin对应的链中，并 不修改后一块的标志位；</li><li>如果不是fast bin或者临近top chunk时<ul><li>程序会先检测前项是否是释放状态，如果前项是释放状态，则将前项和当前chunk合并，同时检测后项状态；</li><li>如果后项是top chunk，则直接将当前的chunk并到top chunk中；</li><li>如果后项不是top chunk的时候，也会将后项合并到当前chunk中，并且会修改后块的标志位，然后将这一块链到unsorted bin上；</li><li>在合并中，会触发unlink操作；</li></ul></li></ul></li></ul><h3 id="unlink函数"><a href="#unlink函数" class="headerlink" title="unlink函数"></a>unlink函数</h3><ul><li><p>在free时，如果free的chunk的前一chunk是空闲的，将调用unlink函数将前一chunk从bin中取出；</p></li><li><p>unlink函数最重要的是下面4行代码：</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> unlink(P, BK, FD)&#123;</span></span><br><span class="line">    BK = P -&gt; bk;</span><br><span class="line">    FD = P -&gt; fd;</span><br><span class="line">    FD -&gt; bk = BK;</span><br><span class="line">    BK -&gt; fd = FD;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li><li><p>旧版的unlink函数中未做任何安全检查；</p></li><li><p>新版的unlink函数中加入了部分安全检查，但在攻击者精心构造的情况下，仍可以绕过安全检查，达到一定的攻击效果；</p></li></ul><h1 id="堆溢出漏洞"><a href="#堆溢出漏洞" class="headerlink" title="堆溢出漏洞"></a>堆溢出漏洞</h1><h2 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h2><ul><li><p>堆溢出造成的原因主要是在堆上对数据进行写入、读取、复制等操作时，未对数据长度、范围等进行良好的处理，导致对非当前chunk进行了操作；</p></li><li><p>通过堆溢出漏洞，能够覆盖关键数据结构、破坏堆结构；</p></li><li><p>堆溢出多见于复制数据到堆上，或向堆上读数据时；</p></li><li><p>由于未对边界进行检查，导致可以在堆上写入超出一个堆块大小的数据，从而覆盖其他关键数据结构，导致对堆结构的破坏；</p></li><li><p>这里以新版unlink为例，介绍堆溢出的利用；</p></li><li><p>由于新版unlink加入了新的检测机制，导致无法简单地通过修改前、后项指针，达到内存任意写的目的；</p></li><li><p>旧版unlink：</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> unlink(P, BK, FD)&#123;</span></span><br><span class="line">    BK = P -&gt; bk;</span><br><span class="line">    FD = P -&gt; fd;</span><br><span class="line">    FD -&gt; bk = BK;</span><br><span class="line">    BK -&gt; fd = FD;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li><li><p>在新版的unlink中主要加入了<code>__builtin_expect( FD-&gt;bk != P || BK- &gt;fd != P, 0 )</code>这个检测，这个检测要求<code>FD-&gt;bk==P</code>且<code>BK-&gt;fd==P</code>，也就是说要求后项指针的前项指针指向P，前项的后项指针指向P，也就是构成一个双链才能进行unlink；</p></li><li><p>要满足<code>FD-&gt;bk=P</code>和<code>BK-&gt;fd=P</code>，<code>__builtin_expect()</code>函数才能执行else的操作绕过该安全检查；</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> unlink(AV, P, BK, FD) &#123;</span></span><br><span class="line">	FD = P-&gt;fd;</span><br><span class="line">	BK = P-&gt;bk;</span><br><span class="line">	<span class="keyword">if</span> (__builtin_expect (FD-&gt;bk != P || BK-&gt;fd != P, <span class="number">0</span>))              </span><br><span class="line">      malloc_printerr (check_action, <span class="string">"corrupted double-linked list"</span>, P, AV);</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">        FD-&gt;bk = BK;</span><br><span class="line">        BK-&gt;fd = FD;</span><br><span class="line">...</span><br></pre></td></tr></table></figure></li></ul><h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>对以下程序进行分析</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* unlink1 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="keyword">char</span> * bssptr = <span class="literal">NULL</span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">	<span class="keyword">char</span> * ptr1 = <span class="built_in">malloc</span>(<span class="number">0x80</span>);</span><br><span class="line">	<span class="keyword">char</span> * ptr2 = <span class="built_in">malloc</span>(<span class="number">0x80</span>);</span><br><span class="line">	bssptr = ptr1;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"bssptr is : %p\n"</span>, &amp;bssptr);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"old ptr is : %p\n"</span>, bssptr);</span><br><span class="line">	<span class="keyword">char</span> buf[] = <span class="string">"\x00\x00\x00\x00\x00\x00\x00\x00\x81\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x90\x00\x00\x00\x00\x00\x00\x00"</span>;</span><br><span class="line">	((<span class="keyword">size_t</span> *)buf)[<span class="number">2</span>] = (<span class="keyword">size_t</span>)(((<span class="keyword">char</span> *)&amp;bssptr) - <span class="number">0x18</span>);</span><br><span class="line">	((<span class="keyword">size_t</span> *)buf)[<span class="number">3</span>] = (<span class="keyword">size_t</span>)(((<span class="keyword">char</span> *)&amp;bssptr) - <span class="number">0x10</span>);</span><br><span class="line">	<span class="built_in">memcpy</span>(ptr1, buf, <span class="number">0x90</span>); <span class="comment">// heap overflow;</span></span><br><span class="line">	<span class="built_in">free</span>(ptr2);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"new ptr is : %p\n"</span>, bssptr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><ul><li><p>绕过新版unlink安全检查条件：</p><ul><li>满足<code>FD-&gt;bk=P</code></li><li>满足<code>BK-&gt;fd=P</code></li></ul></li><li><p>要想实现<code>FD-&gt;bk=P</code></p><ul><li>必须构建<code>FD=ptr1-&gt;fd=&amp;bssptr-0x18</code>才满足(这里以程序unlink1为例子)</li><li>注：<code>FD-&gt;bk=P=&amp;bssptr</code>，因为<code>FD-&gt;bk</code>在FD堆块首地址后面P_size、size和fd三个8字节区域之后，所以<code>FD-&gt;bk=FD堆块首地址+0x18=P=&amp;bssptr</code>，因此<code>FD堆块首地址 =&amp;bssptr-0x18</code>；</li><li>其中，<code>FD堆块首地址FD=ptr1-&gt;fd</code>，这是由ptr1的fd指针决定的；</li></ul></li><li>要想实现<code>BK-&gt;fd=P</code><ul><li>必须构建<code>BK=ptr1-&gt;bk=&amp;bssptr-0x10</code>才满足(这里以程序unlink1为例子)</li><li>注：<code>BK-&gt;fd=P=&amp;bssptr</code>，因为<code>BK-&gt;fd</code>在BK堆块首地址后面P_size、size两个8字节区域之后，所以<code>BK-&gt;fd=堆块首地址+0x10=&amp;bssptr</code>，因此<code>BK堆块首地址=&amp;bssptr-0x10</code>；</li><li>其中，堆块首地址<code>BK=ptr1-&gt;bk</code>，这是由ptr1的fd指针决定的；</li></ul></li><li>这样在就可以绕过<code>__builtin_expect(FD-&gt;bk != P || BK-&gt;fd != P, 0)</code>这个检测，但是这种攻击方式只能使得一个指向堆的指针，指向比本身地址低<code>0x18</code>的位置，如果这时候可以再次对该指针内容进行修改，就可以覆盖指针本身，以达到内存任意读写的目的；</li></ul><h3 id="利用思路"><a href="#利用思路" class="headerlink" title="利用思路"></a>利用思路</h3><ul><li>要想实现<code>__builtin_expect(FD-&gt;bk!=P||BK-&gt;fd!=P,0)</code> 条件下的堆溢出，必须满足上述特定条件，为此必须精心构造：<ul><li><code>BK=&amp;bssptr-0x10</code></li><li><code>FD=&amp;bssptr-0x18</code></li></ul></li><li>首先，通过两个malloc分配两个堆ptr1和ptr2；</li><li>本来ptr1和ptr2都是在用户区域分配的两个已经使用的堆块，但我们为了满足上面两个条件，必须要将ptr1“非法修改”为空闲的堆块；</li><li>将ptr1“非法修改”为空闲的堆块的目的，是在通过free函数将ptr2释放时，由于和ptr2相邻的ptr1是空闲的，因此会自动调用unlink()函数将ptr1脱链，脱链时由于满足构造堆溢出的条件，所以执行unlink()函数中的else语句<code>FD-&gt;bk =BK; BK-&gt;fd =FD;</code>这样实现堆溢出后的覆盖；</li><li>而要想将ptr1从用户使用的堆块，非法修改为空闲堆块，只能考虑通过memcpy()函数将一个精心构造的buf数组内容写入ptr1堆块中，实现覆盖；</li><li><p>精心构造的buf数组内容包括：</p><ul><li><p>第9个字节对应的size处改为<code>x81</code>(最后一个比特为1)，目的是将前面的堆块标识为用户使用的堆块；</p></li><li><p>最后的两个8字节，改为<code>x80</code>和<code>x90</code>，它将要覆盖ptr2的 P_size和size。其中<code>x80</code>对应ptr1的堆块大小为<code>x80</code>(原为<code>x90</code>)，<code>x90</code>最后一位为<code>0</code>对应ptr2的前一个堆块为空闲(后面有解释)；</p><ul><li><code>x80\x00\x00\x00\x00\x00\x00\x00\x90\x00\x00\x00\x00\x00\x00\x00</code></li></ul></li><li><p>再通过<code>((size_t *)buf)[2]=(size_t)(((char *)&amp;bssptr)-0x18</code>，在buf的第3个字节处完成fd的替换；</p></li><li><p>再通过<code>((size_t *)buf)[3]=(size_t)(((char *)&amp;bssptr)-0x10</code>，在buf的第4个字节处完成bk的替换；</p></li><li><p>这样ptr1的fd和bk(见下面白色突出的地方)，就替换为满足unlink条件的<code>BK=&amp;bssptr-0x10</code>、<code>FD=&amp;bssptr-0x18</code>值了(其中&amp;bssptr为<code>0x601060</code>)；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302101923.png" style="zoom:50%"></p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302102125.png" style="zoom:50%"></p></li></ul></li></ul><h3 id="详细说明"><a href="#详细说明" class="headerlink" title="详细说明"></a>详细说明</h3><ul><li><p>要将ptr1伪造为释放块，就要改写ptr2的内容，包括prev_size和size两个字段；</p></li><li><p>上述伪造操作，通过memcpy执行，从而将经过计算好的FD和BK写入ptr1的fd和bk位置；</p></li><li><p>然后释放free释放ptr2，利用伪造的ptr2的size标志位，伪造prt1为释放块，free会对ptr1进行unlink操作；</p></li><li><p>unlink过程中，执行<code>FD-&gt;bk=BK;BK-&gt;fd=FD</code>操作，实现bssptr的重新赋值，将bssptr的值修改为<code>&amp;bssptr-0x18</code>；</p></li><li><p>后续如果能对bssptr进行其他修改，就可以对<code>&amp;bssptr-0x18</code>开始的区域进一步修改，并实现可控，从而为进一步攻击创造条件；</p></li><li><p>代码主要演示了一个堆溢出，修改ptr2的prev_size和size两个字段，将size修改为 <code>0x90</code>(这里<code>0x90</code>的最后一位，即size最后一位为<code>0</code>标志着上面一个块为释放块，没有被使用)，会导致在释放ptr2的时候(前面有一个<code>free(Ptr2)</code>)，误认前一块为已经释放块(然而在程序的逻辑中，并没有释放第一块)；</p></li><li><p>然后会根据prev_size来计算前一块所在地位置，这里我们将前一块大小从<code>0x90</code>减去<code>0x10</code>，是为了使bssptr指向的位置是一个<code>malloc()</code>分配的堆头；</p><ul><li><code>malloc(0x80)</code>分配的用户区域为<code>0x80</code>，加上块头两个size(2个<code>8byte</code>)为<code>0x90</code>空间大小，<code>malloc(0x80)</code>是返回给用户的用户区域的指针；</li><li>为了让bssptr指向的位置是一个<code>malloc()</code>分配的堆头(原来指向的是malloc分配的用户数据区，现在通过prev_size为<code>0x80</code>将bssptr所指向的位置识别为堆头，其实地址是一样的，不过是由用户区地址改变为指向堆头地址；</li><li>所以要修改当前堆块ptr2的P_SIZE的大小为<code>0x80</code>，即减去<code>0x10</code>)，然后通过上述所说的去伪造前后项指针(FD和BK)，以此来达到攻击的目的；</li></ul></li><li><p>下图是在第二个<code>malloc()</code>之后堆上的状态，此时可以看到两个<code>0x91</code>(最后一位为标志位1，代表前面是已用的堆块)的块和一个top chunk，而这时候调用memcpy去对ptr1进行heapover，使得ptr1覆盖ptr2的prev_size和size两个字段；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302103933.png" style="zoom:50%"></p></li><li><p>下图是memcpy之后的内存状态，对前后两块的内容变化进行对比发现后一块ptr2的prev_size和size两个字段分别被改写为<code>0x80</code>和<code>0x90</code>，这样就导致在free后ptr2的时候，根据size的最后一bit为标志位，当此位为0，标志着物理上相连的前一块ptr1是释放块，然后根据prev_size去找前一块的堆头；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104443.png" style="zoom:50%"><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104627.png" alt=""></p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104627.png" style="zoom:50%"></p></li><li><p>此时free函数会调用unlink去解链伪造的堆块，这样就可以达到利用unlink，在满足 条件的情况下，执行elsa操作，使得bssptr里面的值由heap的地址变为指向<code>&amp;bssptr–0x18</code>处；</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">else</span>&#123;</span><br><span class="line">    FD -&gt; bk =BK;</span><br><span class="line">    BK -&gt; fd =FD;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li><li><p>执行free前和之后，bssptr指针指向内容的变化如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302110052.png" style="zoom:50%"></p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302110235.png" style="zoom:50%"></p></li></ul><h1 id="释放后重用漏洞"><a href="#释放后重用漏洞" class="headerlink" title="释放后重用漏洞"></a>释放后重用漏洞</h1><h1 id="重复释放漏洞"><a href="#重复释放漏洞" class="headerlink" title="重复释放漏洞"></a>重复释放漏洞</h1></div><div class="my_post_copyright"><script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script><script type="text/javascript" src="http://jslibs.wuxubj.cn/sweetalert_mini/jquery-1.7.1.min.js"></script><script src="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.min.js"></script><link rel="stylesheet" type="text/css" href="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.mini.css"><link href="css/font-awesome.min.css?v=4.7.0" rel="stylesheet"><script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script><p><span>本文标题: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html">二进制-堆漏洞</a></p><p><span>文章作者: </span><a href="/" title="访问 李钰璕 的个人博客">李钰璕</a></p><p><span>发布时间: </span>2021年02月26日 - 11:38</p><p><span>最后更新: </span>2021年03月02日 - 11:51</p><p><span>原始链接: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html" title="二进制-堆漏洞"><a href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html" title="二进制-堆漏洞">https://www.leeyuxun.github.io/二进制-堆漏洞.html</a></a></p><p><span>许可协议: </span>本博客所有文章除特别声明外，均采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" title="Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)"> <i class="fab fa-creative-commons"></i>BY-NC-SA </a>许可协议，转载请注明出处！</p></div><footer class="post-footer"><div class="post-tags"><a href="/tags/%E5%A0%86%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E/" rel="tag"><i class="fa fa-tag"></i> 堆溢出漏洞</a> <a href="/tags/%E9%87%8A%E6%94%BE%E5%90%8E%E9%87%8D%E7%94%A8%E6%BC%8F%E6%B4%9E/" rel="tag"><i class="fa fa-tag"></i> 释放后重用漏洞</a> <a href="/tags/%E9%87%8D%E5%A4%8D%E9%87%8A%E6%94%BE%E6%BC%8F%E6%B4%9E/" rel="tag"><i class="fa fa-tag"></i> 重复释放漏洞</a></div><div class="post-nav"><div class="post-nav-item"><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E.html" rel="prev" title="二进制-条件竞争漏洞"><i class="fa fa-chevron-left"></i> 二进制-条件竞争漏洞</a></div><div class="post-nav-item"><a href="/hello-world.html" rel="next" title="Hello World">Hello World <i class="fa fa-chevron-right"></i></a></div></div></footer></article></div><script>window.addEventListener('tabs:register', () => {
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="堆结构 堆是供程序使用的虚拟空间之一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="二进制-堆漏洞">
+<meta property="og:url" content="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html">
+<meta property="og:site_name" content="Leeyuxun の blog">
+<meta property="og:description" content="堆结构 堆是供程序使用的虚拟空间之一">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226134049.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226135129.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226140139.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226135708.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226140036.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302101923.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302102125.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302103933.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104443.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104627.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104627.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302110052.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302110235.png">
+<meta property="article:published_time" content="2021-02-26T03:38:05.000Z">
+<meta property="article:modified_time" content="2021-03-02T03:51:25.774Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="堆溢出漏洞">
+<meta property="article:tag" content="释放后重用漏洞">
+<meta property="article:tag" content="重复释放漏洞">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226134049.png">
+
+<link rel="canonical" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>二进制-堆漏洞 | Leeyuxun の blog</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="从0开始学习网络安全">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          二进制-堆漏洞
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-26 11:38:05" itemprop="dateCreated datePublished" datetime="2021-02-26T11:38:05+08:00">2021-02-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-03-02 11:51:25" itemprop="dateModified" datetime="2021-03-02T11:51:25+08:00">2021-03-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="堆结构"><a href="#堆结构" class="headerlink" title="堆结构"></a>堆结构</h1><ul>
+<li><p>堆是供程序使用的虚拟空间之一<a id="more"></a></p>
+<ul>
+<li><p>程序未运行时，并不知道需要多少的虚拟空间来运行程序；</p>
+</li>
+<li><p>在程序运行过程中，往往伴随着大量申请和释放内存的操作，为了更好的管理内存空间的使用和提高程序运行效率，需要专门对内存进行管理；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226134049.png" style="zoom:40%;" /></p>
+</li>
+<li><p>常见的内存管理库有：</p>
+<ul>
+<li>tcmalloc:谷歌开源的内存管理库</li>
+<li>jemalloc:FreeBSD开发人员所开发</li>
+<li>ptmalloc&amp;ptmalloc 2:基于dlmalloc 2.7.x开发</li>
+</ul>
+</li>
+<li><p>ptmalloc中，实现了malloc()、free()和其他函数以对内存进行管理；</p>
+</li>
+<li><p>glibc使用ptmalloc对内存空间进行管理，在2.3.x版本后集成了ptmalloc 2；</p>
+</li>
+</ul>
+</li>
+<li><p>ptmalloc中用户请求的空间由chunk这一数据结构来表示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span> &#123;</span></span><br><span class="line">    <span class="comment">/* #define INTERNAL_SIZE_T size_t */</span></span><br><span class="line">    INTERNAL_SIZE_T prev_size; <span class="comment">/* Size of previous chunk (if free). */</span></span><br><span class="line">    INTERNAL_SIZE_T <span class="built_in">size</span>; overhead. <span class="comment">/* Size in bytes, including overhead */</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd</span>;</span> <span class="comment">/* forward， backward ，这两个指针只在free chunk中存在*/</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk</span>;</span></span><br><span class="line">    <span class="comment">/* Only used for large blocks: pointer to next larger size. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">fd_nextsize</span>;</span> <span class="comment">/* double links -- used only if free. */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">malloc_chunk</span>* <span class="title">bk_nextsize</span>;</span> </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>一个chunk(未分配的)中的信息从上往下依次是：</p>
+<ul>
+<li>前一个chunk的大小</li>
+<li>本chunk的大小(最低位，图中P表示前一个chunk是否处于使用中)</li>
+<li>链表中前一个chunk的地址</li>
+<li>链表中后一个chunk的地址</li>
+</ul>
+</li>
+<li><p>chunk指针指向的是chunk的起始位置</p>
+<ul>
+<li>这个位置并不是用户能够写入或读取的起始位置</li>
+<li>在已分配的chunk中，用户实际使用的区域从mem 指针指向的区域开始</li>
+</ul>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226135129.png" style="zoom:50%;" /></p>
+</li>
+<li><p>在ptmalloc中，为了节省空间，对chunk进行了空间复用</p>
+<ul>
+<li>当一个chunk处于使用中时，它的下一个chunk的第一个域(即用于记录前一个chunk的大小的区域)是无效的，这个域可以被当前的chunk所使用；</li>
+</ul>
+</li>
+<li><p>在用户申请内存空间时，会对用户所需的空间大小进行处理后，再进行空间分配；</p>
+<ul>
+<li>ptmalloc依赖平台对size_t的定义进行地址对齐；</li>
+<li>32位平台size_t长度为4字节；</li>
+<li>64位平台的size_t长度可能是4字节，也可能是8字节；<ul>
+<li>64位Linux平台size_t长度为8字节；</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="堆管理方式"><a href="#堆管理方式" class="headerlink" title="堆管理方式"></a>堆管理方式</h1><h3 id="bin"><a href="#bin" class="headerlink" title="bin"></a>bin</h3><ul>
+<li><p>ptmalloc采用bin来对空闲的chunk进行管理</p>
+<ul>
+<li><p>bin是一种记录空闲chunk的链表数据结构，是一个将chunk连接起来的链表，它根据chunk的大小进行管理，共四类：</p>
+<ul>
+<li>fast bin</li>
+<li>unsorted bin</li>
+<li>small bin</li>
+<li>large bin</li>
+</ul>
+</li>
+<li><p>当chunk被释放时，ptmalloc会将所属chunk根据一定的规则放入相应的bin中；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226140139.png" style="zoom:50%;" /></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226135708.png" style="zoom:50%;" /></p>
+</li>
+</ul>
+</li>
+<li><p>在glibc中用于记录bin的数据结构有两种：</p>
+<ul>
+<li><p>fastbinsY: 这是一个数组，用于记录并维护所有的fast bins；</p>
+</li>
+<li><p>bins: 这也是一个数组，用于记录并维护除fast bins之外的所有bins，一共有126个bins；</p>
+<ul>
+<li>bins[1]为unsorted bin；</li>
+<li>bins[2-63]为small bin；</li>
+<li><p>bins[64-126]为large bin；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226140036.png" style="zoom:40%;" /></p>
+</li>
+</ul>
+</li>
+<li><p><strong>这些bin都位于libc中，因此可以利用链表的结构在特定条件下泄漏libc地址</strong>；</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="main-arena"><a href="#main-arena" class="headerlink" title="main_arena"></a>main_arena</h3><ul>
+<li>主分配区</li>
+<li>每个进程只有一个主分配区，可有多个非主分配区；<ul>
+<li>程序每次申请内存时，都要对主分配区加锁，在多线程环境下，对主分配区的竞争可能会非常激烈，因此在ptmalloc中加入了非主分配区来提高malloc的效率；</li>
+</ul>
+</li>
+<li>主分配区能够访问进程的heap和mmap区域并向操作系统申请虚拟内存，而非主分配区只 能访问mmap区域；</li>
+</ul>
+<h3 id="fast-bin"><a href="#fast-bin" class="headerlink" title="fast bin"></a>fast bin</h3><ul>
+<li>单向链表，通过chunk的size进行索引；</li>
+<li>fast bin主要用于提高小内存申请的分配效率；<ul>
+<li>默认情况下，对于SIZE_SZ为4B的平台，小于64B的chunk分配请求，首先查找fast bins，对于SIZE_SZ为8B的平台，小于128B的chunk分配请求，首先查找fast bins；</li>
+<li>首先会查找fast bins中是否有所需大小的chunk存在(精确匹配)，如果存在，属于fast bin中的chunk被释放后，这个chunk将会被加入到对应索引值idx的fast bin链表中；</li>
+<li>当用户申请了一个大小属于fast bin的chunk，ptmalloc通过chunk大小获得索引值idx，进而获得对应的链表来寻找符合条件的chunk；</li>
+</ul>
+</li>
+<li>fast bin使用LIFO和大小完全匹配的规则<ul>
+<li>添加操作(free内存)就是将新的fast chunk加入链表尾，删除操作(malloc内存)就是将链表尾部的fast chunk删除；</li>
+<li>每个fast bin都是一个单链表(只使用fd指针)。因为在fast bin中无论是添加还是移除fast chunk，都是对“链表尾”进行操作，而不会对某个中间的fast chunk进行操作；</li>
+</ul>
+</li>
+<li>在进行分配时，除去原子性方面的安全检查，只对chunk的size域检查；</li>
+</ul>
+<h3 id="small-bin"><a href="#small-bin" class="headerlink" title="small bin"></a>small bin</h3><ul>
+<li>双向链表结构，chunk大小范围为:16-504B(SIZE_SZ=4B，以8Byte为公差的等差数列)或32-1008B(SIZE_SZ=8B，以16Byte为公差的等差数列)；</li>
+<li>在分配chunk时，对双向链表进行安全检查；</li>
+<li>如果small bin还未初始化，会调用相关函数对fast bin中的chunk进行合并并放到unsorted bin中；</li>
+</ul>
+<h3 id="large-bin"><a href="#large-bin" class="headerlink" title="large bin"></a>large bin</h3><ul>
+<li>chunk大小范围为:大于512B(SIZE_SZ=4B)或1024B(SIZE_SZ=8B)；</li>
+<li>large bin将它的63个bin按照每组的个数32、16、8、4、2、1分为6组，每组组内的各bin的chunk大小符合等差数列；</li>
+<li>在分配的过程中，会寻找最小的符合申请大小的chunk，对合适的chunk进行分割后，剩余的部分将会被放到unsorted bin中；</li>
+</ul>
+<h3 id="unsorted-bin"><a href="#unsorted-bin" class="headerlink" title="unsorted bin"></a>unsorted bin</h3><ul>
+<li>unsortedbin的chunk链表头存放在bins[1]中；</li>
+<li>双向链表，可看作是small bin和large bin的缓存；</li>
+<li>进行分配的时候，如果当前选择的unsorted bin中的chunk不符合条件，则该chunk会被放入到相应的bin中，然后继续查找；</li>
+<li>如果unsorted bin中存在上一次分割剩下的chunk，则先匹配该chunk；</li>
+<li>分配过程中，会对size进行检查；</li>
+</ul>
+<h3 id="各分配区对比"><a href="#各分配区对比" class="headerlink" title="各分配区对比"></a>各分配区对比</h3><ul>
+<li>fast bins是小内存块的高速缓存，当一些大小小于64字节的chunk被回收时，首先会放入fast bins中，在分配小内存时，首先会查看fast bins中是否有合适的内存块，如果存在，则直接返回fast bins中的内存块，以加快分配速度；</li>
+<li>usorted bin只有一个，回收的chunk块必须先放到unsorted bin中，分配内存时会查看unsorted bin中是否有合适的chunk，如果找到满足条件的chunk，则直接返回给用户，否则将unsorted bin的所有chunk放入small bins或是large bins中；</li>
+<li>small bins用于存放固定大小的chunk，共64个bin，最小的chunk大小为16字节或32字节，每个bin的大小相差8字节或是16字节，当分配小内存时，采用精确匹配的方式从small bins中查找合适的chunk；</li>
+<li>large bins用于存储大于等于512B或1024B的空闲chunk，这些chunk使用双向链表的形式按大小顺序排序，分配内存时按最近匹配方式从large bins中分配chunk；</li>
+</ul>
+<h3 id="malloc函数"><a href="#malloc函数" class="headerlink" title="malloc函数"></a>malloc函数</h3><ul>
+<li><p>在ptmalloc中具体由_int_malloc实现；</p>
+</li>
+<li><p>实际申请空间计算方法：</p>
+<ul>
+<li>用户申请的空间加上chunk信息所需空间；</li>
+<li>再减去后一个chunk的复用空间；</li>
+<li>地址以2 * SIZE_SZ进行对齐；</li>
+</ul>
+</li>
+<li><p>如果计算结果小于MIN_CHUNK_SIZE，则按系统规定的最小值进行申请；</p>
+</li>
+<li><p>申请时按照以下顺序查找空闲chunk：</p>
+<ul>
+<li>(tcache)(注:glibc 2.27新加入的机制)</li>
+<li>fast bin</li>
+<li>small bin</li>
+<li>unsorted bin</li>
+<li>large bin</li>
+<li>top chunk</li>
+</ul>
+<p>备注：当malloc从fast bin、small bin、unsorted bin、 large bin中都无法找到合适或足够大的空闲chunk进行分配或分割时，若top chunk足够大，将会从top chunk中进行分配；</p>
+</li>
+</ul>
+<h3 id="free函数"><a href="#free函数" class="headerlink" title="free函数"></a>free函数</h3><ul>
+<li>在用户释放一个堆块的时候，程序会根据堆块的大小，以及堆块位置的不同，做出不同的操作；<ul>
+<li>先判断当前这个块大小是否小于fast bin的最大值，如果小于fast bin的最大值，并且不临近top chunk的时候，就将这个块链入到fast bin对应的链中，并 不修改后一块的标志位；</li>
+<li>如果不是fast bin或者临近top chunk时<ul>
+<li>程序会先检测前项是否是释放状态，如果前项是释放状态，则将前项和当前chunk合并，同时检测后项状态；</li>
+<li>如果后项是top chunk，则直接将当前的chunk并到top chunk中；</li>
+<li>如果后项不是top chunk的时候，也会将后项合并到当前chunk中，并且会修改后块的标志位，然后将这一块链到unsorted bin上；</li>
+<li>在合并中，会触发unlink操作；</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="unlink函数"><a href="#unlink函数" class="headerlink" title="unlink函数"></a>unlink函数</h3><ul>
+<li><p>在free时，如果free的chunk的前一chunk是空闲的，将调用unlink函数将前一chunk从bin中取出；</p>
+</li>
+<li><p>unlink函数最重要的是下面4行代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> unlink(P, BK, FD)&#123;</span></span><br><span class="line">    BK = P -&gt; bk;</span><br><span class="line">    FD = P -&gt; fd;</span><br><span class="line">    FD -&gt; bk = BK;</span><br><span class="line">    BK -&gt; fd = FD;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>旧版的unlink函数中未做任何安全检查；</p>
+</li>
+<li><p>新版的unlink函数中加入了部分安全检查，但在攻击者精心构造的情况下，仍可以绕过安全检查，达到一定的攻击效果；</p>
+</li>
+</ul>
+<h1 id="堆溢出漏洞"><a href="#堆溢出漏洞" class="headerlink" title="堆溢出漏洞"></a>堆溢出漏洞</h1><h2 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h2><ul>
+<li><p>堆溢出造成的原因主要是在堆上对数据进行写入、读取、复制等操作时，未对数据长度、范围等进行良好的处理，导致对非当前chunk进行了操作；</p>
+</li>
+<li><p>通过堆溢出漏洞，能够覆盖关键数据结构、破坏堆结构；</p>
+</li>
+<li><p>堆溢出多见于复制数据到堆上，或向堆上读数据时；</p>
+</li>
+<li><p>由于未对边界进行检查，导致可以在堆上写入超出一个堆块大小的数据，从而覆盖其他关键数据结构，导致对堆结构的破坏；</p>
+</li>
+<li><p>这里以新版unlink为例，介绍堆溢出的利用；</p>
+</li>
+<li><p>由于新版unlink加入了新的检测机制，导致无法简单地通过修改前、后项指针，达到内存任意写的目的；</p>
+</li>
+<li><p>旧版unlink：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> unlink(P, BK, FD)&#123;</span></span><br><span class="line">    BK = P -&gt; bk;</span><br><span class="line">    FD = P -&gt; fd;</span><br><span class="line">    FD -&gt; bk = BK;</span><br><span class="line">    BK -&gt; fd = FD;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在新版的unlink中主要加入了<code>__builtin_expect( FD-&gt;bk != P || BK- &gt;fd != P, 0 )</code>这个检测，这个检测要求<code>FD-&gt;bk==P</code>且<code>BK-&gt;fd==P</code>，也就是说要求后项指针的前项指针指向P，前项的后项指针指向P，也就是构成一个双链才能进行unlink；</p>
+</li>
+<li><p>要满足<code>FD-&gt;bk=P</code>和<code>BK-&gt;fd=P</code>，<code>__builtin_expect()</code>函数才能执行else的操作绕过该安全检查；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> unlink(AV, P, BK, FD) &#123;</span></span><br><span class="line">	FD = P-&gt;fd;</span><br><span class="line">	BK = P-&gt;bk;</span><br><span class="line">	<span class="keyword">if</span> (__builtin_expect (FD-&gt;bk != P || BK-&gt;fd != P, <span class="number">0</span>))              </span><br><span class="line">      malloc_printerr (check_action, <span class="string">"corrupted double-linked list"</span>, P, AV);</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">        FD-&gt;bk = BK;</span><br><span class="line">        BK-&gt;fd = FD;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>对以下程序进行分析</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* unlink1 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="keyword">char</span> * bssptr = <span class="literal">NULL</span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">	<span class="keyword">char</span> * ptr1 = <span class="built_in">malloc</span>(<span class="number">0x80</span>);</span><br><span class="line">	<span class="keyword">char</span> * ptr2 = <span class="built_in">malloc</span>(<span class="number">0x80</span>);</span><br><span class="line">	bssptr = ptr1;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"bssptr is : %p\n"</span>, &amp;bssptr);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"old ptr is : %p\n"</span>, bssptr);</span><br><span class="line">	<span class="keyword">char</span> buf[] = <span class="string">"\x00\x00\x00\x00\x00\x00\x00\x00\x81\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x90\x00\x00\x00\x00\x00\x00\x00"</span>;</span><br><span class="line">	((<span class="keyword">size_t</span> *)buf)[<span class="number">2</span>] = (<span class="keyword">size_t</span>)(((<span class="keyword">char</span> *)&amp;bssptr) - <span class="number">0x18</span>);</span><br><span class="line">	((<span class="keyword">size_t</span> *)buf)[<span class="number">3</span>] = (<span class="keyword">size_t</span>)(((<span class="keyword">char</span> *)&amp;bssptr) - <span class="number">0x10</span>);</span><br><span class="line">	<span class="built_in">memcpy</span>(ptr1, buf, <span class="number">0x90</span>); <span class="comment">// heap overflow;</span></span><br><span class="line">	<span class="built_in">free</span>(ptr2);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"new ptr is : %p\n"</span>, bssptr);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>绕过新版unlink安全检查条件：</p>
+<ul>
+<li>满足<code>FD-&gt;bk=P</code></li>
+<li>满足<code>BK-&gt;fd=P</code></li>
+</ul>
+</li>
+<li><p>要想实现<code>FD-&gt;bk=P</code></p>
+<ul>
+<li>必须构建<code>FD=ptr1-&gt;fd=&amp;bssptr-0x18</code>才满足(这里以程序unlink1为例子)</li>
+<li>注：<code>FD-&gt;bk=P=&amp;bssptr</code>，因为<code>FD-&gt;bk</code>在FD堆块首地址后面P_size、size和fd三个8字节区域之后，所以<code>FD-&gt;bk=FD堆块首地址+0x18=P=&amp;bssptr</code>，因此<code>FD堆块首地址 =&amp;bssptr-0x18</code>；</li>
+<li>其中，<code>FD堆块首地址FD=ptr1-&gt;fd</code>，这是由ptr1的fd指针决定的；</li>
+</ul>
+</li>
+<li>要想实现<code>BK-&gt;fd=P</code><ul>
+<li>必须构建<code>BK=ptr1-&gt;bk=&amp;bssptr-0x10</code>才满足(这里以程序unlink1为例子)</li>
+<li>注：<code>BK-&gt;fd=P=&amp;bssptr</code>，因为<code>BK-&gt;fd</code>在BK堆块首地址后面P_size、size两个8字节区域之后，所以<code>BK-&gt;fd=堆块首地址+0x10=&amp;bssptr</code>，因此<code>BK堆块首地址=&amp;bssptr-0x10</code>；</li>
+<li>其中，堆块首地址<code>BK=ptr1-&gt;bk</code>，这是由ptr1的fd指针决定的；</li>
+</ul>
+</li>
+<li>这样在就可以绕过<code>__builtin_expect(FD-&gt;bk != P || BK-&gt;fd != P, 0)</code>这个检测，但是这种攻击方式只能使得一个指向堆的指针，指向比本身地址低<code>0x18</code>的位置，如果这时候可以再次对该指针内容进行修改，就可以覆盖指针本身，以达到内存任意读写的目的；</li>
+</ul>
+<h3 id="利用思路"><a href="#利用思路" class="headerlink" title="利用思路"></a>利用思路</h3><ul>
+<li>要想实现<code>__builtin_expect(FD-&gt;bk!=P||BK-&gt;fd!=P,0)</code> 条件下的堆溢出，必须满足上述特定条件，为此必须精心构造：<ul>
+<li><code>BK=&amp;bssptr-0x10</code></li>
+<li><code>FD=&amp;bssptr-0x18</code></li>
+</ul>
+</li>
+<li>首先，通过两个malloc分配两个堆ptr1和ptr2；</li>
+<li>本来ptr1和ptr2都是在用户区域分配的两个已经使用的堆块，但我们为了满足上面两个条件，必须要将ptr1“非法修改”为空闲的堆块；</li>
+<li>将ptr1“非法修改”为空闲的堆块的目的，是在通过free函数将ptr2释放时，由于和ptr2相邻的ptr1是空闲的，因此会自动调用unlink()函数将ptr1脱链，脱链时由于满足构造堆溢出的条件，所以执行unlink()函数中的else语句<code>FD-&gt;bk =BK; BK-&gt;fd =FD;</code>这样实现堆溢出后的覆盖；</li>
+<li>而要想将ptr1从用户使用的堆块，非法修改为空闲堆块，只能考虑通过memcpy()函数将一个精心构造的buf数组内容写入ptr1堆块中，实现覆盖；</li>
+<li><p>精心构造的buf数组内容包括：</p>
+<ul>
+<li><p>第9个字节对应的size处改为<code>x81</code>(最后一个比特为1)，目的是将前面的堆块标识为用户使用的堆块；</p>
+</li>
+<li><p>最后的两个8字节，改为<code>x80</code>和<code>x90</code>，它将要覆盖ptr2的 P_size和size。其中<code>x80</code>对应ptr1的堆块大小为<code>x80</code>(原为<code>x90</code>)，<code>x90</code>最后一位为<code>0</code>对应ptr2的前一个堆块为空闲(后面有解释)；</p>
+<ul>
+<li><code>x80\x00\x00\x00\x00\x00\x00\x00\x90\x00\x00\x00\x00\x00\x00\x00</code></li>
+</ul>
+</li>
+<li><p>再通过<code>((size_t *)buf)[2]=(size_t)(((char *)&amp;bssptr)-0x18</code>，在buf的第3个字节处完成fd的替换；</p>
+</li>
+<li><p>再通过<code>((size_t *)buf)[3]=(size_t)(((char *)&amp;bssptr)-0x10</code>，在buf的第4个字节处完成bk的替换；</p>
+</li>
+<li><p>这样ptr1的fd和bk(见下面白色突出的地方)，就替换为满足unlink条件的<code>BK=&amp;bssptr-0x10</code>、<code>FD=&amp;bssptr-0x18</code>值了(其中&amp;bssptr为<code>0x601060</code>)；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302101923.png" style="zoom:50%;" /></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302102125.png" style="zoom:50%;" /></p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="详细说明"><a href="#详细说明" class="headerlink" title="详细说明"></a>详细说明</h3><ul>
+<li><p>要将ptr1伪造为释放块，就要改写ptr2的内容，包括prev_size和size两个字段；</p>
+</li>
+<li><p>上述伪造操作，通过memcpy执行，从而将经过计算好的FD和BK写入ptr1的fd和bk位置；</p>
+</li>
+<li><p>然后释放free释放ptr2，利用伪造的ptr2的size标志位，伪造prt1为释放块，free会对ptr1进行unlink操作；</p>
+</li>
+<li><p>unlink过程中，执行<code>FD-&gt;bk=BK;BK-&gt;fd=FD</code>操作，实现bssptr的重新赋值，将bssptr的值修改为<code>&amp;bssptr-0x18</code>；</p>
+</li>
+<li><p>后续如果能对bssptr进行其他修改，就可以对<code>&amp;bssptr-0x18</code>开始的区域进一步修改，并实现可控，从而为进一步攻击创造条件；</p>
+</li>
+<li><p>代码主要演示了一个堆溢出，修改ptr2的prev_size和size两个字段，将size修改为 <code>0x90</code>(这里<code>0x90</code>的最后一位，即size最后一位为<code>0</code>标志着上面一个块为释放块，没有被使用)，会导致在释放ptr2的时候(前面有一个<code>free(Ptr2)</code>)，误认前一块为已经释放块(然而在程序的逻辑中，并没有释放第一块)；</p>
+</li>
+<li><p>然后会根据prev_size来计算前一块所在地位置，这里我们将前一块大小从<code>0x90</code>减去<code>0x10</code>，是为了使bssptr指向的位置是一个<code>malloc()</code>分配的堆头；</p>
+<ul>
+<li><code>malloc(0x80)</code>分配的用户区域为<code>0x80</code>，加上块头两个size(2个<code>8byte</code>)为<code>0x90</code>空间大小，<code>malloc(0x80)</code>是返回给用户的用户区域的指针；</li>
+<li>为了让bssptr指向的位置是一个<code>malloc()</code>分配的堆头(原来指向的是malloc分配的用户数据区，现在通过prev_size为<code>0x80</code>将bssptr所指向的位置识别为堆头，其实地址是一样的，不过是由用户区地址改变为指向堆头地址；</li>
+<li>所以要修改当前堆块ptr2的P_SIZE的大小为<code>0x80</code>，即减去<code>0x10</code>)，然后通过上述所说的去伪造前后项指针(FD和BK)，以此来达到攻击的目的；</li>
+</ul>
+</li>
+<li><p>下图是在第二个<code>malloc()</code>之后堆上的状态，此时可以看到两个<code>0x91</code>(最后一位为标志位1，代表前面是已用的堆块)的块和一个top chunk，而这时候调用memcpy去对ptr1进行heapover，使得ptr1覆盖ptr2的prev_size和size两个字段；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302103933.png" style="zoom:50%;" /></p>
+</li>
+<li><p>下图是memcpy之后的内存状态，对前后两块的内容变化进行对比发现后一块ptr2的prev_size和size两个字段分别被改写为<code>0x80</code>和<code>0x90</code>，这样就导致在free后ptr2的时候，根据size的最后一bit为标志位，当此位为0，标志着物理上相连的前一块ptr1是释放块，然后根据prev_size去找前一块的堆头；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104443.png" style="zoom:50%;" /><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104627.png" alt=""></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302104627.png" style="zoom:50%;" /></p>
+</li>
+<li><p>此时free函数会调用unlink去解链伪造的堆块，这样就可以达到利用unlink，在满足 条件的情况下，执行elsa操作，使得bssptr里面的值由heap的地址变为指向<code>&amp;bssptr–0x18</code>处；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">else</span>&#123;</span><br><span class="line">    FD -&gt; bk =BK;</span><br><span class="line">    BK -&gt; fd =FD;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>执行free前和之后，bssptr指针指向内容的变化如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302110052.png" style="zoom:50%;" /></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302110235.png" style="zoom:50%;" /></p>
+</li>
+</ul>
+<h1 id="释放后重用漏洞"><a href="#释放后重用漏洞" class="headerlink" title="释放后重用漏洞"></a>释放后重用漏洞</h1><h1 id="重复释放漏洞"><a href="#重复释放漏洞" class="headerlink" title="重复释放漏洞"></a>重复释放漏洞</h1>
+    </div>
+
+    
+    
+    
+        
+
+<div class="my_post_copyright">
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+  
+  <!-- JS库 sweetalert 可修改路径 -->
+  <script type="text/javascript" src="http://jslibs.wuxubj.cn/sweetalert_mini/jquery-1.7.1.min.js"></script>
+  <script src="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.mini.css">
+  <link href="css/font-awesome.min.css?v=4.7.0" rel="stylesheet">
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+  <p><span>本文标题: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html">二进制-堆漏洞</a></p>
+  <p><span>文章作者: </span><a href="/" title="访问 李钰璕 的个人博客">李钰璕</a></p>
+  <p><span>发布时间: </span>2021年02月26日 - 11:38</p>
+  <p><span>最后更新: </span>2021年03月02日 - 11:51</p>
+  <p><span>原始链接: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html" title="二进制-堆漏洞"><a href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E5%A0%86%E6%BC%8F%E6%B4%9E.html" title="二进制-堆漏洞">https://www.leeyuxun.github.io/二进制-堆漏洞.html</a></a></p>
+  <p><span>许可协议: </span>本博客所有文章除特别声明外，均采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" title="Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)"> <i class="fab fa-creative-commons"></i>BY-NC-SA </a>许可协议，转载请注明出处！</p>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A0%86%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E/" rel="tag"><i class="fa fa-tag"></i> 堆溢出漏洞</a>
+              <a href="/tags/%E9%87%8A%E6%94%BE%E5%90%8E%E9%87%8D%E7%94%A8%E6%BC%8F%E6%B4%9E/" rel="tag"><i class="fa fa-tag"></i> 释放后重用漏洞</a>
+              <a href="/tags/%E9%87%8D%E5%A4%8D%E9%87%8A%E6%94%BE%E6%BC%8F%E6%B4%9E/" rel="tag"><i class="fa fa-tag"></i> 重复释放漏洞</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E.html" rel="prev" title="二进制-条件竞争漏洞">
+      <i class="fa fa-chevron-left"></i> 二进制-条件竞争漏洞
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/hello-world.html" rel="next" title="Hello World">
+      Hello World <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
     let { activeClass } = CONFIG.comments;
     if (CONFIG.comments.storage) {
       activeClass = localStorage.getItem('comments_active') || activeClass;
@@ -16,7 +659,169 @@
       let commentClass = event.target.classList[1];
       localStorage.setItem('comments_active', commentClass);
     });
-  }</script></div><div class="toggle sidebar-toggle"><span class="toggle-line toggle-line-first"></span> <span class="toggle-line toggle-line-middle"></span> <span class="toggle-line toggle-line-last"></span></div><aside class="sidebar"><div class="sidebar-inner"><ul class="sidebar-nav motion-element"><li class="sidebar-nav-toc">文章目录</li><li class="sidebar-nav-overview">站点概览</li></ul><div class="post-toc-wrap sidebar-panel"><div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#堆结构"><span class="nav-number">1.</span> <span class="nav-text">堆结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#堆管理方式"><span class="nav-number">2.</span> <span class="nav-text">堆管理方式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#bin"><span class="nav-number">2.0.1.</span> <span class="nav-text">bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#main-arena"><span class="nav-number">2.0.2.</span> <span class="nav-text">main_arena</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#fast-bin"><span class="nav-number">2.0.3.</span> <span class="nav-text">fast bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#small-bin"><span class="nav-number">2.0.4.</span> <span class="nav-text">small bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#large-bin"><span class="nav-number">2.0.5.</span> <span class="nav-text">large bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unsorted-bin"><span class="nav-number">2.0.6.</span> <span class="nav-text">unsorted bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#各分配区对比"><span class="nav-number">2.0.7.</span> <span class="nav-text">各分配区对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#malloc函数"><span class="nav-number">2.0.8.</span> <span class="nav-text">malloc函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#free函数"><span class="nav-number">2.0.9.</span> <span class="nav-text">free函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unlink函数"><span class="nav-number">2.0.10.</span> <span class="nav-text">unlink函数</span></a></li></ol></li></ol><li class="nav-item nav-level-1"><a class="nav-link" href="#堆溢出漏洞"><span class="nav-number">3.</span> <span class="nav-text">堆溢出漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞成因"><span class="nav-number">3.1.</span> <span class="nav-text">漏洞成因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞分析"><span class="nav-number">3.2.</span> <span class="nav-text">漏洞分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#利用思路"><span class="nav-number">3.2.1.</span> <span class="nav-text">利用思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#详细说明"><span class="nav-number">3.2.2.</span> <span class="nav-text">详细说明</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#释放后重用漏洞"><span class="nav-number">4.</span> <span class="nav-text">释放后重用漏洞</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#重复释放漏洞"><span class="nav-number">5.</span> <span class="nav-text">重复释放漏洞</span></a></li></div></div><div class="site-overview-wrap sidebar-panel"><div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person"><img class="site-author-image" itemprop="image" alt="李钰璕" src="/images/avatar.png"><p class="site-author-name" itemprop="name">李钰璕</p><div class="site-description" itemprop="description">从0开始学习网络安全</div></div><div class="site-state-wrap motion-element"><nav class="site-state"><div class="site-state-item site-state-posts"><a href="/archives/"><span class="site-state-item-count">75</span> <span class="site-state-item-name">日志</span></a></div><div class="site-state-item site-state-categories"><a href="/categories/"><span class="site-state-item-count">16</span> <span class="site-state-item-name">分类</span></a></div><div class="site-state-item site-state-tags"><a href="/tags/"><span class="site-state-item-count">105</span> <span class="site-state-item-name">标签</span></a></div></nav></div><div class="links-of-author motion-element"><span class="links-of-author-item"><a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a> </span><span class="links-of-author-item"><a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a></span></div></div><div class="back-to-top motion-element"><i class="fa fa-arrow-up"></i> <span>0%</span></div></div></aside><div id="sidebar-dimmer"></div></div></main><footer class="footer"><div class="footer-inner"><div class="busuanzi-count"><script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></div></footer></div><script src="/lib/anime.min.js"></script><script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script><script src="/lib/velocity/velocity.min.js"></script><script src="/lib/velocity/velocity.ui.min.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/pisces.js"></script><script src="/js/next-boot.js"></script><script src="/js/local-search.js"></script><script>if (typeof MathJax === 'undefined') {
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#堆结构"><span class="nav-number">1.</span> <span class="nav-text">堆结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#堆管理方式"><span class="nav-number">2.</span> <span class="nav-text">堆管理方式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#bin"><span class="nav-number">2.0.1.</span> <span class="nav-text">bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#main-arena"><span class="nav-number">2.0.2.</span> <span class="nav-text">main_arena</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#fast-bin"><span class="nav-number">2.0.3.</span> <span class="nav-text">fast bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#small-bin"><span class="nav-number">2.0.4.</span> <span class="nav-text">small bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#large-bin"><span class="nav-number">2.0.5.</span> <span class="nav-text">large bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unsorted-bin"><span class="nav-number">2.0.6.</span> <span class="nav-text">unsorted bin</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#各分配区对比"><span class="nav-number">2.0.7.</span> <span class="nav-text">各分配区对比</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#malloc函数"><span class="nav-number">2.0.8.</span> <span class="nav-text">malloc函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#free函数"><span class="nav-number">2.0.9.</span> <span class="nav-text">free函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unlink函数"><span class="nav-number">2.0.10.</span> <span class="nav-text">unlink函数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#堆溢出漏洞"><span class="nav-number">3.</span> <span class="nav-text">堆溢出漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞成因"><span class="nav-number">3.1.</span> <span class="nav-text">漏洞成因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞分析"><span class="nav-number">3.2.</span> <span class="nav-text">漏洞分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#利用思路"><span class="nav-number">3.2.1.</span> <span class="nav-text">利用思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#详细说明"><span class="nav-number">3.2.2.</span> <span class="nav-text">详细说明</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#释放后重用漏洞"><span class="nav-number">4.</span> <span class="nav-text">释放后重用漏洞</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#重复释放漏洞"><span class="nav-number">5.</span> <span class="nav-text">重复释放漏洞</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">从0开始学习网络安全</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">75</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!---
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>--->
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
     window.MathJax = {
       loader: {
           load: ['[tex]/mhchem'],
@@ -64,4 +869,12 @@
     MathJax.startup.document.state(0);
     MathJax.texReset();
     MathJax.typeset();
-  }</script></body></html>
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

