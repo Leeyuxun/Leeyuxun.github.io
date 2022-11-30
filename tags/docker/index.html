@@ -47,21 +47,14 @@
 
   <title>标签: Docker | Leeyuxun の note</title>
   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-V3499K2XZY"></script>
     <script>
-      function sendPageView() {
-        if (CONFIG.hostname !== location.hostname) return;
-        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
-        localStorage.setItem('uid', uid);
-        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
-          v  : 1,
-          tid: 'G-V3499K2XZY',
-          cid: uid,
-          t  : 'pageview',
-          dp : encodeURIComponent(location.pathname)
-        }));
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-V3499K2XZY');
       }
-      document.addEventListener('pjax:complete', sendPageView);
-      sendPageView();
     </script>
 
 
@@ -356,87 +349,6 @@
 
     <footer class="footer">
       <div class="footer-inner">
-        
-
-        <!--
-
-<div class="copyright">
-  
-  &copy; 
-  <span itemprop="copyrightYear">2022</span>
-  <span class="with-love">
-    <i class="fa fa-heart"></i>
-  </span>
-  <span class="author" itemprop="copyrightHolder">李钰璕</span>
-</div>
--->
-
-        
-<div class="busuanzi-count">
-  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-</div>
-
-
-
-
-
-
-
-
-      </div>
-    </footer>
-  </div>
-
-  
-  <script src="/lib/anime.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
-  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
-  <script src="/lib/velocity/velocity.min.js"></script>
-  <script src="/lib/velocity/velocity.ui.min.js"></script>
-
-<script src="/js/utils.js"></script>
-
-<script src="/js/motion.js"></script>
-
-
-<script src="/js/schemes/pisces.js"></script>
-
-
-<script src="/js/next-boot.js"></script>
-
-
-
-
-  
-
-
-
-
-  
-<script src="/js/local-search.js"></script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-  
-
-  
-
-</body>
-</html>
-class="footer-inner">
         
 
         <!--

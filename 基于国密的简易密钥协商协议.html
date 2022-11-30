@@ -38,9 +38,9 @@
 <meta property="article:published_time" content="2020-05-16T15:59:41.000Z">
 <meta property="article:modified_time" content="2020-05-16T16:26:44.000Z">
 <meta property="article:author" content="李钰璕">
-<meta property="article:tag" content="密钥协商协议">
 <meta property="article:tag" content="SM2">
 <meta property="article:tag" content="SM3">
+<meta property="article:tag" content="密钥协商协议">
 <meta property="article:tag" content="SM4">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200516180800.png">
@@ -60,21 +60,14 @@
 
   <title>基于国密的简易密钥协商协议 | Leeyuxun の note</title>
   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-V3499K2XZY"></script>
     <script>
-      function sendPageView() {
-        if (CONFIG.hostname !== location.hostname) return;
-        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
-        localStorage.setItem('uid', uid);
-        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
-          v  : 1,
-          tid: 'G-V3499K2XZY',
-          cid: uid,
-          t  : 'pageview',
-          dp : encodeURIComponent(location.pathname)
-        }));
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-V3499K2XZY');
       }
-      document.addEventListener('pjax:complete', sendPageView);
-      sendPageView();
     </script>
 
 
@@ -519,9 +512,9 @@ mjx-container[display="true"] + br {
       <footer class="post-footer">
           
           <div class="post-tags">
-              <a href="/tags/%E5%AF%86%E9%92%A5%E5%8D%8F%E5%95%86%E5%8D%8F%E8%AE%AE/" rel="tag"><i class="fa fa-tag"></i> 密钥协商协议</a>
               <a href="/tags/SM2/" rel="tag"><i class="fa fa-tag"></i> SM2</a>
               <a href="/tags/SM3/" rel="tag"><i class="fa fa-tag"></i> SM3</a>
+              <a href="/tags/%E5%AF%86%E9%92%A5%E5%8D%8F%E5%95%86%E5%8D%8F%E8%AE%AE/" rel="tag"><i class="fa fa-tag"></i> 密钥协商协议</a>
               <a href="/tags/SM4/" rel="tag"><i class="fa fa-tag"></i> SM4</a>
           </div>
 

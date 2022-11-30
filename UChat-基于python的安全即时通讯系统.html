@@ -81,21 +81,14 @@
 
   <title>UChat-基于python的安全即时通讯系统 | Leeyuxun の note</title>
   
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-V3499K2XZY"></script>
     <script>
-      function sendPageView() {
-        if (CONFIG.hostname !== location.hostname) return;
-        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
-        localStorage.setItem('uid', uid);
-        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
-          v  : 1,
-          tid: 'G-V3499K2XZY',
-          cid: uid,
-          t  : 'pageview',
-          dp : encodeURIComponent(location.pathname)
-        }));
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-V3499K2XZY');
       }
-      document.addEventListener('pjax:complete', sendPageView);
-      sendPageView();
     </script>
 
 
@@ -1810,7 +1803,7 @@ mjx-container[display="true"] + br {
 </ol>
 <h2 id="实现效果"><a href="#实现效果" class="headerlink" title="实现效果"></a>实现效果</h2><ol>
 <li><p>注册页面</p>
-<p>对输入的用户名、密码、邮箱、确认密码等进行检查，用户名和密码限制输入非法字符，邮箱限制输入为 <a href="mailto:&#120;&#120;&#120;&#x40;&#120;&#120;&#x78;&#46;&#x78;&#x78;&#120;">xxx@xxx.xxx</a> 形式，同时限制输入的用户名长度不大于 8 个，允许中文输入。</p>
+<p>对输入的用户名、密码、邮箱、确认密码等进行检查，用户名和密码限制输入非法字符，邮箱限制输入为 <a href="mailto:&#x78;&#120;&#120;&#x40;&#120;&#120;&#x78;&#x2e;&#120;&#x78;&#120;">xxx@xxx.xxx</a> 形式，同时限制输入的用户名长度不大于 8 个，允许中文输入。</p>
 <p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145452.png"></p>
 </li>
 <li><p>登录页面</p>
