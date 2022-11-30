@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的 了解shellcode注入原理 理解给出的弹出对话框的汇编代码 通过淹没静态地址来实现shellcode的代码植入 通过跳板来实现shellcode的代码植入 尝试修改汇编语句的shellcode实现修改标题等简单操作">
+<meta property="og:type" content="article">
+<meta property="og:title" content="漏洞技术利用实验">
+<meta property="og:url" content="https://leeyuxun.github.io/%E6%BC%8F%E6%B4%9E%E6%8A%80%E6%9C%AF%E5%88%A9%E7%94%A8%E5%AE%9E%E9%AA%8C.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的 了解shellcode注入原理 理解给出的弹出对话框的汇编代码 通过淹没静态地址来实现shellcode的代码植入 通过跳板来实现shellcode的代码植入 尝试修改汇编语句的shellcode实现修改标题等简单操作">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836316689.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836376754.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836386263.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836456007.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836461058.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565845037488.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565845700629.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565845769821.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565846024211.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565845495853.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565846378550.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565846426783.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565846888982.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565847088620.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565847313872.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565847560360.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565847876404.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848011587.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848379938.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848390125.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848400080.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848407673.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848414568.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848422212.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848427852.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848433371.png">
+<meta property="article:published_time" content="2019-08-15T02:21:40.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:29:50.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="shellcode">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836316689.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E6%BC%8F%E6%B4%9E%E6%8A%80%E6%9C%AF%E5%88%A9%E7%94%A8%E5%AE%9E%E9%AA%8C.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>漏洞技术利用实验 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E6%BC%8F%E6%B4%9E%E6%8A%80%E6%9C%AF%E5%88%A9%E7%94%A8%E5%AE%9E%E9%AA%8C.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          漏洞技术利用实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-15 10:21:40" itemprop="dateCreated datePublished" datetime="2019-08-15T10:21:40+08:00">2019-08-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:29:50" itemprop="dateModified" datetime="2020-04-02T14:29:50+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">软件安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><ol>
+<li>了解<code>shellcode</code>注入原理</li>
+<li>理解给出的弹出对话框的汇编代码</li>
+<li>通过淹没静态地址来实现<code>shellcode</code>的代码植入</li>
+<li>通过跳板来实现<code>shellcode</code>的代码植入</li>
+<li>尝试修改汇编语句的<code>shellcode</code>实现修改标题等简单操作 <span id="more"></span></li>
+</ol>
+<h1 id="理解程序"><a href="#理解程序" class="headerlink" title="理解程序"></a>理解程序</h1><p>阅读并理解代码 </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PASSWORD <span class="string">&quot;1234567&quot;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">verify_password</span> <span class="params">(<span class="type">char</span> *password)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> authenticated;</span><br><span class="line">	<span class="type">char</span> buffer[<span class="number">44</span>];</span><br><span class="line">	authenticated=<span class="built_in">strcmp</span>(password,PASSWORD);</span><br><span class="line">	<span class="built_in">strcpy</span>(buffer,password);<span class="comment">//over flowed here!	</span></span><br><span class="line">	<span class="keyword">return</span> authenticated;</span><br><span class="line">&#125;</span><br><span class="line">main()</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> valid_flag=<span class="number">0</span>;</span><br><span class="line">	<span class="type">char</span> password[<span class="number">1024</span>];</span><br><span class="line">	FILE * fp;</span><br><span class="line">	LoadLibrary(<span class="string">&quot;user32.dll&quot;</span>);<span class="comment">//prepare for messagebox</span></span><br><span class="line">	<span class="keyword">if</span>(!(fp=fopen(<span class="string">&quot;password.txt&quot;</span>,<span class="string">&quot;rw+&quot;</span>)))</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">fscanf</span>(fp,<span class="string">&quot;%s&quot;</span>,password);</span><br><span class="line">	valid_flag = verify_password(password);</span><br><span class="line">	<span class="keyword">if</span>(valid_flag)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;incorrect password!\n&quot;</span>);</span><br><span class="line">		system(<span class="string">&quot;pause&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;Congratulation! You have passed the verification!\n&quot;</span>);</span><br><span class="line">		system(<span class="string">&quot;pause&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	fclose(fp);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>头文件中包含<code>windows.h</code>，方便调用<code>LoadLibrary()</code>函数去装载<code>user32.dll</code>，以便在植入的代码中调用<code>MseeageBox</code></li>
+<li>在主函数打开程序同目录下的<code>password.txt</code>文件并读取文件内容即密码，若无法打开，则直接退出程序</li>
+<li>跳转到子函数<code>verify_password()</code>判断输入的密码是否正确即判断输入的密码<code>password</code>与正确的密码<code>1234567</code>是否相等,如果相等则子函数返回<code>0</code>，否则返回非<code>0</code>，在函数返回之前将输入的<code>password</code>拷贝到数组<code>buffer[44]</code>里面</li>
+<li>主函数在判断子函数<code>verify_password()</code>返回值：如果是<code>0</code>，则输出<code>Congratulation! You have passed the</code><br><code>verification!</code>，关闭<code>password.txt</code>文件，结束程序，否则输出<code>incorrect password!</code>，关闭<code>password.txt</code>文件，结束程序</li>
+</ol>
+<h1 id="通过淹没静态地址来实现shellcode的代码植入"><a href="#通过淹没静态地址来实现shellcode的代码植入" class="headerlink" title="通过淹没静态地址来实现shellcode的代码植入"></a>通过淹没静态地址来实现<code>shellcode</code>的代码植入</h1><ol>
+<li><p>使用<code>Depends.exe</code>对程序<code>overflow.exe</code>进行剖析(参数保持默认)</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836316689.png" alt="1565836316689"></p>
+<ol>
+<li><p>点击<code>kernel32.dll</code>，在右侧窗口找到<code>exitprocess</code>的函数入口点为<code>0x0001B0BB</code>，在下方窗口找到<code>kernel32.dll</code>的实际基址为<code>0x77E60000</code>，两个地址相加可得<code>exitprocess</code>的入口地址：<code>0x77E8B0B0</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836376754.png" alt="1565836376754"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836386263.png" alt="1565836386263"></p>
+</li>
+<li><p>同理在<code>user32.dll</code>，在右侧窗口找到<code>MessageBoxA</code>的函数入口点为<code>0x00033D68</code>，在下方窗口找到user32.dll的实际基址为<code>0x77DF0000</code>，两个地址相加可得<code>MessageBoxA</code>的入口地址：<code>0x77E23D68</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836456007.png" alt="1565836456007"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565836461058.png" alt="1565836461058"></p>
+</li>
+</ol>
+</li>
+<li><p>打开<code>shellcode</code>文件源码并阅读、理解，在工程文件<code>overflow</code>同目录下新建项目<code>shellcode</code>，将源代码拷贝并作出相应更改：将弹出框标题改为<code>ABCD1234</code>，将<code>exitprocess</code>的入口地址改为<code>0x77E8B0B0</code>，将<code>MessageBoxA</code>的入口地址改为<code>0x77E23D68</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	HINSTANCE LibHandle;</span><br><span class="line">	<span class="type">char</span> dllbuf[<span class="number">11</span>] = <span class="string">&quot;user32.dll&quot;</span>;</span><br><span class="line">	LibHandle = LoadLibrary(dllbuf);</span><br><span class="line">	_asm&#123;</span><br><span class="line">		sub sp,<span class="number">0x440</span></span><br><span class="line">		xor ebx,ebx</span><br><span class="line">		push ebx</span><br><span class="line">		push <span class="number">0x34333231</span>		<span class="comment">//1234</span></span><br><span class="line">		push <span class="number">0x44434241</span>		<span class="comment">//ABCD</span></span><br><span class="line"></span><br><span class="line">		mov eax,esp</span><br><span class="line">		push ebx</span><br><span class="line">		push eax</span><br><span class="line">		push eax</span><br><span class="line">		push ebx</span><br><span class="line"></span><br><span class="line">		mov eax,<span class="number">0x77E23D68</span>	<span class="comment">//messageboxA  入口地址</span></span><br><span class="line">		call eax</span><br><span class="line">		push ebx</span><br><span class="line">		mov eax,<span class="number">0x77E7B0BB</span>	<span class="comment">//exitprocess  入口地址</span></span><br><span class="line">		call eax</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行结果如下图，对话框正常弹出</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565845037488.png" alt="1565845037488"></p>
+</li>
+<li><p>使用<code>ollydbg</code>打开新建的<code>shellcode.exe</code>文件，分析获取弹对话框部分的<code>shellcode</code></p>
+<ol>
+<li><p>定位到<code>shellcode</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565845700629.png" alt="1565845700629"></p>
+</li>
+<li><p>将<code>shellcode</code>内容复制为文件如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565845769821.png" alt="1565845769821"></p>
+</li>
+</ol>
+</li>
+<li><p>使用<code>ollydbg</code>打开<code>overflow.exe</code>文件，在<code>strcpy</code>处设置断点，当程序运行到此处时，缓冲区中的<code>dest</code>指向的地址<code>0x12FAF0</code>即为要注入的<code>shellcode</code>的起始地址</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565846024211.png" alt="1565846024211"></p>
+</li>
+<li><p>构建<code>password.txt</code>以注入<code>shellcode</code></p>
+<ol>
+<li><p>用<code>UltraEdit</code>新建<code>password.txt</code>，并切换成<code>16</code>进制编辑的方式</p>
+</li>
+<li><p>根据栈中的位置计算返回地址应该在<code>44(buff) +</code><br><code>4(authenticated) + 4(EBP) = 52</code>的偏移后的第<code>53-56</code>字节</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565845495853.png" alt="1565845495853"></p>
+</li>
+<li><p>构造的txt文件，格式为<code>Shellcode+若干0x90 +shellcode在缓冲区的起始地址</code></p>
+<p>即通过调整<code>0x90</code>的数量来保证第<code>53-56</code>字节是<code>shellcode</code>在缓冲区的起始地址</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565846378550.png" alt="1565846378550"></p>
+</li>
+<li><p>完成后保存到<code>overflow_exe</code>项目的<code>debug</code>目录下，运行 <code>exe</code>程序，弹出对话框。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565846426783.png" alt="1565846426783"></p>
+</li>
+</ol>
+</li>
+</ol>
+<h1 id="通过跳板来实现shellcode的代码植入"><a href="#通过跳板来实现shellcode的代码植入" class="headerlink" title="通过跳板来实现shellcode的代码植入"></a>通过跳板来实现<code>shellcode</code>的代码植入</h1><ol>
+<li><p>使用<code>ollydbg</code>打开<code>overflow.exe</code>文件</p>
+</li>
+<li><p>在<code>strcpy</code>函数上设置断点，运行至断点。然后右键选择<code>overflow return address -&gt;ASCII overflow returns -&gt;search JMP/CALL ESP</code>，搜索<code>JMP/CALL ESP</code>语句，并点击日志查看,选择一条在<code>user32</code>中的<code>JMP ESP</code>指令，记录地址<code>0x77E2E32A</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565846888982.png" alt="1565846888982"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565847088620.png" alt="1565847088620"></p>
+</li>
+<li><p>更改<code>password.txt</code>文件，其结构为 <code>52字节填充物 + 4字节JMP ESP地址(逆 序) + shellcode + 若干0x90</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565847313872.png" alt="1565847313872"></p>
+</li>
+<li><p>运行overflow.exe，对话框弹出</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565847560360.png" alt="1565847560360"></p>
+</li>
+</ol>
+<h1 id="修改汇编语句的shellcode实现修改标题"><a href="#修改汇编语句的shellcode实现修改标题" class="headerlink" title="修改汇编语句的shellcode实现修改标题"></a>修改汇编语句的<code>shellcode</code>实现修改标题</h1><ol>
+<li><p>将标题修改为软件安全，新建shellcode1代码如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	HINSTANCE LibHandle;</span><br><span class="line">	<span class="type">char</span> dllbuf[<span class="number">11</span>] = <span class="string">&quot;user32.dll&quot;</span>;</span><br><span class="line">	LibHandle = LoadLibrary(dllbuf);</span><br><span class="line">	_asm&#123;</span><br><span class="line">		sub sp,<span class="number">0x440</span></span><br><span class="line">		xor ebx,ebx</span><br><span class="line">		push ebx</span><br><span class="line"></span><br><span class="line">		push <span class="number">0xABC8B2B0</span>		<span class="comment">//安全</span></span><br><span class="line">		push <span class="number">0XFEBCEDC8</span>		<span class="comment">//软件</span></span><br><span class="line">		push <span class="number">0x00000000</span>		<span class="comment">//阻断</span></span><br><span class="line">		push <span class="number">0x34333231</span>		<span class="comment">//1234</span></span><br><span class="line">		push <span class="number">0x44434241</span>		<span class="comment">//ABCD</span></span><br><span class="line"></span><br><span class="line">		mov eax,esp</span><br><span class="line">		push ebx <span class="comment">//MB_OK</span></span><br><span class="line">		add eax, <span class="number">12</span></span><br><span class="line">		push eax <span class="comment">//title</span></span><br><span class="line">		sub eax, <span class="number">12</span></span><br><span class="line">		push eax <span class="comment">//text</span></span><br><span class="line">		push ebx <span class="comment">//NULL</span></span><br><span class="line"></span><br><span class="line">		mov eax,<span class="number">0x77E23D68</span>	<span class="comment">//messageboxA  入口地址</span></span><br><span class="line">		call eax</span><br><span class="line">		push ebx</span><br><span class="line">		mov eax,<span class="number">0x77E7B0BB</span>	<span class="comment">//exitprocess  入口地址</span></span><br><span class="line">		call eax</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>程序运行结果如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565847876404.png" alt="1565847876404"></p>
+</li>
+</ol>
+<h1 id="测试结论"><a href="#测试结论" class="headerlink" title="测试结论"></a>测试结论</h1><p>​        <code>shellcode</code>是利用特定漏洞的二进制代码，利用缓冲区溢出等原理达到获取权限的目的。本次实验通过查找并计算所需函数的入口地址，得到一段汇编语言写的<code>shellcode</code>代码，并通过淹没静态地址和利用跳板的方法两种方法成功进行了<code>shellcode</code>代码注入，更深一步了解了函数跳转的原理，同时也明白了<code>shellcode</code>代码植入的危害性。实验过程中发现如果shellcode的地址含有空(<code>\0</code>)，<code>shellcode</code>会被截断。其中修改原理图示如下:</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848011587.png" alt="1565848011587"></p>
+<h1 id="思考题"><a href="#思考题" class="headerlink" title="思考题"></a>思考题</h1><p>在不修改<code>StackOverrun</code>程序源代码的情况下，构造<code>shellcode</code>，通过<code>jmp esp</code>的方式实现通过记事本打开<code>shellcode.txt</code>（可使用<code>CreateProcessA</code>或<code>WinExec</code>等<code>API</code>）</p>
+<ol>
+<li><p>使用<code>OllyDbg</code>查找程序<code>StackOverrun.exe</code>中的<code>jmp esp</code>的地址，选取其中一个：<code>0x77F8948B</code>，将其作为返回地址进行修改。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848379938.png" alt="1565848379938"></p>
+</li>
+<li><p>程序运行结束时，使用<code>JMP ESP</code>指令跳转到<code>ESP</code>地址处，单步运行，查看<code>EBP</code>为<code>0x0012FFC0</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848390125.png" alt="1565848390125"></p>
+</li>
+<li><p>在地址<code>0x0012FF74</code>处修改成如下汇编语句</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848400080.png" alt="1565848400080"></p>
+</li>
+<li><p>构造<code>shellcode</code>结构：<code>12字节填充物 + jmp esp地址 + 汇编机器码 + notepad&quot; &quot;shellcode</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848407673.png" alt="1565848407673"></p>
+</li>
+<li><p>使用命令行运行程序，参数为上述<code>shellcode</code>的<code>txt</code>文本形式</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848414568.png" alt="1565848414568"></p>
+</li>
+<li><p>运行程序后显示未找到<code>shellcode.txt</code>，显示是否新建文件</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848422212.png" alt="1565848422212"></p>
+</li>
+<li><p>根据提示，新建<code>txt</code>文件，内容为<code>123</code>，再次使用命令行运行程序，发现成功打开新建的<code>shellcode.txt</code>文件</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848427852.png" alt="1565848427852"></p>
+</li>
+<li><p>搜索该新建的<code>shellcode.txt</code>文件，发现其在<code>C</code>盘目录下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565848433371.png" alt="1565848433371"></p>
+</li>
+<li><p>分析原因，可能是<code>shellcode</code>构造时汇编语言不精确导致的，现在还未弄清楚。</p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E6%BC%8F%E6%B4%9E%E6%8A%80%E6%9C%AF%E5%88%A9%E7%94%A8%E5%AE%9E%E9%AA%8C.html" title="漏洞技术利用实验">https://leeyuxun.github.io/漏洞技术利用实验.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/shellcode/" rel="tag"><i class="fa fa-tag"></i> shellcode</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E6%A0%88%E6%BA%A2%E5%87%BA%E5%AE%9E%E9%AA%8C.html" rel="prev" title="栈溢出实验">
+      <i class="fa fa-chevron-left"></i> 栈溢出实验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E8%99%9A%E5%87%BD%E6%95%B0%E6%94%BB%E5%87%BB%E5%92%8CSEH%E6%94%BB%E5%87%BB%E5%AE%9E%E9%AA%8C.html" rel="next" title="虚函数攻击和SEH攻击实验">
+      虚函数攻击和SEH攻击实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%90%86%E8%A7%A3%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.</span> <span class="nav-text">理解程序</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E6%B7%B9%E6%B2%A1%E9%9D%99%E6%80%81%E5%9C%B0%E5%9D%80%E6%9D%A5%E5%AE%9E%E7%8E%B0shellcode%E7%9A%84%E4%BB%A3%E7%A0%81%E6%A4%8D%E5%85%A5"><span class="nav-number">3.</span> <span class="nav-text">通过淹没静态地址来实现shellcode的代码植入</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E8%B7%B3%E6%9D%BF%E6%9D%A5%E5%AE%9E%E7%8E%B0shellcode%E7%9A%84%E4%BB%A3%E7%A0%81%E6%A4%8D%E5%85%A5"><span class="nav-number">4.</span> <span class="nav-text">通过跳板来实现shellcode的代码植入</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E6%B1%87%E7%BC%96%E8%AF%AD%E5%8F%A5%E7%9A%84shellcode%E5%AE%9E%E7%8E%B0%E4%BF%AE%E6%94%B9%E6%A0%87%E9%A2%98"><span class="nav-number">5.</span> <span class="nav-text">修改汇编语句的shellcode实现修改标题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%BB%93%E8%AE%BA"><span class="nav-number">6.</span> <span class="nav-text">测试结论</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%9D%E8%80%83%E9%A2%98"><span class="nav-number">7.</span> <span class="nav-text">思考题</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

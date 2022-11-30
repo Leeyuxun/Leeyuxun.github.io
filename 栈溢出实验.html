@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的 通过对程序输入的密码的长度、内容等修改用Ollydbg来验证缓冲区溢出的发生； 完成淹没相邻变量改变程序流程实验； 完成淹没返回地址改变程序流程实验。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="栈溢出实验">
+<meta property="og:url" content="https://leeyuxun.github.io/%E6%A0%88%E6%BA%A2%E5%87%BA%E5%AE%9E%E9%AA%8C.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的 通过对程序输入的密码的长度、内容等修改用Ollydbg来验证缓冲区溢出的发生； 完成淹没相邻变量改变程序流程实验； 完成淹没返回地址改变程序流程实验。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799697555.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799861740.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799976558.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800007485.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800057648.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800090252.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800116530.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800210253.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800272406.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800278163.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799861740.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800411998.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800478425.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800508388.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800555252.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800579050.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800609024.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800684920.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800712667.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799861740.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800877672.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800935070.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800965098.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800984564.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834365217.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834372312.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834378838.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834384587.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834389557.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834395688.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834400315.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834406262.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834411915.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834418120.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834422939.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834540332.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834562756.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834577380.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834608803.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834620098.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834665736.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834685709.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834727293.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834768220.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834834550.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565835109100.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565835211633.png">
+<meta property="article:published_time" content="2019-08-14T16:14:27.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:28:12.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="栈溢出">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799697555.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E6%A0%88%E6%BA%A2%E5%87%BA%E5%AE%9E%E9%AA%8C.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>栈溢出实验 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E6%A0%88%E6%BA%A2%E5%87%BA%E5%AE%9E%E9%AA%8C.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          栈溢出实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-15 00:14:27" itemprop="dateCreated datePublished" datetime="2019-08-15T00:14:27+08:00">2019-08-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:28:12" itemprop="dateModified" datetime="2020-04-02T14:28:12+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">软件安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><ol>
+<li>通过对程序输入的密码的长度、内容等修改用<code>Ollydbg</code>来验证缓冲区溢出的发生；</li>
+<li>完成淹没相邻变量改变程序流程实验；</li>
+<li>完成淹没返回地址改变程序流程实验。<span id="more"></span></li>
+</ol>
+<h1 id="理解程序"><a href="#理解程序" class="headerlink" title="理解程序"></a>理解程序</h1><p>阅读并理解代码 </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PASSWORD <span class="string">&quot;1234567&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">verify_password</span> <span class="params">(<span class="type">char</span> *password)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> authenticated;</span><br><span class="line">	<span class="type">char</span> buffer[<span class="number">8</span>];<span class="comment">// add local buff</span></span><br><span class="line">	authenticated=<span class="built_in">strcmp</span>(password,PASSWORD);</span><br><span class="line">	<span class="built_in">strcpy</span>(buffer,password);<span class="comment">//over flowed here!	</span></span><br><span class="line">	<span class="keyword">return</span> authenticated;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">main()</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> valid_flag=<span class="number">0</span>;</span><br><span class="line">	<span class="type">char</span> password[<span class="number">1024</span>];</span><br><span class="line">	<span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;please input password:       &quot;</span>);</span><br><span class="line">		</span><br><span class="line">		<span class="built_in">scanf</span>(<span class="string">&quot;%s&quot;</span>,password);</span><br><span class="line">		</span><br><span class="line">		valid_flag = verify_password(password);</span><br><span class="line">		</span><br><span class="line">		<span class="keyword">if</span>(valid_flag)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;incorrect password!\n\n&quot;</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">		&#123;</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;Congratulation! You have passed the verification!\n&quot;</span>);</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>在主函数内输入密码<code>password</code></p>
+</li>
+<li><p>跳转到子函数<code>verify_password()</code>判断输入的密码是否正确即判断输入的密码<code>password</code>与正确的密码<code>1234567</code>是否相等,如果相等则子函数返回0，否则返回非0，在函数返回之前将输入的<code>password</code>拷贝到数组<code>buffer[8]</code>里面</p>
+</li>
+<li><p>主函数在判断子函数<code>verify_password()</code>返回值：如果是0，则输出<code>Congratulation! You have passed the verification!</code>，结束程序，否则输出<code>incorrect password!</code>，继续输入密码<code>password</code>重复上述过程</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799697555.png" alt="1565799697555"></p>
+</li>
+</ol>
+<h1 id="验证缓冲区溢出"><a href="#验证缓冲区溢出" class="headerlink" title="验证缓冲区溢出"></a>验证缓冲区溢出</h1><p>(通过对程序输入的密码的长度、内容等修改验证缓冲区溢出的发生)</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>下图是栈中缓冲区示意图，其中每一行占四个字节，发生缓冲区溢出只需设置数组<code>buffer[8]</code>的长度大于<code>8</code>字节。是<code>buffer</code>的值覆盖<code>authenticated</code>等的值。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799861740.png" alt="1565799861740"></p>
+<h2 id="操作过程"><a href="#操作过程" class="headerlink" title="操作过程"></a>操作过程</h2><ol>
+<li><p>使用<code>Ollydbg</code>打开<code>overflow_var.exe</code>文件</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799976558.png" alt="1565799976558"></p>
+</li>
+<li><p>同时按下<code>Alt</code>和<code>F9</code>执行到用户代码如下图：在地址为<code>00401724</code>处<code>CALL test.00401014</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800007485.png" alt="1565800007485"></p>
+</li>
+<li><p>找到地址<code>00401014</code>处 <code>JMP test.main</code>，即此处向下为用户代码，通过分析用户代码，发现<code>00401030</code>至<code>0040107F</code>为子函数<code>verify_password()</code>反汇编代码</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800057648.png" alt="1565800057648"></p>
+</li>
+<li><p>分析反汇编代码，找到源代码<code>strcpy(buffer,password)</code>所在的位置发现在<code>00401064</code>处，设置断点。然后点击运行，输入密码为<code>444</code>程序走到这个语句时会自动停止，接着点击不进入函数的单步调试按钮</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800090252.png" alt="1565800090252"></p>
+</li>
+<li><p>调试过程中观察右下角栈数据，发现两个地址被赋值为<code>444</code> 其中<code>4</code>的<code>ASCII码</code>为<code>0x34</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800116530.png" alt="1565800116530"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800210253.png" alt="1565800210253"></p>
+</li>
+<li><p>继续运行，输入密码为<code>AAAAAAAAABC</code>,重复上述操作，得到结果如下，由于填写的字符串超过位数，已经将邻接的变量覆盖,即缓冲区已经溢出。其中<code>A</code>的<code>ASCII码</code>为<code>0x41</code>。其中<code>buffer[8]</code>的地址为<code>0012FB18——0012FB1F</code>，<code>authenticated</code>的地址为<code>0012FB20——0012FB23</code>。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800272406.png" alt="1565800272406"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800278163.png" alt="1565800278163"></p>
+</li>
+</ol>
+<h1 id="淹没相邻变量改变程序流程"><a href="#淹没相邻变量改变程序流程" class="headerlink" title="淹没相邻变量改变程序流程"></a>淹没相邻变量改变程序流程</h1><h2 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h2><p>下图是栈中缓冲区示意图，其中每一行占<strong>四个字节</strong>，只需增加数组<code>buffer[8]</code>的长度将原来<code>authenticated</code>的值覆盖掉，更改为想要的值即可，即如果想要跳过密码，只需要将<code>authenticated</code>的值覆盖为<code>0</code>。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799861740.png" alt="1565799861740"></p>
+<h2 id="操作过程-1"><a href="#操作过程-1" class="headerlink" title="操作过程"></a>操作过程</h2><ol>
+<li><p>输入错误密码<code>1234</code>，查看<code>buffer[8]</code>和<code>authenticated</code>的值</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800411998.png" alt="1565800411998"></p>
+<p><code>Buffer[0-7]:0x34333231 CCCCCC00</code> (其中<code>00</code>是字符串结束符标识)</p>
+<p><code>Authenticated:0XFFFFFFFF</code>(因为<code>1234</code>&lt;<code>1234567</code>,<code>authenticated</code>的值为<code>-1</code>，写成补码的形式即为<code>0xFFFFFFFF</code>)</p>
+<p>运行结果如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800478425.png" alt="1565800478425"></p>
+</li>
+<li><p>输入错误密码<code>2345</code>，查看<code>buffer[8]</code>和<code>authenticated</code>的值</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800508388.png" alt="1565800508388"></p>
+<p><code>Buffer[0-7]:0x35343332 CCCCCC00</code> (其中<code>00</code>是字符串结束符标识)</p>
+<p><code>Authenticated:0X00000001</code> (因为<code>2345</code>&gt;<code>1234567</code>,<code>authenticated</code>的值为<code>1</code>，写成补码的形式即为<code>0x00000001</code>)</p>
+<p>运行结果如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800555252.png" alt="1565800555252"></p>
+</li>
+<li><p>输入正确密码<code>1234567</code>，查看<code>buffer[8]</code>和<code>authenticated</code>的值</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800579050.png" alt="1565800579050"></p>
+<p><code>Buffer[0-7]:0x34333231 00373635</code> (其中<code>00</code>是字符串结束符标识)</p>
+<p><code>Authenticated:0X00000000</code></p>
+<p>运行结果如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800609024.png" alt="1565800609024"></p>
+</li>
+<li><p>根据上述三次密码输入和对代码的分析，当<code>authenticated</code>的值为<code>0x00000000</code>时，才能得到正确的输出结果，即跳过密码。</p>
+<p>为此，采用将密码输入为<code>8</code>位(这<code>8</code>个数要比<code>1234567</code>大，否则会导致<code>authenticate</code>补码较大如<code>0Xffffff00</code>)，即末尾的空白结束符将<code>authenticated</code>的<code>0x01</code>淹没。</p>
+<p>随机输入密码<code>23456789</code>查看<code>buffer[8]</code>和<code>authenticated</code>的值</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800684920.png" alt="1565800684920"></p>
+<p><code>Buffer[0-7]:0x35343332  39383736</code> </p>
+<p><code>Authenticated:0X00000000</code></p>
+<p><code>Buffer</code>的结束符淹没了<code>authenticated</code>的值使<code>authenticated</code>的值为<code>0x00000000</code></p>
+<p>运行结果如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800712667.png" alt="1565800712667"></p>
+<p>显示密码输入正确，实现了淹没相邻变量改变程序流程。</p>
+</li>
+</ol>
+<h1 id="淹没返回地址改变程序流程"><a href="#淹没返回地址改变程序流程" class="headerlink" title="淹没返回地址改变程序流程"></a>淹没返回地址改变程序流程</h1><h2 id="原理-2"><a href="#原理-2" class="headerlink" title="原理"></a>原理</h2><p>下图是栈中缓冲区示意图，其中每一行占<strong>四个字节</strong>。只需要先放置16个字符串，然后接下来的<code>4</code>个字节就能够淹没返回地址，达到控制返回地址的目的。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565799861740.png" alt="1565799861740"></p>
+<h2 id="操作过程-2"><a href="#操作过程-2" class="headerlink" title="操作过程"></a>操作过程</h2><ol>
+<li><p>由于返回地址的数据有些不是能通过可见的<code>ASCII字符</code>表示的，修改程序，让文件作为输入源</p>
+</li>
+<li><p>使用<code>ollydbg</code>打开该<code>overflow_ret.exe</code>文件，通过查找字符串发现如果密码正确，程序会到地址<code>0x0040112F</code>出继续执行程序， 接下来的工作就是将返回地址修改为<code>0x0040112F</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800877672.png" alt="1565800877672"></p>
+</li>
+<li><p>在<code>overflow_ret\Dbug</code>目录下新建<code>password.txt</code>文件，使用<code>UltraEdit</code>进行编辑(记事本只能输入可见的文字,有局限),利用<code>Ctrl+H</code>进入二进制编辑模式，前16个字节输入<code>AAAAAAAAAAAAAAAA</code>，在<code>17-20</code>字节上填下地址<code>0x0040112F</code>(注意从右向左填) ，保存文件</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800935070.png" alt="1565800935070"></p>
+</li>
+<li><p>使用<code>ollydbg</code>再次调试<code>overflow_ret.exe</code>文件，会直接弹出<code>Congratulation! You have passed the verification!</code>，即密码输入正确</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800965098.png" alt="1565800965098"></p>
+</li>
+<li><p>由于修改了返回地址，导致<strong>栈平衡出错</strong>，最后会显示调试的程序无法处理例外</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565800984564.png" alt="1565800984564"></p>
+</li>
+</ol>
+<h1 id="思考题"><a href="#思考题" class="headerlink" title="思考题"></a>思考题</h1><ul>
+<li>以<code>StackOverrun</code>程序为靶子，通过自己使用<code>ollydbg</code>调试，两个要求：其一，要求分析PE格式加载到内存中的地址变化；其二，挑选其中一处函数的跳转，详细分析，跳转时<code>sp</code>，<code>bp</code>，<code>ip</code>的变化，要求以程序运行的顺序记录跳转时的这些寄存器的变化。</li>
+<li>在不修改源代码的情况下，修改<code>StackOverrun</code>程序的流程，通过淹没返回地址，用<code>jmp esp</code>的方式，让其调用<code>bar</code>函数并输出结果</li>
+</ul>
+<h2 id="分析源代码"><a href="#分析源代码" class="headerlink" title="分析源代码"></a>分析源代码</h2><p>程序由三个函数组成，一个<code>main</code>函数，两个子函数<code>foo</code>和<code>bar</code>,main函数打印两个子函数的起始地址并调用<code>foo</code>函数。<code>foo</code>函数打印当前栈顶向下<code>40</code>个字节的地址，bar函数打印一串字符串，正常情况下程序不会调用<code>bar</code>函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">foo</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* input)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">char</span> buf[<span class="number">10</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">//What? No extra arguments supplied to printf?</span></span><br><span class="line">    <span class="comment">//It&#x27;s a cheap trick to view the stack 8-)</span></span><br><span class="line">    <span class="comment">//We&#x27;ll see this trick again when we look at format strings.</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;My stack looks like:\n%p\n%p\n%p\n%p\n%p\n% p\n%p\n%p\n%p\n%p\n\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//Pass the user input straight to secure code public enemy #1.</span></span><br><span class="line">    <span class="built_in">strcpy</span>(buf, input);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>, buf);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Now the stack looks like:\n%p\n%p\n%p\n%p\n%p\n%p\n%p\n%p\n%p\n%p\n\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">bar</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Augh! I&#x27;ve been hacked!\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">//Blatant cheating to make life easier on myself</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Address of foo = %p\n&quot;</span>, foo);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Address of bar = %p\n&quot;</span>, bar);</span><br><span class="line">   </span><br><span class="line">foo(argv[<span class="number">1</span>]);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="分析内存地址变化"><a href="#分析内存地址变化" class="headerlink" title="分析内存地址变化"></a>分析内存地址变化</h2><p>根据程序显示，<code>foo()</code>的起始地址为<code>0x00401000</code>,<code>bar()</code>的起始地址为<code>00401060</code>,分析汇编代码知道<code>main()</code>函数的起始地址为<code>0x00401070</code>，在这三个位置分别设置断点，然后进行调试分析。</p>
+<ol>
+<li><p>把入口地址<code>0x00401000</code>压入栈中</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834365217.png" alt="1565834365217"></p>
+</li>
+<li><p>把要打印的<code>Address of foo = %p</code>的地址<code>0x004070DC</code>压入栈中并转到地址<code>0x004010B0</code>处</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834372312.png" alt="1565834372312"></p>
+</li>
+<li><p>执行返回后，将栈顶指针<code>ESP</code>地址增加<code>8</code>字节，<code>ADD ESP,8</code></p>
+</li>
+<li><p>把入口地址<code>0x00401000</code>压入栈中</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834378838.png" alt="1565834378838"></p>
+</li>
+<li><p>把要打印的<code>Address of bar = %p</code>的地址<code>0x004070C4</code>压入栈中并转到地址<code>0x004010B0</code>处</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834384587.png" alt="1565834384587"></p>
+</li>
+<li><p>将<code>ECX</code>压入栈中</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834389557.png" alt="1565834389557"></p>
+</li>
+<li><p>将返回地址<code>0x0040109E</code>压入栈中，并跳转到地址<code>0x00401000</code>处即跳转到函数<code>foo</code>处</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834395688.png" alt="1565834395688"></p>
+</li>
+<li><p>将<code>ESP</code>地址降低<code>0x0C</code>字节<code>SUB ESP,0C</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834400315.png" alt="1565834400315"></p>
+</li>
+<li><p>将<code>ESI</code>和<code>EDI</code>压入栈</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834406262.png" alt="1565834406262"></p>
+</li>
+<li><p>把要打印的<code>My stack looks like: %p %p %p %p %p %p %p %p %p %p </code>的地址<code>0x00407070</code>压入栈中并转到地址<code>0x004010B0</code>处</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834411915.png" alt="1565834411915"></p>
+</li>
+<li><p>执行返回后，将栈顶指针<code>ESP</code>地址增加<code>4</code>字节，<code>ADD ESP,4</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834418120.png" alt="1565834418120"></p>
+</li>
+<li><p>程序执行到<code>0x0040101B</code>处便无法执行已经执行完毕</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834422939.png" alt="1565834422939"></p>
+</li>
+</ol>
+<h2 id="分析sp-bp-ip变化"><a href="#分析sp-bp-ip变化" class="headerlink" title="分析sp,bp,ip变化"></a>分析<code>sp</code>,<code>bp</code>,<code>ip</code>变化</h2><p>分析程序由<code>main()</code>函数跳转到<code>foo</code>函数时<code>sp</code>,<code>bp</code>,<code>ip</code>的变化</p>
+<ol>
+<li><p>在程序跳转之前位于地址<code>0x00401098</code>处，操作是将<code>ECX</code>压入栈</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834540332.png" alt="1565834540332"></p>
+<p>此时各个寄存器的情况如下，<code>ECX</code>的值为<code>0x00000000</code>，<code>ESP</code>的值为<code>0x0012FF7C</code>,<code>EBP</code>的值为<code>0x0012FFC0</code>，EIP的值为<code>0x00401098</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834562756.png" alt="1565834562756"></p>
+<p>内存分布情况如下图所示</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834577380.png" alt="1565834577380"></p>
+</li>
+<li><p>向下执行一步，此时<code>ECX</code>已经入栈，各个寄存器的情况如下,<code>ESP</code>向上移动四个字节，值为<code>0x0012FF78</code>，EBP的值不变，为<code>0x0012FFC0</code>，<code>EIP</code>的值为<code>0x00401099</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834608803.png" alt="1565834608803"></p>
+<p>内存分布情况如下图所示</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834620098.png" alt="1565834620098"></p>
+</li>
+<li><p>执行<code>CALL stack0ve.00401000</code>进行跳转，各个寄存器的情况如下，<code>ESP</code>向上移动四个字节，值为<code>0x0012FF74</code>, <code>EBP</code>的值不变，为<code>0x0012FFC0</code>，<code>EIP</code>的值为<code>0x00401000</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834665736.png" alt="1565834665736"></p>
+<p>内存分布情况如下图所示，新增加的栈顶存储的是<code>main()</code>函数的返回地址<code>0x0040109E</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834685709.png" alt="1565834685709"></p>
+</li>
+<li><p>继续执行<code>SUB ESP,0C</code>，栈顶向上移动<code>12</code>字节，各个寄存器的情况如下，<code>ESP</code>值为<code>0x0012FF68</code>, <code>EBP</code>的值不变，为<code>0x0012FFC0</code>，<code>EIP</code>的值为<code>0x00401003</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834727293.png" alt="1565834727293"></p>
+<p>内存分布情况如下图所示，新增加的栈从<code>0x0012FF6C</code>至<code>0x0012FF73</code>没有存储任何值，<code>0x0012FF68</code>至<code>0x0012FF6B</code>存储的是地址<code>0x00407128</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834768220.png" alt="1565834768220"></p>
+</li>
+<li><p>小结：函数跳转时先将调用参数入栈(<code>0x0012FF78</code>)，然后将返回地址入栈(<code>0X0012FF74</code>)，最后将局部参数入栈(<code>0x0012FF68-0x0012FF73</code>)</p>
+</li>
+</ol>
+<h2 id="修改StackOverrun程序的流程"><a href="#修改StackOverrun程序的流程" class="headerlink" title="修改StackOverrun程序的流程"></a>修改<code>StackOverrun</code>程序的流程</h2><p>通过淹没返回地址，用<code>jmp esp</code>的方式，让其调用<code>bar()</code>函数并输出结果</p>
+<ol>
+<li><p>程序运行结果如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565834834550.png" alt="1565834834550"></p>
+<p>根据上述分析和程序运行结果可知输出的十个地址中，<code>0x0040109E</code>为<code>main()</code>函数的返回地址。根据源代码分析，只需在程序后输入地址覆盖<code>0x0040109E</code>为<code>0x00401060</code>即可</p>
+</li>
+<li><p>在程序后输入 “**AAAAAAAAAAAAAAAAAAAA<code>@**&quot; ，其中 &quot;**</code>@ **”的十六进制<code>ASCII码</code>为<code>0x601040</code>得到结果如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565835109100.png" alt="1565835109100"></p>
+</li>
+<li><p>发现输出的是个地址中最上面的两个与程序后面输入的内容无关，故输入为“**AAAAAAAAAAAA<code>@** ”，程序运行结果如下，成功调用</code>bar()`函数并输出结果</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565835211633.png" alt="1565835211633"></p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E6%A0%88%E6%BA%A2%E5%87%BA%E5%AE%9E%E9%AA%8C.html" title="栈溢出实验">https://leeyuxun.github.io/栈溢出实验.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E6%A0%88%E6%BA%A2%E5%87%BA/" rel="tag"><i class="fa fa-tag"></i> 栈溢出</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E7%BC%93%E5%86%B2%E5%8C%BA%E6%BA%A2%E5%87%BA%E5%AE%9E%E9%AA%8C.html" rel="prev" title="缓冲区溢出实验">
+      <i class="fa fa-chevron-left"></i> 缓冲区溢出实验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%BC%8F%E6%B4%9E%E6%8A%80%E6%9C%AF%E5%88%A9%E7%94%A8%E5%AE%9E%E9%AA%8C.html" rel="next" title="漏洞技术利用实验">
+      漏洞技术利用实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%90%86%E8%A7%A3%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.</span> <span class="nav-text">理解程序</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E7%BC%93%E5%86%B2%E5%8C%BA%E6%BA%A2%E5%87%BA"><span class="nav-number">3.</span> <span class="nav-text">验证缓冲区溢出</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">3.1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E8%BF%87%E7%A8%8B"><span class="nav-number">3.2.</span> <span class="nav-text">操作过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B7%B9%E6%B2%A1%E7%9B%B8%E9%82%BB%E5%8F%98%E9%87%8F%E6%94%B9%E5%8F%98%E7%A8%8B%E5%BA%8F%E6%B5%81%E7%A8%8B"><span class="nav-number">4.</span> <span class="nav-text">淹没相邻变量改变程序流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86-1"><span class="nav-number">4.1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E8%BF%87%E7%A8%8B-1"><span class="nav-number">4.2.</span> <span class="nav-text">操作过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B7%B9%E6%B2%A1%E8%BF%94%E5%9B%9E%E5%9C%B0%E5%9D%80%E6%94%B9%E5%8F%98%E7%A8%8B%E5%BA%8F%E6%B5%81%E7%A8%8B"><span class="nav-number">5.</span> <span class="nav-text">淹没返回地址改变程序流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86-2"><span class="nav-number">5.1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E8%BF%87%E7%A8%8B-2"><span class="nav-number">5.2.</span> <span class="nav-text">操作过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%9D%E8%80%83%E9%A2%98"><span class="nav-number">6.</span> <span class="nav-text">思考题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">6.1.</span> <span class="nav-text">分析源代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90%E5%86%85%E5%AD%98%E5%9C%B0%E5%9D%80%E5%8F%98%E5%8C%96"><span class="nav-number">6.2.</span> <span class="nav-text">分析内存地址变化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90sp-bp-ip%E5%8F%98%E5%8C%96"><span class="nav-number">6.3.</span> <span class="nav-text">分析sp,bp,ip变化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9StackOverrun%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%B5%81%E7%A8%8B"><span class="nav-number">6.4.</span> <span class="nav-text">修改StackOverrun程序的流程</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

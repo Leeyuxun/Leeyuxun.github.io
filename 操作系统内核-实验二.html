@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的 加深对进程概念的理解，明确进程和程序的区别；                                                                      进一步认识并发执行的实质；                                                                                        分析">
+<meta property="og:type" content="article">
+<meta property="og:title" content="操作系统内核-实验二">
+<meta property="og:url" content="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%8C.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的 加深对进程概念的理解，明确进程和程序的区别；                                                                      进一步认识并发执行的实质；                                                                                        分析">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570014004158.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570038016574.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570080291071.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570071904980.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570080232148.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570078674032.png">
+<meta property="article:published_time" content="2019-10-03T07:50:39.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:34:24.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="Linux进程管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570014004158.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%8C.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>操作系统内核-实验二 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%8C.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          操作系统内核-实验二
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-03 15:50:39" itemprop="dateCreated datePublished" datetime="2019-10-03T15:50:39+08:00">2019-10-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:34:24" itemprop="dateModified" datetime="2020-04-02T14:34:24+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">操作系统内核实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><ol>
+<li>加深对进程概念的理解，明确进程和程序的区别；                                                                     </li>
+<li>进一步认识并发执行的实质；                                                                                       </li>
+<li>分析进程争用资源的现象，学习解决进程互斥的方法； </li>
+<li>了解Linux系统中进程通信的基本原理；<span id="more"></span></li>
+</ol>
+<h1 id="实验步骤"><a href="#实验步骤" class="headerlink" title="实验步骤"></a>实验步骤</h1><h2 id="函数介绍"><a href="#函数介绍" class="headerlink" title="函数介绍"></a>函数介绍</h2><h3 id="fork函数"><a href="#fork函数" class="headerlink" title="fork函数"></a>fork函数</h3><ul>
+<li><p>在Linux中，fork函数是非常重要的函数，它的作用是从已经存在的父进程中创建一个子进程。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;unistd.h&gt;</span>		<span class="comment">//引用fork时的头文件</span></span></span><br><span class="line"><span class="type">pid_t</span>   <span class="title function_">fork</span><span class="params">(<span class="type">void</span>)</span>;		<span class="comment">//fork的返回类型为空1</span></span><br></pre></td></tr></table></figure></li>
+<li><p>当一个进程调用fork函数之后，就有两个二进制代码相同的进程，运行在相同的位置，但是每个进程都开始自己的活动。</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570014004158.png"></li>
+<li><p>调用fork函数，当控制转移到内核中的fork代码后，内核开始做如下工作：</p>
+<ol>
+<li>分配新的内存块和内核数据结构给子进程；</li>
+<li>将父进程部分数据结构内容拷贝至子进程；</li>
+<li>将子进程添加到系统进程列表；</li>
+<li>fork返回开始调度器，调度。</li>
+</ol>
+</li>
+<li><p>调用fork函数返回值的三种情况：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">fork</span><span class="params">()</span>; </span><br><span class="line">pid = fork(); </span><br><span class="line"><span class="keyword">if</span>(pid &lt; <span class="number">0</span>) &#123;		<span class="comment">//错误</span></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;fork error\n&quot;</span>);                         </span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span>(pid == <span class="number">0</span>) &#123; 		<span class="comment">//子进程</span></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;The child process is running now!\n&quot;</span>); </span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">&#125;				</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(pid &gt; <span class="number">0</span>) &#123;		<span class="comment">//父进程</span></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;The parent process is running now!\n&quot;</span>); </span><br><span class="line">	<span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">&#125; 			</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><code>pid &lt; 0 </code>，运行错误；</li>
+<li><code>pid &gt; 0 </code>，运行父进程；</li>
+<li><code>pid = 0 </code>，运行子进程。</li>
+</ol>
+</li>
+</ul>
+<h3 id="wait函数"><a href="#wait函数" class="headerlink" title="wait函数"></a>wait函数</h3><ul>
+<li><p>函数原型：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span>		<span class="comment">/*提供类型pid_t的定义*/</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;wait.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">wait</span><span class="params">(<span class="type">int</span> *status)</span></span><br></pre></td></tr></table></figure></li>
+<li><p>函数功能：父进程一旦调用了wait函数就立即阻塞自己，由wait自动分析是否当前进程的某个子进程已经退出，如果让它找到了这样一个已经变成僵尸的子进程，wait就会收集这个子进程的信息，并把它彻底销毁后返回；如果没有找到这样一个子进程，wait就会一直阻塞在这里，直到有一个出现为止。</p>
+</li>
+<li><p>备注：</p>
+<ul>
+<li><p>当父进程忘了用wait函数等待已终止的子进程时，子进程就会进入一种无父进程的状态，此时子进程就是僵尸进程；</p>
+</li>
+<li><p>wait()要与fork()配套出现，如果在使用fork()之前调用wait()，wait()的返回值则为-1，正常情况下wait()的返回值为子进程的PID；</p>
+</li>
+<li><p>如果先终止父进程，子进程将继续正常进行，只是它将由init进程(PID 1)继承，当子进程终止时，init进程捕获这个状态；</p>
+</li>
+<li><p>参数status用来保存被收集进程退出时的一些状态，它是一个指向int类型的指针。但如果我们对这个子进程是如何死掉毫不在意，只想把这个僵尸进程消灭掉，我们就可以设定这个参数为NULL，就像下面这样：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pid = wait(<span class="literal">NULL</span>);</span><br></pre></td></tr></table></figure></li>
+<li><p>如果成功，wait会返回被收集的子进程的进程ID，如果调用进程没有子进程，调用就会失败，此时wait返回-1，同时errno被置为ECHILD。</p>
+</li>
+<li><p>如果参数status的值不是NULL，wait就会把子进程退出时的状态取出并存入其中，<br>这是一个整数值（int），指出子进程是正常退出还是被非正常结束的，以及正常结束时的返回值，或被哪一个信号结束的等信息。由于这些信息被存放在一个整数的不同二进制位中，所以用常规的方法读取会非常麻烦，因此设计了一套专门的宏（macro）来完成这项工作，其中最常用的两个如下：</p>
+<ol>
+<li><p><code>WIFEXITED(status)</code><br>这个宏用来指出子进程是否为正常退出的，如果是，它会返回一个非零值。</p>
+</li>
+<li><p><code>WEXITSTATUS(status)</code> </p>
+<p>当WIFEXITED返回非零值时，我们可以用这个宏来提取子进程的返回值，如果子进程调用exit(5)退出，WEXITSTATUS(status)就会返回5；如果子进程调用exit(7)，WEXITSTATUS(status)就会返回7。如果进程不是正常退出的，也就是说，<br>WIFEXITED返回0，这个值就毫无意义。</p>
+</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="exit函数"><a href="#exit函数" class="headerlink" title="exit函数"></a>exit函数</h3><p>进程结束最常用函数，表示正常结束；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span>  </span></span><br><span class="line"><span class="type">void</span> <span class="title function_">exit</span><span class="params">(<span class="type">int</span> status)</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="kill函数"><a href="#kill函数" class="headerlink" title="kill函数"></a>kill函数</h3><p>删除执行中的程序和任务，异常结束；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kill(<span class="type">int</span> PID,<span class="type">int</span> IID);</span><br></pre></td></tr></table></figure>
+
+<h3 id="signal函数"><a href="#signal函数" class="headerlink" title="signal函数"></a>signal函数</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span>(* signal(<span class="type">int</span> sig, <span class="type">void</span>(* func)(<span class="type">int</span>)))(<span class="type">int</span>);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>设置处理信号的功能指定使用sig指定的<em>信号编号</em>处理信号的方法。 参数func指定程序可以处理信号的三种方式之一：</p>
+<ol>
+<li>默认处理(SIG_DFL)：信号由该特定信号的默认动作处理；</li>
+<li>忽略信号(SIG_IGN)：忽略信号，即使没有意义，代码执行仍将继续；</li>
+<li>函数处理程序：定义一个特定的函数来处理信号</li>
+</ol>
+</li>
+<li><p>参数</p>
+<ul>
+<li><p><code>SIG</code></p>
+<p>设置处理功能的信号值；</p>
+</li>
+<li><p><code>FUNC</code></p>
+<p>指向函数的指针；</p>
+</li>
+<li><p>返回值</p>
+<p>返回类型与参数func的类型相同。</p>
+</li>
+</ul>
+</li>
+<li><p>常用的signal</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>功能</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SIGNHUP</td>
+<td>挂起</td>
+<td>1</td>
+</tr>
+<tr>
+<td>SIGINT</td>
+<td>键盘中断，键盘按<code>Ctrl+C</code></td>
+<td>2</td>
+</tr>
+<tr>
+<td>SIGQUIT</td>
+<td>键盘按<code>QUIT</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td>SIGILL</td>
+<td>非法指令</td>
+<td>4</td>
+</tr>
+<tr>
+<td>SIGTRAP</td>
+<td>跟踪中断</td>
+<td>5</td>
+</tr>
+<tr>
+<td>SIGIOT</td>
+<td>IOT指令</td>
+<td>6</td>
+</tr>
+<tr>
+<td>SIGBUS</td>
+<td>总线错</td>
+<td>7</td>
+</tr>
+<tr>
+<td>SIGFPE</td>
+<td>浮点运算溢出</td>
+<td>8</td>
+</tr>
+<tr>
+<td>SIGKILL</td>
+<td>要求终止进程</td>
+<td>9</td>
+</tr>
+<tr>
+<td>SIGUSR1</td>
+<td>用户定义信号#1</td>
+<td>10</td>
+</tr>
+<tr>
+<td>SIGSEGV</td>
+<td>段违法</td>
+<td>11</td>
+</tr>
+<tr>
+<td>SIGUSR2</td>
+<td>用户定义信号#2</td>
+<td>12</td>
+</tr>
+<tr>
+<td>SIGPIPE</td>
+<td>向没有读进程的管道上写</td>
+<td>13</td>
+</tr>
+<tr>
+<td>SIGALRM</td>
+<td>定时器告警，时间到</td>
+<td>14</td>
+</tr>
+<tr>
+<td>SIGTERM</td>
+<td>kill发出的软件结束信号</td>
+<td>15</td>
+</tr>
+<tr>
+<td>SIGSTKFLT</td>
+<td>Linux专用，数学协处理器的栈异常</td>
+<td>16</td>
+</tr>
+<tr>
+<td>SIGCHLD</td>
+<td>子进程死</td>
+<td>17</td>
+</tr>
+<tr>
+<td>SIGCOUNT</td>
+<td>若已停止则继续</td>
+<td>18</td>
+</tr>
+<tr>
+<td>SIGPWR</td>
+<td>电源故障</td>
+<td>30</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+<h3 id="pipe函数"><a href="#pipe函数" class="headerlink" title="pipe函数"></a>pipe函数</h3><p>管道是一种把两个进程之间的标准输入和标准输出连接起来的机制，从而提供一种让多个进程间通信的方法，当进程创建管道时，每次都需要提供两个文件描述符来操作管道。其中一个对管道进行写操作，另一个对管道进行读操作。对管道的读写与一般的IO系统函数一致，使用write()函数写入数据，使用read()读出数据。</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570038016574.png">
+
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">pipe</span><span class="params">(<span class="type">int</span> filedes[<span class="number">2</span>])</span>;</span><br></pre></td></tr></table></figure>
+
+<p>返回值：成功，返回0，否则返回-1。</p>
+<p>参数数组包含pipe使用的两个文件的描述符。</p>
+<ul>
+<li>fd[0]:读管道；</li>
+<li>fd[1]:写管道；</li>
+<li>fd[2]:提供进程使用的文件描述符数组。</li>
+</ul>
+<p>必须在fork()中调用pipe()，否则子进程不会继承文件描述符。两个进程不共享祖先进程，就不能使用pipe。</p>
+<h2 id="编制实现软中断通信的程序"><a href="#编制实现软中断通信的程序" class="headerlink" title="编制实现软中断通信的程序"></a>编制实现软中断通信的程序</h2><h3 id="程序分析"><a href="#程序分析" class="headerlink" title="程序分析"></a>程序分析</h3><p>使用系统调用fork()创建两个子进程，再用系统调用signal()让父进程捕捉键盘上来的中断信号（即按Ctrl+c键），当父进程接受到这两个软中断的其中某一个后，父进程用系统调用kill()向两个子进程分别发送整数值为16和17软中断信号，子进程获得对应软中断信号后，分别输出下列信息后终止：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Child process <span class="number">1</span> is killed by parent !!</span><br><span class="line">Child process <span class="number">2</span> is killed by parent !!</span><br></pre></td></tr></table></figure>
+
+<p>父进程调用wait()函数等待两个子进程终止后，输出以下信息后终止：                                                         </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Parent process is killed!! </span><br></pre></td></tr></table></figure>
+
+<h3 id="程序流程图"><a href="#程序流程图" class="headerlink" title="程序流程图"></a>程序流程图</h3><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570080291071.png" width="75%" height="75%">
+
+<h3 id="程序源代码"><a href="#程序源代码" class="headerlink" title="程序源代码"></a>程序源代码</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">waiting</span><span class="params">()</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">stop</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> wait_mark;</span><br><span class="line"> </span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">   <span class="type">int</span> p1,p2;						<span class="comment">/*定义两个进程号变量*/</span></span><br><span class="line">   <span class="keyword">while</span>((p1=fork())&lt;<span class="number">0</span>);			<span class="comment">/*创建子进程p1*/</span></span><br><span class="line">   <span class="keyword">if</span>(p1&gt;<span class="number">0</span>)&#123;</span><br><span class="line">       <span class="keyword">while</span>((p2=fork())&lt;<span class="number">0</span>);		<span class="comment">/*创建子进程p2*/</span></span><br><span class="line">       <span class="keyword">if</span>(p2&gt;<span class="number">0</span>)&#123;</span><br><span class="line">           <span class="built_in">printf</span>(<span class="string">&quot;Father PID:%d\n&quot;</span>,getpid());</span><br><span class="line">           wait_mark=<span class="number">1</span>;				<span class="comment">/*不往下执行，直到捕捉到键盘上传来的信号*/</span></span><br><span class="line">           signal(SIGINT,stop);		<span class="comment">/*接收到^c信号，转stop*/</span></span><br><span class="line">           waiting();</span><br><span class="line">           kill(p1,<span class="number">16</span>);				<span class="comment">/*向p1发软中断信号16*/</span></span><br><span class="line">           kill(p2,<span class="number">17</span>);				<span class="comment">/*向p2发软中断信号17*/</span></span><br><span class="line">           wait(<span class="number">0</span>);					<span class="comment">/*同步*/</span></span><br><span class="line">           wait(<span class="number">0</span>);</span><br><span class="line">           <span class="built_in">printf</span>(<span class="string">&quot;Parent process is killed!\n&quot;</span>);</span><br><span class="line">           <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">else</span>&#123;</span><br><span class="line">           <span class="built_in">printf</span>(<span class="string">&quot;Child2 PID:%d\n&quot;</span>,getpid());</span><br><span class="line">           wait_mark=<span class="number">1</span>;</span><br><span class="line">           signal(<span class="number">17</span>,stop);			<span class="comment">/*接收到软中断信号17，转stop*/</span></span><br><span class="line">           signal(SIGINT,SIG_IGN);	<span class="comment">/*屏蔽从键盘上传来的中断信号，使得子进程可以接收到父进程传来的软中断信号*/</span></span><br><span class="line">           waiting();				<span class="comment">/*不往下执行*/</span></span><br><span class="line">           lockf(<span class="built_in">stdout</span>,<span class="number">1</span>,<span class="number">0</span>);</span><br><span class="line">           <span class="built_in">printf</span>(<span class="string">&quot;Child process 2 is killed by parent!\n&quot;</span>);</span><br><span class="line">           lockf(<span class="built_in">stdout</span>,<span class="number">0</span>,<span class="number">0</span>);</span><br><span class="line">           <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">else</span>&#123;</span><br><span class="line">       <span class="built_in">printf</span>(<span class="string">&quot;Child1 PID:%d\n&quot;</span>,getpid());</span><br><span class="line">       wait_mark=<span class="number">1</span>;</span><br><span class="line">       signal(<span class="number">16</span>,stop);				<span class="comment">/*接收到软中断信号16，转stop*/</span></span><br><span class="line">       signal(SIGINT,SIG_IGN);		<span class="comment">/*屏蔽从键盘上传来的中断信号，使得子进程可以接收到父进程传来的软中断信号*/</span></span><br><span class="line">       waiting();					<span class="comment">/*不往下执行*/</span></span><br><span class="line">       lockf(<span class="built_in">stdout</span>,<span class="number">1</span>,<span class="number">0</span>);</span><br><span class="line">       <span class="built_in">printf</span>(<span class="string">&quot;Child process 1 is killed by parent!\n&quot;</span>);</span><br><span class="line">       lockf(<span class="built_in">stdout</span>,<span class="number">0</span>,<span class="number">0</span>);</span><br><span class="line">       <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">waiting</span><span class="params">()</span>&#123;</span><br><span class="line">	<span class="keyword">while</span>(wait_mark!=<span class="number">0</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">stop</span><span class="params">()</span>&#123;</span><br><span class="line">	wait_mark=<span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="程序运行结果"><a href="#程序运行结果" class="headerlink" title="程序运行结果"></a>程序运行结果</h3><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570071904980.png">
+
+<h3 id="运行结果分析"><a href="#运行结果分析" class="headerlink" title="运行结果分析"></a>运行结果分析</h3><p>​        程序运行两次，软中断后，结果输出顺序不相同。理论上，父程序在同一时间下达指令，软中断子程序1和子程序2并发执行，并发执行并不是同时执行，而可能是交叉执行，两个子程序执行完成时间不一致，即第一次运行程序2先完成，第二次运行程序1先完成。</p>
+<h2 id="编制实现进程的管道通信的程序"><a href="#编制实现进程的管道通信的程序" class="headerlink" title="编制实现进程的管道通信的程序"></a>编制实现进程的管道通信的程序</h2><h3 id="程序分析-1"><a href="#程序分析-1" class="headerlink" title="程序分析"></a>程序分析</h3><p>使用系统调用pipe()建立一条管道线，两个子进程分别向管道写一句话：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Child process <span class="number">1</span> is sending a message!  </span><br><span class="line">Child process <span class="number">2</span> is sending a message!  </span><br></pre></td></tr></table></figure>
+
+<p>父进程从管道中先后读出来自于两个子进程p1、p2的消息，显示在屏幕上。</p>
+<h3 id="程序流程图-1"><a href="#程序流程图-1" class="headerlink" title="程序流程图"></a>程序流程图</h3><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570080232148.png" width="50%" height="50%">
+
+<h3 id="程序源代码-1"><a href="#程序源代码-1" class="headerlink" title="程序源代码"></a>程序源代码</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> pid1,pid2;						<span class="comment">/*定义两个进程号变量*/</span></span><br><span class="line"> </span><br><span class="line">main()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Father PID:%d\n&quot;</span>,getpid());</span><br><span class="line">    <span class="type">int</span> fd[<span class="number">2</span>];</span><br><span class="line">    <span class="type">char</span> outpipe[<span class="number">100</span>],inpipe[<span class="number">100</span>];	<span class="comment">/*定义两个字符数组*/</span></span><br><span class="line">    pipe(fd);						<span class="comment">/*创建一个管道*/</span></span><br><span class="line">    <span class="keyword">while</span> ((pid1=fork())&lt;<span class="number">0</span>);		<span class="comment">/*如果进程1创建不成功,则空循环*/</span></span><br><span class="line">    <span class="keyword">if</span>(pid1==<span class="number">0</span>)&#123;					<span class="comment">/*如果子进程1创建成功,pid1为进程号*/</span></span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Child1 PID:%d\n&quot;</span>,getpid());</span><br><span class="line">        lockf(fd[<span class="number">1</span>],<span class="number">1</span>,<span class="number">0</span>);			<span class="comment">/*锁定管道*/</span></span><br><span class="line">        <span class="built_in">sprintf</span>(outpipe,<span class="string">&quot;child 1 process is sending message!&quot;</span>);		<span class="comment">/*把串放入数组outpipe中*/</span></span><br><span class="line">        write(fd[<span class="number">1</span>],outpipe,<span class="number">50</span>);    <span class="comment">/*向管道写长为50字节的串*/</span></span><br><span class="line">        lockf(fd[<span class="number">1</span>],<span class="number">0</span>,<span class="number">0</span>);			<span class="comment">/*解除管道的锁定*/</span></span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);					<span class="comment">/*结束进程1*/</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">while</span> ((pid2=fork())&lt;<span class="number">1</span>);	<span class="comment">/*若进程2创建不成功,则空循环*/</span></span><br><span class="line">        <span class="keyword">if</span>(pid2==<span class="number">0</span>)&#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;Child2 PID:%d\n&quot;</span>,getpid());</span><br><span class="line">            lockf(fd[<span class="number">1</span>],<span class="number">1</span>,<span class="number">0</span>);       <span class="comment">/*锁定管道*/</span></span><br><span class="line">            <span class="built_in">sprintf</span>(outpipe,<span class="string">&quot;child 2 process is sending message!&quot;</span>);</span><br><span class="line">            write(fd[<span class="number">1</span>],outpipe,<span class="number">50</span>);</span><br><span class="line">            lockf(fd[<span class="number">1</span>],<span class="number">0</span>,<span class="number">0</span>);		<span class="comment">/*解除管道的锁定*/</span></span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">0</span>);				<span class="comment">/*结束进程2*/</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            wait(<span class="number">0</span>);                <span class="comment">/*同步，等待子进程1结束*/</span></span><br><span class="line">            read(fd[<span class="number">0</span>],inpipe,<span class="number">50</span>);  <span class="comment">/*从管道中读长为50字节的串*/</span></span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>,inpipe);	<span class="comment">/*显示读出的数据*/</span></span><br><span class="line">            wait(<span class="number">0</span>);				<span class="comment">/*同步，等待子进程2结束*/</span></span><br><span class="line">            read(fd[<span class="number">0</span>],inpipe,<span class="number">50</span>);  <span class="comment">/*从管道中读长为50字节的串*/</span></span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>,inpipe);	<span class="comment">/*显示读出的数据*/</span></span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">0</span>);				<span class="comment">/*结束父进程*/</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="程序运行结果-1"><a href="#程序运行结果-1" class="headerlink" title="程序运行结果"></a>程序运行结果</h3><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570078674032.png">
+
+<h3 id="运行结果分析-1"><a href="#运行结果分析-1" class="headerlink" title="运行结果分析"></a>运行结果分析</h3><p>根据对源代码的注释分析，父进程必须先接收子程序1的消息，再接收子程序2的消息。因此必须先创建成功子程序1，再创建子程序2，这里用到了两个while()循环如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> ((pid1=fork())&lt;<span class="number">0</span>);		<span class="comment">/*如果进程1创建不成功,则空循环*/</span></span><br><span class="line"><span class="keyword">while</span> ((pid2=fork())&lt;<span class="number">0</span>);		<span class="comment">/*如果进程2创建不成功,则空循环*/</span></span><br></pre></td></tr></table></figure>
+
+<p>因此会先打印出子程序1的PID和消息，再打印子程序2的PID和消息。</p>
+<h1 id="实验难点与收获"><a href="#实验难点与收获" class="headerlink" title="实验难点与收获"></a>实验难点与收获</h1><h2 id="难点"><a href="#难点" class="headerlink" title="难点"></a>难点</h2><ol>
+<li>对并发执行的理解；</li>
+<li>对管道通信过程的学习等；</li>
+</ol>
+<h2 id="收获"><a href="#收获" class="headerlink" title="收获"></a>收获</h2><ol>
+<li>学习了进程管理的相关函数如fork()、wait()、kill()、signal()、pipe()等的使用；</li>
+<li>知道了并发执行并不是同一时间执行两个程序，对并发有了更确切的理解；</li>
+<li>深入理解了进程互斥的概念；</li>
+<li>了解了Linux系统中进程通信的基本原理等；</li>
+</ol>
+<h1 id="实验思考"><a href="#实验思考" class="headerlink" title="实验思考"></a>实验思考</h1><p>通过这次实验，我对操作系统进程管理的内容有了更深入的理解。在linx操作系统中，进程的创建需要调用fork函数，该函数调用一次，返回两次。深入理解了进程互斥的概念，即两个或两个以上的进程,不能同时进入关于同一组共享变量的临界区域。进程互斥通过lockf()来实现。通过kill()函数和signal()函数深入理解进程的之间的软中断。前者是发送软中断信号，后者是接收软中断信号。通过pipe()函数理解进程之间的管道通信。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%8C.html" title="操作系统内核-实验二">https://leeyuxun.github.io/操作系统内核-实验二.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag"><i class="fa fa-tag"></i> Linux进程管理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%80.html" rel="prev" title="操作系统内核-实验一">
+      <i class="fa fa-chevron-left"></i> 操作系统内核-实验一
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%9C%AC%E5%9C%B0%E4%BB%A3%E7%A0%81%E6%9B%B4%E6%96%B0%E5%88%B0Github.html" rel="next" title="本地代码更新到Github">
+      本地代码更新到Github <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%AD%A5%E9%AA%A4"><span class="nav-number">2.</span> <span class="nav-text">实验步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.1.</span> <span class="nav-text">函数介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#fork%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.1.</span> <span class="nav-text">fork函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wait%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.2.</span> <span class="nav-text">wait函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#exit%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.3.</span> <span class="nav-text">exit函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kill%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.4.</span> <span class="nav-text">kill函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#signal%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.5.</span> <span class="nav-text">signal函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#pipe%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.6.</span> <span class="nav-text">pipe函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E5%88%B6%E5%AE%9E%E7%8E%B0%E8%BD%AF%E4%B8%AD%E6%96%AD%E9%80%9A%E4%BF%A1%E7%9A%84%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.2.</span> <span class="nav-text">编制实现软中断通信的程序</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%88%86%E6%9E%90"><span class="nav-number">2.2.1.</span> <span class="nav-text">程序分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">2.2.2.</span> <span class="nav-text">程序流程图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">2.2.3.</span> <span class="nav-text">程序源代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">2.2.4.</span> <span class="nav-text">程序运行结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C%E5%88%86%E6%9E%90"><span class="nav-number">2.2.5.</span> <span class="nav-text">运行结果分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E5%88%B6%E5%AE%9E%E7%8E%B0%E8%BF%9B%E7%A8%8B%E7%9A%84%E7%AE%A1%E9%81%93%E9%80%9A%E4%BF%A1%E7%9A%84%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.3.</span> <span class="nav-text">编制实现进程的管道通信的程序</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%88%86%E6%9E%90-1"><span class="nav-number">2.3.1.</span> <span class="nav-text">程序分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E6%B5%81%E7%A8%8B%E5%9B%BE-1"><span class="nav-number">2.3.2.</span> <span class="nav-text">程序流程图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E6%BA%90%E4%BB%A3%E7%A0%81-1"><span class="nav-number">2.3.3.</span> <span class="nav-text">程序源代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-1"><span class="nav-number">2.3.4.</span> <span class="nav-text">程序运行结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C%E5%88%86%E6%9E%90-1"><span class="nav-number">2.3.5.</span> <span class="nav-text">运行结果分析</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E9%9A%BE%E7%82%B9%E4%B8%8E%E6%94%B6%E8%8E%B7"><span class="nav-number">3.</span> <span class="nav-text">实验难点与收获</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9A%BE%E7%82%B9"><span class="nav-number">3.1.</span> <span class="nav-text">难点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B6%E8%8E%B7"><span class="nav-number">3.2.</span> <span class="nav-text">收获</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%80%9D%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">实验思考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

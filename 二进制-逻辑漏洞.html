@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="逻辑漏洞成因逻辑漏洞是指那些在程序中，因代码逻辑不正确而引发的漏洞；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="二进制-逻辑漏洞">
+<meta property="og:url" content="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9E.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="逻辑漏洞成因逻辑漏洞是指那些在程序中，因代码逻辑不正确而引发的漏洞；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303210257.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303210422.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303210453.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303215719.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303222828.png">
+<meta property="og:image" content="https://leeyuxun.github.io/Users/leeyuxun/Library/Application%20Support/typora-user-images/image-20210303223556667.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303225032.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303225318.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303230411.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303232803.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303233726.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303233901.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000120.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000417.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000644.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000831.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000907.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304001412.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304002226.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304001939.png">
+<meta property="article:published_time" content="2021-03-03T11:59:23.000Z">
+<meta property="article:modified_time" content="2021-03-03T16:52:07.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="逻辑漏洞">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303210257.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9E.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>二进制-逻辑漏洞 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9E.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          二进制-逻辑漏洞
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-03-03 19:59:23" itemprop="dateCreated datePublished" datetime="2021-03-03T19:59:23+08:00">2021-03-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-03-04 00:52:07" itemprop="dateModified" datetime="2021-03-04T00:52:07+08:00">2021-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="逻辑漏洞成因"><a href="#逻辑漏洞成因" class="headerlink" title="逻辑漏洞成因"></a>逻辑漏洞成因</h1><p>逻辑漏洞是指那些在程序中，因代码逻辑不正确而引发的漏洞；<span id="more"></span></p>
+<p>逻辑漏洞成因：</p>
+<ul>
+<li>产生于程序设计不够细致，或编码不够严谨的地方；<ul>
+<li>  当程序体量较为庞大，分支结构较为复杂的时候，不太常用到的分支结构就往往得不到足够的重视，设计和编码也就难以得到保障，导致很可能存在逻辑漏洞；</li>
+</ul>
+</li>
+<li>发生在频繁变更的程序段上；<ul>
+<li>  如因需求的频繁变更，或因执行出现的bug等问题，需要对程序进行修改的时候，往往是没有足够的时间重头开始进行设计，也不容易分析全与其他部分之间的关联；</li>
+<li>  因此，在编码过程中，就很可能存在与其他部分出现冲突，或不匹配的情况，很可能会存在逻辑漏洞；</li>
+</ul>
+</li>
+<li>合作出现问题，大型的程序或系统往往是由多人、多团队协作完成的；<ul>
+<li>  由于不同的人，对不同的功能存在不同的理解，以及各种原因导致的交流不畅，都会影响到各模块之间的协调和整体的安全性；</li>
+</ul>
+</li>
+<li>不严谨的边界判别<ul>
+<li>出现情况往往是在<code>&gt;</code>与<code>&gt;=</code>、<code>&lt;</code>与<code>&lt;=</code>的误用，或字符串的长度判别情况；<ul>
+<li>  边界值被算入判别条件或把边界值漏掉，可能导致循环多进行一轮，或者将本不该放过判别条件的值放过判别条件；</li>
+<li>  字符串的长度判别举例，一个长为16个字符的字符串，所占的空间为字符串数组下标为0-15，第16个下标为字符串结束符，因而需要17个空间进行存储；</li>
+</ul>
+</li>
+<li>指针与引用的误用<ul>
+<li>  指针与引用均是用于间接的使用其他对象，这就导致指针与引用的误用，这种误用往往出现在函数的调用，如在scanf函数中，参数为数据的引用，误将其用为指针的话，就会出现错误；</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>递归爆段<ul>
+<li>  递归是函数自身调用自身的一种情况，如果这个调用自身的过程过于深入，而一直没有结果返回，则容易发生递归爆栈，这也是逻辑的漏洞，是函数的功能、数据处理不当造成的；</li>
+</ul>
+</li>
+</ul>
+<h1 id="递归暴栈逻辑漏洞"><a href="#递归暴栈逻辑漏洞" class="headerlink" title="递归暴栈逻辑漏洞"></a>递归暴栈逻辑漏洞</h1><h2 id="成因"><a href="#成因" class="headerlink" title="成因"></a>成因</h2><p>由于系统会在每次调用函数时为函数安排一个栈空间，并在函数结束时回收这个空间；</p>
+<p>如果函数迟迟不返回，这个空间就迟迟回收不回来；</p>
+<p>而不断的自身调用自身，就导致这个空间不断的被分配，直到这个空间被分配完，就造成了爆栈；</p>
+<h2 id="程序分析"><a href="#程序分析" class="headerlink" title="程序分析"></a>程序分析</h2><p>对如下程序进行递归分析</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* recursion10 */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">func</span><span class="params">(<span class="type">int</span> i)</span>{</span><br><span class="line">    <span class="keyword">if</span> (i&gt;<span class="number">0</span>){</span><br><span class="line">        i--;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"%d"</span>,i);</span><br><span class="line">        func(i);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    <span class="type">int</span> i=<span class="number">0x10</span>;</span><br><span class="line">    func(i);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"\n"</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>首先在进入main函数的<code>mov rbp,rsp</code>处下一个断点， 查看栈帧情况；其次在第一次调用func函数，和第二次调用func函数的地方下两个断点；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303210257.png" style="zoom:50%;"></li>
+<li><p>程序在main函数开始时的栈顶指针和栈底指针均为<code>0x7fffffffde70</code>地址；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303210422.png" style="zoom:50%;"></li>
+<li><p>然后将程序运行到第一次调用函数func，此时栈顶指针为<code>0x7fffffffde60</code>,栈低指针为<code>0x7fffffffde70</code>；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303210453.png" style="zoom:50%;"></li>
+<li><p>接下来进入func函数内部，运行到第 一次递归调用func函数时，查看此时的栈帧情况，栈顶指针为<code>0x7fffffffde40</code>地址，栈底指针为<code>0x7fffffffde50</code>地址；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303215719.png" style="zoom:50%;"></li>
+<li><p>  通过对两次递归调用时的栈帧情况的分析，可以发现每次递归调用消耗<code>0x20</code>的栈空间，栈帧逐渐向低地址发展；</p>
+</li>
+<li><p>  随着递归的不断深入，栈帧会逐渐减小，直到超过临界值，导致爆栈；</p>
+</li>
+</ul>
+<p>将递归深度改为<code>0x100000</code>，在gdb加载后运行程序，可以看到程序运行发生了递归爆栈错误；</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303222828.png" style="zoom:50%;">
+
+<h1 id="不严谨的边界判别"><a href="#不严谨的边界判别" class="headerlink" title="不严谨的边界判别"></a>不严谨的边界判别</h1><h2 id="成因-1"><a href="#成因-1" class="headerlink" title="成因"></a>成因</h2><ul>
+<li>  错误使用<code>&gt;=</code>与<code>&gt;</code>、<code>&lt;=</code>与<code>&lt;</code>；</li>
+<li>  忽视数组下标以0开始；</li>
+<li>  忽视字符串最后结束符；</li>
+</ul>
+<h2 id="后果"><a href="#后果" class="headerlink" title="后果"></a>后果</h2><ul>
+<li>  放过不该放过的叛别情况；</li>
+<li>  程序变得难以预料；</li>
+<li>  数据泄露；</li>
+</ul>
+<h2 id="程序分析-1"><a href="#程序分析-1" class="headerlink" title="程序分析"></a>程序分析</h2><p>对以下程序进行分析；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* lossly_border */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    <span class="type">char</span> s[<span class="number">20</span>]=<span class="string">""</span>;</span><br><span class="line">    <span class="type">int</span> i=<span class="number">0</span>;</span><br><span class="line">    <span class="type">char</span> c=<span class="string">'c'</span>;</span><br><span class="line">    <span class="keyword">for</span> (i=<span class="number">0</span>;i&lt;<span class="number">20</span>;i++)</span><br><span class="line">        s[i]=c;</span><br><span class="line">    <span class="type">int</span> slen = <span class="built_in">strlen</span>(s);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%d\n"</span>,slen);</span><br><span class="line"></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>  分析程序用于一个申请长度为20个字符的字符串中添加进20个字符，然后打印出字符串长度；</p>
+</li>
+<li><p>运行程序，发现输出的结果长度为22，与预期的长度20不符；</p>
+  <img src="/Users/leeyuxun/Library/Application Support/typora-user-images/image-20210303223556667.png" alt="image-20210303223556667" style="zoom:50%;"></li>
+<li><p>使用gdb调试，找到字符串存储位置，发现字符串的开始地址是参数<code>rbp-0x20</code>；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303225032.png" style="zoom:50%;"></li>
+<li><p>查看其中的值，即长度计算将栈上其他数值也计算了进去，此时打印字符串内容也会将这个值打出来；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303225318.png" style="zoom:50%;"></li>
+<li><p>  <code>0x63</code>即为存储的字符<code>c</code>，可以看到存储了20个<code>c</code>字符。但接下来并没有字符串结束符，而是原先栈中数据<code>0xff7f0000</code>(这是因为是小端存储模式)，所以<code>strlen()</code>函数在判别字符串长度的时候就把<code>0xff</code>和<code>0x7f</code>也一同算进去了，造成了字符串长度出现错误；</p>
+</li>
+</ul>
+<h1 id="与-的误用"><a href="#与-的误用" class="headerlink" title="==与=的误用"></a><code>==</code>与<code>=</code>的误用</h1><h2 id="成因-2"><a href="#成因-2" class="headerlink" title="成因"></a>成因</h2><p><code>==</code>是常见的判别符号，<code>=</code>由于与<code>==</code>相近很容易被当做<code>==</code>使用；</p>
+<h2 id="后果-1"><a href="#后果-1" class="headerlink" title="后果"></a>后果</h2><ul>
+<li>  if(i==1)表示如果i等于1执行；</li>
+<li>  而if(i=1)则是给i赋值为1，1为返回的值；</li>
+</ul>
+<h2 id="程序分析-2"><a href="#程序分析-2" class="headerlink" title="程序分析"></a>程序分析</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* equality */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    <span class="type">int</span> i=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (i=<span class="number">1</span>) <span class="built_in">printf</span>(<span class="string">"i=1\n"</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>运行程序，打印出i=1，即判断条件为真，执行了printf语句，而之前为i的赋值为0，本不应判断为真的，这就是<code>==</code>与<code>=</code>的使用不正确导致的漏洞；</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303230411.png" style="zoom:50%;">
+
+<h1 id="函数默认参数问题"><a href="#函数默认参数问题" class="headerlink" title="函数默认参数问题"></a>函数默认参数问题</h1><h2 id="成因-3"><a href="#成因-3" class="headerlink" title="成因"></a>成因</h2><ul>
+<li>  函数存在默认参数；</li>
+<li>  函数存在缺省参数情况；</li>
+<li>  部分函数部分参数通常不会用到；</li>
+<li>  这些参数在编码中不受重视，却会影响函数的处理方式；</li>
+<li>  如果这些参数在调用时，出现与正常参数格式等不一样的情况，就会产生难以预料的后果，造成逻辑漏洞；</li>
+</ul>
+<h2 id="后果-2"><a href="#后果-2" class="headerlink" title="后果"></a>后果</h2><p>导致函数处理结果与预期不一致，后果难以预料；</p>
+<h2 id="漏洞举例"><a href="#漏洞举例" class="headerlink" title="漏洞举例"></a>漏洞举例</h2><p><code>read(int fd, void *buf, size_t count)</code></p>
+<ul>
+<li><p><code>read</code>函数有三个参数；</p>
+<ul>
+<li>  第一个参数是一个<code>int</code>类型的文件描述符；</li>
+<li>  第二个是数据保存的缓冲区首地址；</li>
+<li>  第三个是请求读入的字节数；</li>
+</ul>
+</li>
+<li><p><code>read</code>函数参数问题:</p>
+<p>  如果这个<code>read</code>函数的第一个参数为<code>0</code>，<code>read</code>函数不会报错，也没有文件可以读取，会选择从标准输入流中读入数据，也就是可以输入任意数据，且函数的返回值也没有异常；</p>
+</li>
+</ul>
+<p>对以下程序进行分析；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* read0 */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span> </span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> handle=<span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> handle0=<span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> slen=<span class="number">0</span>;</span><br><span class="line">    <span class="type">char</span> s[<span class="number">20</span>]=<span class="string">""</span>;</span><br><span class="line">    handle = open(<span class="string">"read0.txt"</span>,O_RDONLY);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%d\n"</span>,handle);</span><br><span class="line">    </span><br><span class="line">    slen = read(handle,s,<span class="number">15</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%d\n"</span>,slen);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%s\n"</span>,s);</span><br><span class="line"></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>程序使用只读的方式从文件read0.txt中读入数据，而read0.txt中存储为<code>1234567890</code>；</p>
+<p>运行程序结果如下；</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303232803.png" style="zoom:50%;">
+
+<ul>
+<li>  对于open函数，打开一个文件时，返回未被使用的最小文件描述符(非负整数)，失败返回-1；</li>
+<li>  由于系统中默认已打开三个文件描述符(0:标准输入，1:标准输出 ，2:标准出错)之外，未被使用的最小文件描述符就是3；</li>
+<li>  可以看到，open函数为read0.txt分配的文件描述符为3，成功读入了11个字符，其中有一位为字符串结束符，最后输出了文件内容；</li>
+</ul>
+<p>如果这里的文件描述符，误用了初始化后未使用的另一个描述符<code>handle0</code>，就会变为从标准输入中读入了；</p>
+<p>程序如下，其中<code>slen=read(handle0,s,15)</code>中，将handle误用为参数handle0；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* read1 */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span> </span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> handle=<span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> handle0=<span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> slen=<span class="number">0</span>;</span><br><span class="line">    <span class="type">char</span> s[<span class="number">20</span>]=<span class="string">""</span>;</span><br><span class="line">    handle = open(<span class="string">"read0.txt"</span>,O_RDONLY);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%d\n"</span>,handle);</span><br><span class="line">    </span><br><span class="line">    slen = read(handle0,s,<span class="number">15</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%d\n"</span>,slen);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%s\n"</span>,s);</span><br><span class="line"></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>漏洞分析：</p>
+<ul>
+<li><p>  linux中会对文件进行重定向；</p>
+</li>
+<li><p>  对应文件描述符0、1、2的是标准输入、标准输出、标准错误，这里对应为标准输入了；</p>
+</li>
+<li><p>运行程序，程序会在调用<code>read</code>函数的时候等输入；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303233726.png" style="zoom:50%;"></li>
+<li><p>输入<code>abcdef</code>，看到确实是从标准输入中进行读入并且输出；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210303233901.png" style="zoom:50%;"></li>
+</ul>
+<h1 id="malloc导致的字符串长度判别错误"><a href="#malloc导致的字符串长度判别错误" class="headerlink" title="malloc导致的字符串长度判别错误"></a><code>malloc</code>导致的字符串长度判别错误</h1><h2 id="成因-4"><a href="#成因-4" class="headerlink" title="成因"></a>成因</h2><ul>
+<li>  堆中情况较为复杂；</li>
+<li>  <code>malloc</code>连续分配的地址不一定连续；</li>
+<li>  防止无谓的因字符串对齐而浪费存储空间，使用了下一个分配的地址参与了字符串长度的判断；</li>
+<li>  但是当连续的堆，分配不到相连续的存储空间时；</li>
+<li>  导致下一个分配地址会与当前分配地址间隔比较远；</li>
+<li>  进行长度判别就不准确了；</li>
+</ul>
+<h2 id="程序分析-3"><a href="#程序分析-3" class="headerlink" title="程序分析"></a>程序分析</h2><p>对以下程序进行分析</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* length */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">stu</span>{</span></span><br><span class="line">    <span class="type">char</span> *<span class="built_in">string</span>;</span><br><span class="line">    <span class="type">char</span> name[<span class="number">20</span>];</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    <span class="type">char</span> *string1 = (<span class="type">char</span>*) <span class="built_in">malloc</span>(<span class="number">50</span>);</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stu</span> *<span class="title">stu1</span> =</span> (<span class="keyword">struct</span> stu *)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> stu));</span><br><span class="line">    stu1-&gt;<span class="built_in">string</span> = string1;</span><br><span class="line">    <span class="built_in">strcpy</span>(string1,<span class="string">"AA"</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(stu1-&gt;name,<span class="string">"AAAAAAA"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span> *string2 = (<span class="type">char</span>*) <span class="built_in">malloc</span>(<span class="number">50</span>);</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stu</span> *<span class="title">stu2</span> =</span> (<span class="keyword">struct</span> stu *)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> stu));</span><br><span class="line">    stu2-&gt;<span class="built_in">string</span> = string2;</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">strcpy</span>(string2,<span class="string">"BB"</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(stu2-&gt;name,<span class="string">"BBBBBBB"</span>);</span><br><span class="line">  </span><br><span class="line">    <span class="built_in">free</span>(stu1-&gt;<span class="built_in">string</span>);</span><br><span class="line">    <span class="built_in">free</span>(stu1);</span><br><span class="line">    </span><br><span class="line">    <span class="type">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">scanf</span>(<span class="string">"%d"</span>,&amp;i);</span><br><span class="line">    <span class="type">char</span> *string3 = (<span class="type">char</span>*) <span class="built_in">malloc</span>(i);</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stu</span> *<span class="title">stu3</span> =</span> (<span class="keyword">struct</span> stu *)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> stu));</span><br><span class="line">    stu3-&gt;<span class="built_in">string</span> = string3;</span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> *string3addr =  (<span class="type">unsigned</span> <span class="type">int</span>*) &amp;stu3-&gt;<span class="built_in">string</span>;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> *stu3addr =  (<span class="type">unsigned</span> <span class="type">int</span>*) &amp;stu3;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%x %x\n"</span>,*stu3addr,*string3addr);</span><br><span class="line">    <span class="type">char</span> str[<span class="number">100</span>];</span><br><span class="line">    <span class="built_in">scanf</span>(<span class="string">"%s"</span>,str);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%d"</span>,*stu3addr-*string3addr<span class="number">-4</span>);</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">strlen</span>(str)&gt;=(*stu3addr-*string3addr<span class="number">-4</span>)){</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"string is too long!\n"</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">strcpy</span>(string3,str);</span><br><span class="line">    <span class="built_in">strcpy</span>(stu3-&gt;name,<span class="string">"CCCCCCC"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">free</span>(stu2-&gt;<span class="built_in">string</span>);</span><br><span class="line">    <span class="built_in">free</span>(stu2);</span><br><span class="line">    <span class="built_in">free</span>(stu3-&gt;<span class="built_in">string</span>);</span><br><span class="line">    <span class="built_in">free</span>(stu3);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>程序定义了一个结构体，由一个字符串指针和一个字符串构成；<ul>
+<li>  存储时，采用了连续分配两个存储空间的方式，对字符串指针所指向字符串，和结构体本身字符串进行存储；</li>
+</ul>
+</li>
+<li>  在运行程序时，首先连续配置了两个结构体，以及它们对应的字符串；</li>
+<li>  然后将第一个字符串和结构体的空间释放掉；</li>
+<li>  接下来就到了会触发漏洞的关键输入部分；</li>
+<li>  程序允许用户自己输入字符串长度和字符串内容；</li>
+<li>而对于字符串长度的判断，就是通过接下来申请的结构体的地址进行计算；<ul>
+<li>  调用scanf函数，堆中为其分配了<code>0x410</code>大小；</li>
+<li>  即连续分配的两个地址确实不是连续的，中间间隔了第二个结构体和scanf函数的空间，而长度判别在这里就不起作用了；</li>
+</ul>
+</li>
+</ul>
+<p>程序正常运行结果如下；</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000120.png" style="zoom:50%;">
+
+<p>使用gdb查看运行情况，主要是堆分配；</p>
+<ul>
+<li><p>下图为两个原始结构体stu1和stu2申请完成后的汇编代码，两次malloc是stu2的两次申请，可以看到malloc申请的空间依次存储，<code>rax</code>是malloc的返回值， 第4次申请的起始地址是存放在<code>rbp-0x90</code>的位置；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000417.png" style="zoom:50%;"></li>
+<li><p>查看四次分配的空间排布；</p>
+<ul>
+<li><p>四个malloc，分配了2个结构体中的指针和两个指向结构体指针，这四个指针是在系统固定区域存储，指针所占空间是固定的，每个8字节，所以通过<code>rbp-0x90</code>前推是<code>rbp-0xa8</code>；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000644.png" style="zoom:50%;"></li>
+</ul>
+</li>
+<li><p>2次free释放了struct1的两块空间；</p>
+<ul>
+<li><p>被free掉的空间正好是<code>0x602010</code>和<code>0x602050</code>，也即stu1的两块空间；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000831.png" style="zoom:50%;">
+
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304000907.png" style="zoom:50%;"></li>
+</ul>
+</li>
+<li><p>接着程序调用了scanf函数；</p>
+<ul>
+<li>  第一次调用scanf函数，堆中为其分配了<code>0x410</code>大小(默认为scanf函数分配的空间)的空间；</li>
+<li>  这个空间大小已经超过了fastbin的范畴，进入了large bin；</li>
+<li>  在large bin开始分配前，系统会回收重组所有的unsorted bin，于是被释放的stu1的堆块空间：<code>0x602010</code>到<code>0x602080</code>之间的地址就被合并成了一块；</li>
+<li>  但是仍然并不满足scanf函数的<code>0x410</code>空间需要，还要在最后一个堆块，即stu2所占空间后面的空闲空间进行分配；</li>
+</ul>
+</li>
+<li><p>接着进行漏洞的利用，这次scanf申请的字符串空间大小为<code>70</code>，查看分配的字符串的地址和结构体的地址；</p>
+<ul>
+<li>  stu3的两块指针为<code>rbp-0x88</code>和<code>rbp-0xb0</code>；</li>
+</ul>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304001412.png" style="zoom:50%;"></li>
+<li><p>查看两指针位置；</p>
+<ul>
+<li>  分配的起始地址是<code>0x602010</code>与<code>0x602500</code>；</li>
+</ul>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304002226.png" style="zoom:50%;"></li>
+<li><p>查看地址中的存储内容，可以看到分别是刚回收的<code>0x602010</code>与继续分配的<code>0x602500</code>(stu3的结构体地址)，一块是stu1的堆块，另一个是相隔很远的堆块，即连续分配的两个地址确实不是连续的，中间间隔了第二个结构体和scanf函数的空间，而长度判别在这里就不起作用了(非常长的一块空间)；</p>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="built_in">strlen</span>(str)&gt;=(*stu3addr-*string3addr<span class="number">-4</span>)){</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"string is too long!\n"</span>);</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">}</span><br></pre></td></tr></table></figure></li>
+<li><p>输入过长会直接覆盖掉第二个结构体的堆结构的chunk头 ，导致free过程中的异常；</p>
+<ul>
+<li>  <code>free(stu2-&gt;string);</code>，在这里出现bug；</li>
+</ul>
+</li>
+<li><p>在长度判别不起作用的情况下，当给string分配的堆块为70(分配72)，如果输入过长，只要超过80(72+8(占据p_size的8))，则覆盖stu2的size，会直接覆盖掉第二个结构体的堆结构的chunk头，导致stu2的string在free过程中的异常；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210304001939.png" style="zoom:50%;"></li>
+<li><p>  程序出错，但并没有显示长度过长；</p>
+</li>
+<li><p>  在长度判别不起作用的情况下，可以看到程序在进行free函数的时候遇到了错误，这就是由malloc没能按顺序分配时所引发的错误；</p>
+</li>
+</ul>
+<p>备注：<a target="_blank" rel="noopener" href="https://github.com/Leeyuxun/Binary-Experiment-Program">实验程序下载</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9E.html" title="二进制-逻辑漏洞">https://leeyuxun.github.io/二进制-逻辑漏洞.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9E/" rel="tag"><i class="fa fa-tag"></i> 逻辑漏洞</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E.html" rel="prev" title="二进制-条件竞争漏洞">
+      <i class="fa fa-chevron-left"></i> 二进制-条件竞争漏洞
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/Ubuntu%E4%B8%8BPWN%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%B0%8F%E7%BB%93.html" rel="next" title="Ubuntu下PWN环境配置小结">
+      Ubuntu下PWN环境配置小结 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9E%E6%88%90%E5%9B%A0"><span class="nav-number">1.</span> <span class="nav-text">逻辑漏洞成因</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%92%E5%BD%92%E6%9A%B4%E6%A0%88%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9E"><span class="nav-number">2.</span> <span class="nav-text">递归暴栈逻辑漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%90%E5%9B%A0"><span class="nav-number">2.1.</span> <span class="nav-text">成因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%88%86%E6%9E%90"><span class="nav-number">2.2.</span> <span class="nav-text">程序分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8D%E4%B8%A5%E8%B0%A8%E7%9A%84%E8%BE%B9%E7%95%8C%E5%88%A4%E5%88%AB"><span class="nav-number">3.</span> <span class="nav-text">不严谨的边界判别</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%90%E5%9B%A0-1"><span class="nav-number">3.1.</span> <span class="nav-text">成因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E6%9E%9C"><span class="nav-number">3.2.</span> <span class="nav-text">后果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%88%86%E6%9E%90-1"><span class="nav-number">3.3.</span> <span class="nav-text">程序分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8E-%E7%9A%84%E8%AF%AF%E7%94%A8"><span class="nav-number">4.</span> <span class="nav-text">&#x3D;&#x3D;与&#x3D;的误用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%90%E5%9B%A0-2"><span class="nav-number">4.1.</span> <span class="nav-text">成因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E6%9E%9C-1"><span class="nav-number">4.2.</span> <span class="nav-text">后果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%88%86%E6%9E%90-2"><span class="nav-number">4.3.</span> <span class="nav-text">程序分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E9%BB%98%E8%AE%A4%E5%8F%82%E6%95%B0%E9%97%AE%E9%A2%98"><span class="nav-number">5.</span> <span class="nav-text">函数默认参数问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%90%E5%9B%A0-3"><span class="nav-number">5.1.</span> <span class="nav-text">成因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E6%9E%9C-2"><span class="nav-number">5.2.</span> <span class="nav-text">后果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E4%B8%BE%E4%BE%8B"><span class="nav-number">5.3.</span> <span class="nav-text">漏洞举例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#malloc%E5%AF%BC%E8%87%B4%E7%9A%84%E5%AD%97%E7%AC%A6%E4%B8%B2%E9%95%BF%E5%BA%A6%E5%88%A4%E5%88%AB%E9%94%99%E8%AF%AF"><span class="nav-number">6.</span> <span class="nav-text">malloc导致的字符串长度判别错误</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%90%E5%9B%A0-4"><span class="nav-number">6.1.</span> <span class="nav-text">成因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%88%86%E6%9E%90-3"><span class="nav-number">6.2.</span> <span class="nav-text">程序分析</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

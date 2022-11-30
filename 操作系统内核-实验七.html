@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验内容以MooseFS-PB分布式文件系统为例，了解分布式文件系统实现方法，功能特点及作用.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="操作系统内核 实验七">
+<meta property="og:url" content="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%83.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验内容以MooseFS-PB分布式文件系统为例，了解分布式文件系统实现方法，功能特点及作用.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103043.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103126.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103228.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103315.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103559.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103748.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103816.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217104015.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217111359.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217111630.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217111710.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217112115.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217112527.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217113220.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217113318.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217115449.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217115558.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217115632.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217115959.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217120337.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217120859.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217121020.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217182216.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217171507.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217171639.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217171716.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217173730.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217173645.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217182700.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217173859.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217183000.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217183644.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217183316.png">
+<meta property="article:published_time" content="2019-12-20T14:44:30.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:34:04.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="分布式文件系统管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103043.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%83.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>操作系统内核 实验七 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%83.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          操作系统内核 实验七
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-20 22:44:30" itemprop="dateCreated datePublished" datetime="2019-12-20T22:44:30+08:00">2019-12-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:34:04" itemprop="dateModified" datetime="2020-04-02T14:34:04+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">操作系统内核实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验内容"><a href="#实验内容" class="headerlink" title="实验内容"></a>实验内容</h1><p>以MooseFS-PB分布式文件系统为例，了解分布式文件系统实现方法，功能特点及作用.</p>
+<span id="more"></span>
+
+<h1 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h1><ol>
+<li><p><code>master server</code>: <code>Ubuntu 18.04</code> </p>
+<p>IP: <code>10.128.255.181</code></p>
+</li>
+<li><p>元数据日志服务器: <code>Ubuntu 16.04</code> </p>
+<p>IP: <code>10.128.243.103</code></p>
+</li>
+<li><p><code>chunk server</code>: <code>Ubuntu 16.04</code> </p>
+<p>IP: <code>10.128.219.79</code></p>
+</li>
+<li><p>客户端: <code>Ubuntu 16.04</code> </p>
+<p>IP: <code>10.128.205.7</code></p>
+</li>
+</ol>
+<h1 id="实验过程"><a href="#实验过程" class="headerlink" title="实验过程"></a>实验过程</h1><h2 id="搭建master-server"><a href="#搭建master-server" class="headerlink" title="搭建master server"></a>搭建<code>master server</code></h2><h3 id="安装编译器、工具包"><a href="#安装编译器、工具包" class="headerlink" title="安装编译器、工具包"></a>安装编译器、工具包</h3><ol>
+<li><p>输入如下命令，安装相关编译器、工具包；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt install build-essential libpcap-dev zlib1g-dev libfuse-dev pkg-config</span><br><span class="line">$ sudo apt install fuse</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103043.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103126.png"></p>
+</li>
+<li><p>将moosefs源码拷贝到到<code>/moosefs</code>目录下，进入<code>/moosefs</code>目录安装mfs软件包；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> moosefs/</span><br><span class="line">$ sudo ./configure --prefix=/usr/local/mfs --with-default-user=mfs --with-default-group=mfs</span><br><span class="line">$ sudo make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103228.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103315.png"></p>
+</li>
+<li><p>修改输出目录配置文件、定义挂载以及权限设定文件、主配置文件、元数据日志文件信息；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> /usr/local/mfs/etc/mfs/</span><br><span class="line"><span class="comment">#修改输出目录配置文件，定义挂载以及权限设定文件</span></span><br><span class="line">$ sudo <span class="built_in">cp</span> mfsexports.cfg.sample  mfsexports.cfg</span><br><span class="line"><span class="comment">#修改主配置文件</span></span><br><span class="line">$ sudo <span class="built_in">cp</span> mfsmaster.cfg.sample mfsmaster.cfg</span><br><span class="line"><span class="comment">#修改元数据日志文件</span></span><br><span class="line">$ sudo <span class="built_in">cp</span> mfstopology.cfg.sample  mfstopology.cfg</span><br><span class="line"><span class="comment">#修改master元数据文件</span></span><br><span class="line">$ <span class="built_in">cd</span> /usr/local/mfs/var/mfs/</span><br><span class="line">$ sudo <span class="built_in">cp</span> metadata.mfs.empty metadata.mfs</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103559.png"></p>
+</li>
+</ol>
+<h3 id="启动master-server"><a href="#启动master-server" class="headerlink" title="启动master server"></a>启动<code>master server</code></h3><ol>
+<li><p>创建进程用户</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo useradd -s /sbin/nologin mfs</span><br></pre></td></tr></table></figure></li>
+<li><p>授权、优化路径</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo <span class="built_in">chown</span> -R mfs.mfs /usr/local/mfs</span><br><span class="line">$ sudo <span class="built_in">ln</span> -s /usr/local/mfs/sbin/* /usr/local/bin/</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103748.png"></p>
+</li>
+<li><p>启动服务</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo mfsmaster start</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217103816.png"></p>
+</li>
+<li><p>查看服务运行成功</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo netstat -anpt | grep mfsmaster</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217104015.png"></p>
+</li>
+</ol>
+<h2 id="搭建元数据日志服务器"><a href="#搭建元数据日志服务器" class="headerlink" title="搭建元数据日志服务器"></a>搭建元数据日志服务器</h2><h3 id="安装编译器、工具包-1"><a href="#安装编译器、工具包-1" class="headerlink" title="安装编译器、工具包"></a>安装编译器、工具包</h3><ol>
+<li><p>输入如下命令，安装相关编译器、工具包；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt install build-essential libpcap-dev zlib1g-dev libfuse-dev pkg-config</span><br><span class="line">$ sudo apt install fuse</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217111359.png"></p>
+</li>
+<li><p>将moosefs源码拷贝到到<code>/moosefs</code>目录下，进入<code>/moosefs</code>目录安装mfs软件包；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> moosefs/</span><br><span class="line">$ sudo ./configure --prefix=/usr/local/mfs --with-default-user=mfs --with-default-group=mfs</span><br><span class="line">$ sudo make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217111630.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217111710.png"></p>
+</li>
+<li><p>修改主配置文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> /usr/local/mfs/etc/mfs/</span><br><span class="line">$ sudo <span class="built_in">cp</span> mfsmaster.cfg.sample mfsmaster.cfg</span><br><span class="line">$ sudo <span class="built_in">cp</span> mfsexports.cfg.sample mfsexports.cfg</span><br><span class="line">$ sudo <span class="built_in">cp</span> mfsmetalogger.cfg.sample mfsmetalogger.cfg</span><br><span class="line">$ sudo <span class="built_in">cd</span> /usr/local/mfs/var/mfs</span><br><span class="line">$ sudo <span class="built_in">cp</span> metadata.mfs.empty metadata.mfs</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217112115.png"></p>
+<p>修改<code>mfsmetalogger.cfg</code>文件内容如下</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> /usr/local/mfs/etc/mfs/</span><br><span class="line">$ sudo vi mfsmetalogger.cfg</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MASTER_HOST = 10.128.255.181 #执行master服务器的ip地址</span><br><span class="line">META_DOWNLOAD_FREQ = 24 #备份频率时间</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217112527.png"></p>
+</li>
+</ol>
+<h3 id="启动元数据日志服务器"><a href="#启动元数据日志服务器" class="headerlink" title="启动元数据日志服务器"></a>启动元数据日志服务器</h3><ol>
+<li><p>创建进程用户</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo useradd -s /sbin/nologin mfs</span><br></pre></td></tr></table></figure></li>
+<li><p>授权、优化路径</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo <span class="built_in">chown</span> -R mfs.mfs /usr/local/mfs</span><br><span class="line">$ sudo <span class="built_in">ln</span> -s /usr/local/mfs/sbin/* /usr/local/bin/</span><br></pre></td></tr></table></figure></li>
+<li><p>启动服务</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo mfsmetalogger start</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217113220.png"></p>
+</li>
+<li><p>查看服务运行成功</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo netstat -anpt | grep mfsmetalogger</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217113318.png"></p>
+</li>
+</ol>
+<h2 id="搭建chunk-server"><a href="#搭建chunk-server" class="headerlink" title="搭建chunk server"></a>搭建<code>chunk server</code></h2><h3 id="安装编译器、工具包-2"><a href="#安装编译器、工具包-2" class="headerlink" title="安装编译器、工具包"></a>安装编译器、工具包</h3><ol>
+<li><p>输入如下命令，安装相关编译器、工具包；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt install build-essential libpcap-dev zlib1g-dev libfuse-dev pkg-config</span><br><span class="line">$ sudo apt install fuse</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217115449.png"></p>
+</li>
+<li><p>将moosefs源码拷贝到到<code>/moosefs</code>目录下，进入<code>/moosefs</code>目录安装mfs软件包；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> moosefs/</span><br><span class="line">$ sudo ./configure --prefix=/usr/local/mfs --with-default-user=mfs --with-default-group=mfs</span><br><span class="line">$ sudo make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217115558.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217115632.png"></p>
+</li>
+<li><p>修改主配置文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> /usr/local/mfs/etc/mfs/</span><br><span class="line">$ sudo <span class="built_in">cp</span> mfschunkserver.cfg.sample  mfschunkserver.cfg</span><br><span class="line">$ sudo <span class="built_in">cp</span> mfshdd.cfg.sample  mfshdd.cfg</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217115959.png"></p>
+<p>修改<code>mfschunkserver.cfg</code>文件内容如下</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo vi mfschunkserver.cfg</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MASTER_HOST  = 10.128.255.181 #指向master服务器的ip地址,去掉注释符号</span><br><span class="line">MASTER_PORT  = 9420</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217120337.png"></p>
+<p>修改<code>mfshdd.cfg</code>文件内容如下</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#添加一行</span></span><br><span class="line">/data </span><br><span class="line"><span class="comment">#这是一个给MFS的分区，生产环境中最好使用独立的分区，或者磁盘挂载到此目录下</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="启动chunk-server"><a href="#启动chunk-server" class="headerlink" title="启动chunk server"></a>启动<code>chunk server</code></h3><ol>
+<li><p>创建进程用户</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo useradd -s /sbin/nologin mfs</span><br></pre></td></tr></table></figure></li>
+<li><p>创建MFS分区目录</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo <span class="built_in">mkdir</span> /data</span><br><span class="line">$ sudo <span class="built_in">chown</span> -R mfs:mfs /data/</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217120859.png"></p>
+</li>
+<li><p>授权、优化路径</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo <span class="built_in">chown</span> -R mfs.mfs /usr/local/mfs</span><br><span class="line">$ sudo <span class="built_in">ln</span> -s /usr/local/mfs/sbin/* /usr/local/bin/</span><br></pre></td></tr></table></figure></li>
+<li><p>启动服务</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo mfschunkserver start</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217121020.png"></p>
+</li>
+<li><p>查看服务运行成功</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo netstat -anpt | grep mfschunkserve</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217182216.png"></p>
+</li>
+</ol>
+<h2 id="配置客户端"><a href="#配置客户端" class="headerlink" title="配置客户端"></a>配置客户端</h2><h3 id="安装编译器、工具包-3"><a href="#安装编译器、工具包-3" class="headerlink" title="安装编译器、工具包"></a>安装编译器、工具包</h3><ol>
+<li><p>输入如下命令，安装相关编译器、工具包；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt install build-essential libpcap-dev zlib1g-dev libfuse-dev pkg-config</span><br><span class="line">$ sudo apt install fuse</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217171507.png"></p>
+</li>
+<li><p>将moosefs源码拷贝到到<code>/moosefs</code>目录下，进入<code>/moosefs</code>目录安装mfs软件包；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> moosefs/</span><br><span class="line">$ sudo ./configure --prefix=/usr/local/mfs --with-default-user=mfs --with-default-group=mfs</span><br><span class="line">$ sudo make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217171639.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217171716.png"></p>
+</li>
+</ol>
+<h3 id="挂载MFS文件系统"><a href="#挂载MFS文件系统" class="headerlink" title="挂载MFS文件系统"></a>挂载MFS文件系统</h3><ol>
+<li><p>创建进程用户</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo useradd -s /sbin/nologin mfs</span><br></pre></td></tr></table></figure></li>
+<li><p>授权、优化路径</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo <span class="built_in">chown</span> -R mfs.mfs /usr/local/mfs</span><br><span class="line">$ sudo <span class="built_in">ln</span> -s /usr/local/mfs/sbin/* /usr/local/bin/</span><br></pre></td></tr></table></figure></li>
+<li><p>挂载MFS文件系统</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#创建挂载点</span></span><br><span class="line">$ sudo <span class="built_in">mkdir</span> /mnt/mfs</span><br><span class="line"><span class="comment">#加载fuse模块到内核</span></span><br><span class="line">$ sudo modprobe fuse</span><br><span class="line"><span class="comment">#挂载MFS</span></span><br><span class="line">$ sudo /usr/local/mfs/bin/mfsmount /mnt/mfs/ -H 10.128.255.181</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217173730.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217173645.png"></p>
+</li>
+<li><p>启动</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo mfscgiserv start</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217182700.png"></p>
+</li>
+<li><p>查看是否启动成功</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo netstat -anpt | grep mfs</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217173859.png"></p>
+</li>
+<li><p>打开浏览器，输入url：<code>http://10.128.205.7:9425</code>，显示如下，配置成功</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217183000.png"></p>
+</li>
+<li><p>输入<code>master  server</code>的ip地址，则会显示<code>master server</code>的相关信息</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217183644.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191217183316.png"></p>
+</li>
+</ol>
+<h1 id=""><a href="#" class="headerlink" title=""></a></h1>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%83.html" title="操作系统内核 实验七">https://leeyuxun.github.io/操作系统内核-实验七.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%AE%A1%E7%90%86/" rel="tag"><i class="fa fa-tag"></i> 分布式文件系统管理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E5%85%AD.html" rel="prev" title="操作系统内核 实验六">
+      <i class="fa fa-chevron-left"></i> 操作系统内核 实验六
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%B8%89.html" rel="next" title="漏洞分析技术实验三">
+      漏洞分析技术实验三 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%86%85%E5%AE%B9"><span class="nav-number">1.</span> <span class="nav-text">实验内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">2.</span> <span class="nav-text">实验环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">实验过程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%90%AD%E5%BB%BAmaster-server"><span class="nav-number">3.1.</span> <span class="nav-text">搭建master server</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E7%BC%96%E8%AF%91%E5%99%A8%E3%80%81%E5%B7%A5%E5%85%B7%E5%8C%85"><span class="nav-number">3.1.1.</span> <span class="nav-text">安装编译器、工具包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8master-server"><span class="nav-number">3.1.2.</span> <span class="nav-text">启动master server</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E5%85%83%E6%95%B0%E6%8D%AE%E6%97%A5%E5%BF%97%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="nav-number">3.2.</span> <span class="nav-text">搭建元数据日志服务器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E7%BC%96%E8%AF%91%E5%99%A8%E3%80%81%E5%B7%A5%E5%85%B7%E5%8C%85-1"><span class="nav-number">3.2.1.</span> <span class="nav-text">安装编译器、工具包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8%E5%85%83%E6%95%B0%E6%8D%AE%E6%97%A5%E5%BF%97%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="nav-number">3.2.2.</span> <span class="nav-text">启动元数据日志服务器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%90%AD%E5%BB%BAchunk-server"><span class="nav-number">3.3.</span> <span class="nav-text">搭建chunk server</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E7%BC%96%E8%AF%91%E5%99%A8%E3%80%81%E5%B7%A5%E5%85%B7%E5%8C%85-2"><span class="nav-number">3.3.1.</span> <span class="nav-text">安装编译器、工具包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8chunk-server"><span class="nav-number">3.3.2.</span> <span class="nav-text">启动chunk server</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">3.4.</span> <span class="nav-text">配置客户端</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E7%BC%96%E8%AF%91%E5%99%A8%E3%80%81%E5%B7%A5%E5%85%B7%E5%8C%85-3"><span class="nav-number">3.4.1.</span> <span class="nav-text">安装编译器、工具包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%82%E8%BD%BDMFS%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F"><span class="nav-number">3.4.2.</span> <span class="nav-text">挂载MFS文件系统</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">4.</span> <span class="nav-text"></span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的通过对CryptDB的安装和使用，了解学习加密数据库查询技术的原理和实现方式.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CryptDB安装与使用">
+<meta property="og:url" content="https://leeyuxun.github.io/CryptDB%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的通过对CryptDB的安装和使用，了解学习加密数据库查询技术的原理和实现方式.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212011701.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212012233.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212012327.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212014946.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212102340.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212103018.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212103110.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110349.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110435.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110729.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110809.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110948.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212111247.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212111446.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212111743.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212112018.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212112100.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212112247.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212112402.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212113558.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212114915.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212115503.png">
+<meta property="article:published_time" content="2019-12-19T15:56:50.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:47:22.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="CryptDB">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212011701.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/CryptDB%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CryptDB安装与使用 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/CryptDB%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CryptDB安装与使用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-19 23:56:50" itemprop="dateCreated datePublished" datetime="2019-12-19T23:56:50+08:00">2019-12-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:47:22" itemprop="dateModified" datetime="2020-04-02T14:47:22+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">大数据安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><p>通过对CryptDB的安装和使用，了解学习加密数据库查询技术的原理和实现方式.</p>
+<span id="more"></span>
+
+<h1 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h1><ul>
+<li>操作系统：ubuntu 12.04</li>
+<li>工具：CryptDB、git、ruby</li>
+</ul>
+<h1 id="CryptDB简介"><a href="#CryptDB简介" class="headerlink" title="CryptDB简介"></a>CryptDB简介</h1><ul>
+<li><p>CryptDB 是来自MIT的一个开源项目，它不是某种数据库，而是加密数据库查询技术的一种，可以在加密的数据库（目前支持MySQL）上进行简单的操作。正常说来， 一个应用是直接连接数据库的，配置了CryptDB后，CryptDB作为应用和数据库的中间代理，以明文的方式与应用交互，以密文的方式与数据库交互。</p>
+</li>
+<li><p>CryptDB首次解决了实用性的问题，它将数据嵌套进多个加密层，每层使用不同的密钥，这些加密密钥与用户的密码有关，即便是数据库管理员也不能访问这些加密的数据，这也防止了因数据库泄露导致用户信息泄露的问题。虽然目前支持的SQL语句有限，还没有到真正投入使用的程度，但其性却非常出众。Google也根据CryptDB的设计开发了Encrypted BigQuery client。 </p>
+</li>
+<li><p>CryptDB官网的介绍如下</p>
+<blockquote>
+<p>Online applications are vulnerable to theft of sensitive information  because adversaries can exploit software bugs to gain access to private  data, and because curious or malicious administrators may capture and  leak data. CryptDB is a system that provides practical and provable  confidentiality in the face of these attacks for applications backed by  SQL databases. It works by executing SQL queries over encrypted data  using a collection of efficient SQL-aware encryption schemes. CryptDB  can also chain encryption keys to user passwords, so that a data item  can be decrypted only by using the password of one of the users with  access to that data. As a result, a database administrator never gets  access to decrypted data, and even if all servers are compromised, an  adversary cannot decrypt the data of any user who is not logged in. An  analysis of a trace of 126 million SQL queries from a production MySQL  server shows that CryptDB can support operations over encrypted data for 99.5% of the 128,840 columns seen in the trace. Our evaluation shows  that CryptDB has low overhead, reducing throughput by 14.5% for phpBB, a web forum application, and by 26% for queries from TPC-C, compared to  unmodified MySQL. Chaining encryption keys to user passwords requires  11-13 unique schema annotations to secure more than 20 sensitive fields  and 2-7 lines of source code changes for three multi-user web  applications. </p>
+</blockquote>
+</li>
+</ul>
+<h1 id="实验步骤"><a href="#实验步骤" class="headerlink" title="实验步骤"></a>实验步骤</h1><h2 id="CryptDB安装"><a href="#CryptDB安装" class="headerlink" title="CryptDB安装"></a>CryptDB安装</h2><ol>
+<li><p>安装Ubuntu系统</p>
+<p>CryptDB依附于ubuntu系统，本次实验使用的是12.04版本的系统，已经安装完毕；</p>
+</li>
+<li><p>安装git和ruby</p>
+<p>安装git是为了获取官网的源码；</p>
+<p>安装ruby是因为CryptDB的安装脚本使用ruby语言编写；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt-get install git ruby</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212011701.png"></p>
+</li>
+<li><p>克隆CryptDB代码</p>
+<p>把CryptDB项目克隆到了主目录下，后续步骤中也会安装到这个目录；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git <span class="built_in">clone</span> -b public git://g.csail.mit.edu/cryptdb</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212012233.png"></p>
+</li>
+<li><p>安装CryptDB</p>
+<p>进入到cryptdb文件夹，执行安装脚本，按照提示，等待完成。</p>
+<p>在此过程中会要求设置mysql密码，因后续过程需要mysql和CryptDB密码相同，所以在此设置了mysql密码为CryptDB默认密码letmein；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> cryptdb</span><br><span class="line">$ ./scripts/install.rb .</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212012327.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212014946.png"></p>
+</li>
+<li><p>添加环境变量<code>EDBDIR</code>到<code>.bashrc</code></p>
+<p>编辑<code>cryptdb/</code><strong>同</strong>目录下的<code>.bashrc</code>，把下面的代码添加到最后；</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">export EDBDIR=/home/levi/cryptdb/</span><br></pre></td></tr></table></figure>
+
+<p>至此，安装完成，重启设备即可使用CryptDB；</p>
+</li>
+</ol>
+<h2 id="CryptDB使用"><a href="#CryptDB使用" class="headerlink" title="CryptDB使用"></a>CryptDB使用</h2><p>本实验中准备了3个终端：</p>
+<ul>
+<li><code>终端1</code>：用于运行CryptDB，在上面显示密文；</li>
+<li><code>终端2</code>：用于从代理端口3306访问数据库，显示用户实际操作状态；</li>
+<li><code>终端3</code>：用于从正常端口访问数据库，显示明文；</li>
+</ul>
+<h3 id="启用proxy"><a href="#启用proxy" class="headerlink" title="启用proxy"></a>启用proxy</h3><p>MySQL使用本地<code>3306</code>端口，CryptDB使用本地<code>3307</code>端口，CryptDB把<code>3307</code>端口的数据处理后通过<code>3306</code>端口与MySQL交互；</p>
+<p>在<code>终端1</code>中输入如下内容，系统返回<code>started</code>即为执行成功；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ /home/levi/cryptdb/bins/proxy-bin/bin/mysql-proxy  \</span><br><span class="line">   --plugins=proxy --event-threads=4             \</span><br><span class="line">   --max-open-files=1024                         \</span><br><span class="line">   --proxy-lua-script=<span class="variable">$EDBDIR</span>/mysqlproxy/wrapper.lua \</span><br><span class="line">   --proxy-address=127.0.0.1:3307                \</span><br><span class="line">   --proxy-backend-addresses=localhost:3306</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212102340.png"></p>
+<h3 id="启用CryptDB和mysql"><a href="#启用CryptDB和mysql" class="headerlink" title="启用CryptDB和mysql"></a>启用CryptDB和mysql</h3><ol>
+<li><p>在<code>终端2</code>中输入如下命令，连接到本机<code>3306</code>端口的mysql；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -u root -p -h 127.0.0.1 -P 3306</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212103018.png"></p>
+<p>在<code>终端3</code>中输入如下命令，连接到本机<code>3307</code>端口的CryptDB；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -u root -p -h 127.0.0.1 -P 3307</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212103110.png"></p>
+</li>
+</ol>
+<h3 id="CryptDB使用演示"><a href="#CryptDB使用演示" class="headerlink" title="CryptDB使用演示"></a>CryptDB使用演示</h3><ol>
+<li><p>在<code>终端3</code>中查询数据库<code>show databases;</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110349.png"></p>
+<p>此时在<code>终端1</code>中显示CryptDB查询数据库的结果；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110435.png"></p>
+</li>
+<li><p>在<code>终端3</code>中创建数据库名称为<code>leeyuxun</code> <code>create database leeyuxun;</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110729.png"></p>
+<p>此时在<code>终端1</code>中显示CryptDB创建数据库<code>leeyuxun</code>的结果；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110809.png"></p>
+</li>
+<li><p>在<code>终端3</code>中打开数据库<code>leeyuxun</code> <code>use leeyuxun;</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212110948.png"></p>
+<p>此时在<code>终端1</code>中显示CryptDB打开数据库的结果；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212111247.png"></p>
+</li>
+<li><p>在<code>终端3</code>中新建表<code>users</code>；</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create table users(id int(2) not null primary key auto_increment,username varchar(40),password varchar(40));</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212111446.png"></p>
+<p>此时在<code>终端1</code>中显示CryptDB新建表<code>users</code>的结果；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212111743.png"></p>
+</li>
+<li><p>在<code>终端3</code>中的<code>users</code>表中增加数据；</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">insert into users(username,password) values(&quot;lizhilin&quot;,&quot;123456&quot;);</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212112018.png"></p>
+<p>此时在<code>终端1</code>中显示CryptDB的<code>users</code>表增加数据的结果；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212112100.png"></p>
+</li>
+<li><p>在<code>终端3</code>中查询表<code>users</code>中的记录<code>select * from users;</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212112247.png"></p>
+<p>此时在<code>终端1</code>中显示CryptDB的<code>users</code>表查询记录的结果；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212112402.png"></p>
+</li>
+<li><p>在<code>终端1</code>中发现新创建的<code>users</code>表在Mysql中储存的名字为<code>table_CIGLJIQNCC</code>，在<code>终端2</code>中查询以此命名的表，发现储存数据为密文，表明数据在Mysql端是加密的；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212113558.png"></p>
+</li>
+</ol>
+<h2 id="修改密码"><a href="#修改密码" class="headerlink" title="修改密码"></a>修改密码</h2><h3 id="修改CryptDB密码"><a href="#修改CryptDB密码" class="headerlink" title="修改CryptDB密码"></a>修改CryptDB密码</h3><p>输入如下语句即可更改CryptDB的密码；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo xdg-open /home/levi/cryptdb/mysqlproxy/wrapper.lua</span><br></pre></td></tr></table></figure>
+
+<p>更换<code>letmein</code>为其他密码即可；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212114915.png"></p>
+<h3 id="修改mysql密码"><a href="#修改mysql密码" class="headerlink" title="修改mysql密码"></a>修改mysql密码</h3><p>输入如下语句并按提示输入当前密码，要更改的密码，并确认密码；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ mysqladmin -u root -p password</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212115503.png"></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/CryptDB%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8.html" title="CryptDB安装与使用">https://leeyuxun.github.io/CryptDB安装与使用.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/CryptDB/" rel="tag"><i class="fa fa-tag"></i> CryptDB</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/OAuth-CSRF%E5%AE%9E%E9%AA%8C.html" rel="prev" title="OAuth CSRF实验">
+      <i class="fa fa-chevron-left"></i> OAuth CSRF实验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E5%9B%9B.html" rel="next" title="操作系统内核 实验四">
+      操作系统内核 实验四 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">2.</span> <span class="nav-text">实验环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CryptDB%E7%AE%80%E4%BB%8B"><span class="nav-number">3.</span> <span class="nav-text">CryptDB简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%AD%A5%E9%AA%A4"><span class="nav-number">4.</span> <span class="nav-text">实验步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#CryptDB%E5%AE%89%E8%A3%85"><span class="nav-number">4.1.</span> <span class="nav-text">CryptDB安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CryptDB%E4%BD%BF%E7%94%A8"><span class="nav-number">4.2.</span> <span class="nav-text">CryptDB使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E7%94%A8proxy"><span class="nav-number">4.2.1.</span> <span class="nav-text">启用proxy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E7%94%A8CryptDB%E5%92%8Cmysql"><span class="nav-number">4.2.2.</span> <span class="nav-text">启用CryptDB和mysql</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CryptDB%E4%BD%BF%E7%94%A8%E6%BC%94%E7%A4%BA"><span class="nav-number">4.2.3.</span> <span class="nav-text">CryptDB使用演示</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E5%AF%86%E7%A0%81"><span class="nav-number">4.3.</span> <span class="nav-text">修改密码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9CryptDB%E5%AF%86%E7%A0%81"><span class="nav-number">4.3.1.</span> <span class="nav-text">修改CryptDB密码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9mysql%E5%AF%86%E7%A0%81"><span class="nav-number">4.3.2.</span> <span class="nav-text">修改mysql密码</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

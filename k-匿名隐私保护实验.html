@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的 理解基本的k-匿名算法； 通过相关程序实现对数据表元组的k-匿名处理；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="k-匿名隐私保护实验">
+<meta property="og:url" content="https://leeyuxun.github.io/k-%E5%8C%BF%E5%90%8D%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4%E5%AE%9E%E9%AA%8C.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的 理解基本的k-匿名算法； 通过相关程序实现对数据表元组的k-匿名处理；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205003115.png">
+<meta property="article:published_time" content="2019-12-19T15:41:42.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:37:34.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="k-匿名算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205003115.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/k-%E5%8C%BF%E5%90%8D%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4%E5%AE%9E%E9%AA%8C.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>k-匿名隐私保护实验 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/k-%E5%8C%BF%E5%90%8D%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4%E5%AE%9E%E9%AA%8C.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          k-匿名隐私保护实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-19 23:41:42" itemprop="dateCreated datePublished" datetime="2019-12-19T23:41:42+08:00">2019-12-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:37:34" itemprop="dateModified" datetime="2020-04-02T14:37:34+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">大数据安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><ol>
+<li>理解基本的k-匿名算法；</li>
+<li>通过相关程序实现对数据表元组的k-匿名处理；</li>
+</ol>
+<span id="more"></span>
+
+<h1 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h1><ul>
+<li><p>编程语言：Java</p>
+</li>
+<li><p>硬件设备：IDEA，JDK版本1.8  </p>
+</li>
+</ul>
+<h1 id="实验原理"><a href="#实验原理" class="headerlink" title="实验原理"></a>实验原理</h1><h2 id="k-匿名的核心思想"><a href="#k-匿名的核心思想" class="headerlink" title="k-匿名的核心思想"></a>k-匿名的核心思想</h2><p>K-匿名的核心思想是设法切断数据表中准标识符与敏感属性之间的一对一关系来保护隐私属性。使得在一个数据表中，一条记录的准标识符至少有k-1条记录的准标识符与之相同。即如果使用准标识符查询的话，我们得到的查询结果应至少包含k条记录，并且这k条记录的准标识符完全相同，攻击者进而无法通过准标识符推理出隐私数据。</p>
+<h2 id="基本的k-匿名算法"><a href="#基本的k-匿名算法" class="headerlink" title="基本的k-匿名算法"></a>基本的k-匿名算法</h2><ul>
+<li>输入：原始数据表T<sub>p</sub>, 匿名参数k；</li>
+<li>输出：满足k-匿名的数据表T<sub>k</sub>；</li>
+<li>步骤：<ol>
+<li>从T<sub>p</sub>中依次读取k条记录；</li>
+<li>针对原始记录的属性信息对标识符和不希望发布的信息做抑制处理；</li>
+<li>对准标识符中的属性进行泛化，直到k条记录的准标识符完全相同，将处理后的这k条记录存入到T<sub>k</sub>中；</li>
+<li>重复1-3步骤，直到数据全部被处理，若剩余的记录不足k条做抑制处理；  </li>
+</ol>
+</li>
+</ul>
+<h1 id="实验要求"><a href="#实验要求" class="headerlink" title="实验要求"></a>实验要求</h1><ol>
+<li>给定原始数据集，根据基本的k-匿名算法编写程序对其实现简单的k-匿名处理，使得匿名化处理后的表通过准标识符查询出来的记录至少有k条；</li>
+<li>给出实验报告说明和源代码；</li>
+</ol>
+<h1 id="实验内容"><a href="#实验内容" class="headerlink" title="实验内容"></a>实验内容</h1><ol>
+<li><p>没有按照实验教程给出的步骤去做，做了一点创新，重新生成了一个新的数据文件及集org，共有1000条数据，由于数据量比较大，这里不做展示，已经放在了附件中；</p>
+</li>
+<li><p>编写k-匿名处理程序对原始数据集进行k-匿名处理，假设k=2，在原始数据集中按顺序依次选择2条数据记录后，首先需要去除这2条数据记录中的标识符属性No，使之不会出现在k-匿名后的数据记录中，接着需要对这2条数据记录中的准标识符属性<code>idNumber</code>、<code>sex</code>、<code>age</code>、<code>height</code>进行泛化处理。</p>
+</li>
+<li><p>这里做的和实验指导上的不相同，实验指导上没有将<code>idNumber</code>列为准标识符，本实验也没有将它作为准标识符属性，身份证号是每个人的唯一标志，不能作为准标识符。但是为了提高数据的匿名性，本实验将<code>idNumber</code>的第一个字符作为准标识符，即产生了四个准标识符，具体如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Operation.java */</span></span><br><span class="line">    <span class="comment">//只读取org文件中idNumber的第一位到setIdNumber中</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; org_list.size(); i++) &#123;</span><br><span class="line">        Org org=<span class="keyword">new</span> <span class="title class_">Org</span>();</span><br><span class="line">        String org_ori=org_list.get(i);</span><br><span class="line">        String elements[]=org_ori.split(<span class="string">&quot;,&quot;</span>);</span><br><span class="line">        org.setNo(Integer.parseInt(elements[<span class="number">0</span>]));</span><br><span class="line">        org.setIdNumber(elements[<span class="number">1</span>].charAt(<span class="number">0</span>));</span><br><span class="line">        org.setSex(elements[<span class="number">2</span>].charAt(<span class="number">0</span>));</span><br><span class="line">        org.setAge(Integer.parseInt(elements[<span class="number">3</span>]));</span><br><span class="line">        org.setHeight(Integer.parseInt(elements[<span class="number">4</span>]));</span><br><span class="line">        org.setDisease(elements[<span class="number">5</span>]);</span><br><span class="line">        orgs.add(org);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//对k条记录中的准标识符进行泛化处理,包括idNumber的第一位idNumberFirst</span></span><br><span class="line">	K temp=generalize(org_k);  </span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> <span class="number">0</span>; m &lt; k; m++) &#123;</span><br><span class="line">		K out=<span class="keyword">new</span> <span class="title class_">K</span>();</span><br><span class="line">		out.setIdNumberFirst(temp.getIdNumberFirst());</span><br><span class="line">		out.setSex(temp.getSex());</span><br><span class="line">		out.setAge(temp.getAge());</span><br><span class="line">		out.setHeight(temp.getHeight());</span><br><span class="line">		out.setDisease(org_k.get(m).getDisease());</span><br><span class="line">		results.add(out);  </span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//选取k条记录中的第一条记录的属性值作为上述标志属性的默认值，包括idNumberFirst</span></span><br><span class="line">	<span class="keyword">if</span>(org_k.indexOf(i)==<span class="number">0</span>) &#123;</span><br><span class="line">		idNumberFirst_flag=i.getIdNumberFirst();</span><br><span class="line">		sex_flag=i.getSex();</span><br><span class="line">		age_min=i.getAge();</span><br><span class="line">		age_max=i.getAge();</span><br><span class="line">		height_min=i.getHeight();</span><br><span class="line">		height_max=i.getHeight();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//判断idNumberFirst属性的取值是否一致</span></span><br><span class="line">	String idNumberFirst=<span class="string">&quot;&quot;</span>;</span><br><span class="line">	<span class="keyword">if</span>(idNumberFirst_flag!=i.getIdNumberFirst()) </span><br><span class="line">        idNumberFirst_flag=<span class="string">&#x27;*&#x27;</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//如果k条记录的idNumberFirst属性的取值有不一致的，就均设为*，否则不变</span></span><br><span class="line">	<span class="keyword">if</span>(idNumberFirst_flag == <span class="string">&#x27;*&#x27;</span>)</span><br><span class="line">        idNumberFirst=<span class="string">&quot;*&quot;</span>;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">        idNumberFirst=<span class="string">&quot;&quot;</span>+idNumberFirst_flag;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Org.java */</span></span><br><span class="line">	<span class="comment">//在org.java中添加idNumberFirst，并添加函数获取和发送idNumberFirst</span></span><br><span class="line">	<span class="keyword">private</span> <span class="type">char</span> idNumberFirst;</span><br><span class="line">	<span class="keyword">public</span> <span class="type">char</span> <span class="title function_">getIdNumberFirst</span><span class="params">()</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> idNumberFirst;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setIdNumber</span><span class="params">(<span class="type">char</span> idNumberFirst)</span> &#123;</span><br><span class="line">		<span class="built_in">this</span>.idNumberFirst = idNumberFirst;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* k.java */</span></span><br><span class="line">	<span class="comment">//在k.java中添加idNumberFirst，并添加函数获取和发送idNumberFirst</span></span><br><span class="line">	<span class="keyword">private</span> String idNumberFirst;</span><br><span class="line">	<span class="keyword">public</span> String <span class="title function_">getIdNumberFirst</span><span class="params">()</span> &#123;</span><br><span class="line">    	<span class="keyword">return</span> idNumberFirst;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setIdNumberFirst</span><span class="params">(String idNumberFirst)</span> &#123;</span><br><span class="line">    	<span class="built_in">this</span>.idNumberFirst = idNumberFirst;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<p>经过k-匿名处理后，输出了1000条数据记录，但每条记录中只剩下泛化后的准标识符属性值和敏感属性值，理论上通过任意一组准标识符属性查询到的数据记录均有两条，用来切断准标识符属性和敏感属性的一对一关系，满足了k-匿名的处理要求，这里开始按照实验指导书上的要求做完实验后满足上述要求，但是由于自己做了创新后，输出1000条数据，没法准确判断，这里做数据截图如下，生成的完整数据会放到附件里，这里加入一个准标识符后比之前匿名化提供的信息更多；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205003115.png"></p>
+</li>
+</ol>
+<h1 id="实验步骤"><a href="#实验步骤" class="headerlink" title="实验步骤"></a>实验步骤</h1><ol>
+<li><p>运行<code>DataGerenerate.java</code>生成1000条数据集合org；</p>
+</li>
+<li><p>设置匿名参数<code>k=2</code>；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> k=<span class="number">2</span>;</span><br></pre></td></tr></table></figure></li>
+<li><p>创建<code>operation</code>对象，用于调用其内部的方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Operation operation=<span class="keyword">new</span> <span class="title class_">Operation</span>();</span><br></pre></td></tr></table></figure></li>
+<li><p>获取原始数据集记录，并用<code>ArrayList</code>进行存储；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">ArrayList&lt;Org&gt;  org_lists=operation.getOrgData();</span><br><span class="line"><span class="comment">//读取原始的数据集</span></span><br><span class="line"><span class="keyword">public</span> ArrayList&lt;Org&gt; <span class="title function_">getOrgData</span><span class="params">()</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line"> 	ArrayList&lt;String&gt; org_list=<span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;String&gt;();</span><br><span class="line"> 	File file=<span class="keyword">new</span> <span class="title class_">File</span>(<span class="string">&quot;src/k_anonymity/org&quot;</span>);</span><br><span class="line"> 	<span class="keyword">if</span> (!file.exists()) &#123;</span><br><span class="line">		System.out.println(<span class="string">&quot;文件不存在！&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">    FileReader fReader=<span class="keyword">new</span> <span class="title class_">FileReader</span>(file);</span><br><span class="line">    BufferedReader bufferedReader=<span class="keyword">new</span> <span class="title class_">BufferedReader</span>(fReader);</span><br><span class="line">    String str;</span><br><span class="line">    <span class="comment">// 按行读取字符串</span></span><br><span class="line">    <span class="keyword">while</span> ((str = bufferedReader.readLine()) != <span class="literal">null</span>) &#123;</span><br><span class="line">        org_list.add(str);</span><br><span class="line">    &#125;</span><br><span class="line">    bufferedReader.close();</span><br><span class="line">    fReader.close();</span><br><span class="line">    ArrayList&lt;Org&gt; orgs=<span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;Org&gt;();</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; org_list.size(); i++) &#123;</span><br><span class="line">        Org org=<span class="keyword">new</span> <span class="title class_">Org</span>();</span><br><span class="line">        String org_ori=org_list.get(i);</span><br><span class="line">        String elements[]=org_ori.split(<span class="string">&quot;,&quot;</span>);</span><br><span class="line">        org.setNo(Integer.parseInt(elements[<span class="number">0</span>]));</span><br><span class="line">        org.setIdNumber(elements[<span class="number">1</span>].charAt(<span class="number">0</span>));</span><br><span class="line">        org.setSex(elements[<span class="number">2</span>].charAt(<span class="number">0</span>));</span><br><span class="line">        org.setAge(Integer.parseInt(elements[<span class="number">3</span>]));</span><br><span class="line">        org.setHeight(Integer.parseInt(elements[<span class="number">4</span>]));</span><br><span class="line">        org.setDisease(elements[<span class="number">5</span>]);</span><br><span class="line">        orgs.add(org);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> orgs;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>对原始数据进行k-匿名化处理；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">ArrayList&lt;K&gt; results=operation.k_anonymous(org_lists, k);</span><br><span class="line"><span class="comment">//k-匿名处理</span></span><br><span class="line"><span class="keyword">public</span> ArrayList&lt;K&gt; <span class="title function_">k_anonymous</span><span class="params">(ArrayList&lt;Org&gt; org_lists, <span class="type">int</span> k)</span> &#123;</span><br><span class="line">	<span class="comment">// TODO Auto-generated method stub</span></span><br><span class="line">	<span class="comment">//用于存放匿名化后的数据</span></span><br><span class="line">	ArrayList&lt;K&gt; results=<span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;K&gt;();</span><br><span class="line">	<span class="comment">//存放临时选取的k个原始记录</span></span><br><span class="line">	ArrayList&lt;Org&gt; org_k=<span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;Org&gt;();</span><br><span class="line">	<span class="type">int</span> i=<span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (Org j : org_lists) &#123;</span><br><span class="line">		org_k.add(j);</span><br><span class="line">		i++;</span><br><span class="line">		<span class="keyword">if</span>(i%k==<span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">//对k条记录中的准标识符进行泛化处理</span></span><br><span class="line">            K temp=generalize(org_k);</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> <span class="number">0</span>; m &lt; k; m++) &#123;</span><br><span class="line">                K out=<span class="keyword">new</span> <span class="title class_">K</span>();</span><br><span class="line">                out.setIdNumberFirst(temp.getIdNumberFirst());</span><br><span class="line">                out.setSex(temp.getSex());</span><br><span class="line">                out.setAge(temp.getAge());</span><br><span class="line">                out.setHeight(temp.getHeight());</span><br><span class="line">                out.setDisease(org_k.get(m).getDisease());</span><br><span class="line">                results.add(out);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//清除已经处理过的k个记录，用于存储下次选取的k条记录</span></span><br><span class="line">            org_k.clear(); </span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> results;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>对原始数据中的准标识符进行泛化；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//对原始数据中的准标识符进行泛化</span></span><br><span class="line">	<span class="keyword">private</span> K <span class="title function_">generalize</span><span class="params">(ArrayList&lt;Org&gt; org_k)</span> &#123;</span><br><span class="line">		K temp=<span class="keyword">new</span> <span class="title class_">K</span>();</span><br><span class="line">		<span class="type">char</span> idNumberFirst_flag=<span class="string">&#x27; &#x27;</span>;</span><br><span class="line">		<span class="type">char</span> sex_flag=<span class="string">&#x27; &#x27;</span>;</span><br><span class="line">		<span class="type">int</span> age_min=<span class="number">0</span>;</span><br><span class="line">		<span class="type">int</span> age_max=<span class="number">0</span>;</span><br><span class="line">		<span class="type">int</span> height_min=<span class="number">0</span>;</span><br><span class="line">		<span class="type">int</span> height_max=<span class="number">0</span>;</span><br><span class="line">		<span class="keyword">for</span> (Org i : org_k) &#123;</span><br><span class="line">			<span class="comment">//选取k条记录中的第一条记录的属性值作为上述标志属性的默认值</span></span><br><span class="line">			<span class="keyword">if</span>(org_k.indexOf(i)==<span class="number">0</span>) &#123;</span><br><span class="line">				idNumberFirst_flag=i.getIdNumberFirst();</span><br><span class="line">				sex_flag=i.getSex();</span><br><span class="line">				age_min=i.getAge();</span><br><span class="line">				age_max=i.getAge();</span><br><span class="line">				height_min=i.getHeight();</span><br><span class="line">				height_max=i.getHeight();</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">//判断idNumberFirst属性的取值是否一致</span></span><br><span class="line">			<span class="keyword">if</span>(idNumberFirst_flag!=i.getIdNumberFirst()) </span><br><span class="line">                idNumberFirst_flag=<span class="string">&#x27;*&#x27;</span>;</span><br><span class="line">			<span class="comment">//判断sex属性的取值是否一致</span></span><br><span class="line">			<span class="keyword">if</span>(sex_flag!=i.getSex())</span><br><span class="line">                sex_flag=<span class="string">&#x27;*&#x27;</span>;</span><br><span class="line">			<span class="comment">//判断Age的取值范围</span></span><br><span class="line">			<span class="keyword">if</span>(age_min&gt;i.getAge())</span><br><span class="line">                age_min=i.getAge();</span><br><span class="line">			<span class="keyword">if</span>(age_max&lt;i.getAge())</span><br><span class="line">                age_max=i.getAge();</span><br><span class="line">			<span class="comment">//判断height的取值范围</span></span><br><span class="line">			<span class="keyword">if</span>(height_min&gt;i.getHeight())</span><br><span class="line">                height_min=i.getHeight();</span><br><span class="line">			<span class="keyword">if</span>(height_max&lt;i.getHeight())</span><br><span class="line">                height_max=i.getHeight();</span><br><span class="line">		&#125;</span><br><span class="line">        </span><br><span class="line">		String idNumberFirst=<span class="string">&quot;&quot;</span>;</span><br><span class="line">		String sex=<span class="string">&quot;&quot;</span>;</span><br><span class="line">		String age=<span class="string">&quot;&quot;</span>;</span><br><span class="line">		String height=<span class="string">&quot;&quot;</span>;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//如果k条记录的idNumberFirst属性的取值有不一致的，就均设为*，否则不变</span></span><br><span class="line">		<span class="keyword">if</span>(idNumberFirst_flag == <span class="string">&#x27;*&#x27;</span>)</span><br><span class="line">            idNumberFirst=<span class="string">&quot;*&quot;</span>;</span><br><span class="line">		<span class="keyword">else</span> </span><br><span class="line">            idNumberFirst=<span class="string">&quot;&quot;</span>+idNumberFirst_flag;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//如果k条记录的sex属性的取值有不一致的，sex就均设为*，否则不变</span></span><br><span class="line">		<span class="keyword">if</span>(sex_flag == <span class="string">&#x27;*&#x27;</span>)</span><br><span class="line">            sex=<span class="string">&quot;*&quot;</span>;   </span><br><span class="line">		<span class="keyword">else</span> </span><br><span class="line">            sex=<span class="string">&quot;&quot;</span>+sex_flag;  </span><br><span class="line">		</span><br><span class="line">		<span class="comment">//如果k条记录中年龄的最大值和最小值相等</span></span><br><span class="line">		<span class="keyword">if</span>(age_min%<span class="number">10</span>==<span class="number">5</span> &amp;&amp; age_max%<span class="number">10</span>==<span class="number">5</span> &amp;&amp; age_min==age_max ) </span><br><span class="line">        &#123;</span><br><span class="line">			age_min=(age_min/<span class="number">10</span>)*<span class="number">10</span>;</span><br><span class="line">			age_max=age_min+<span class="number">5</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		age=age_min+<span class="string">&quot;~&quot;</span>+age_max;   </span><br><span class="line">		</span><br><span class="line">		<span class="comment">//如果k条记录中身高的最大值和最小值相等</span></span><br><span class="line">		<span class="keyword">if</span>(height_min%<span class="number">10</span>==<span class="number">5</span> &amp;&amp; </span><br><span class="line">           height_max%<span class="number">10</span>==<span class="number">5</span> &amp;&amp; </span><br><span class="line">           height_min==height_max) </span><br><span class="line">        &#123;</span><br><span class="line">			height_min=(age_min/<span class="number">10</span>)*<span class="number">10</span>;</span><br><span class="line">			height_max=age_min+<span class="number">5</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		height=height_min+<span class="string">&quot;~&quot;</span>+height_max;</span><br><span class="line"></span><br><span class="line">		temp.setIdNumberFirst(idNumberFirst);</span><br><span class="line">		temp.setSex(sex);</span><br><span class="line">		temp.setAge(age);</span><br><span class="line">		temp.setHeight(height);</span><br><span class="line">		<span class="keyword">return</span> temp; </span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>将匿名化后的数据输出到<code>k</code>中，程序结束；</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">operation.printResults(results);</span><br><span class="line">System.out.println(<span class="string">&quot;done&quot;</span>);</span><br><span class="line"><span class="comment">//输出匿名化后的结果</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">printResults</span><span class="params">(ArrayList&lt;K&gt; results)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">	File file=<span class="keyword">new</span> <span class="title class_">File</span>(<span class="string">&quot;src/k_anonymity/k&quot;</span>);</span><br><span class="line">	<span class="keyword">if</span> (!file.exists()) &#123; </span><br><span class="line">		file.createNewFile();</span><br><span class="line">	&#125;</span><br><span class="line">   	FileWriter writer=<span class="keyword">new</span> <span class="title class_">FileWriter</span>(file);</span><br><span class="line">   	BufferedWriter bufferedWriter=<span class="keyword">new</span> <span class="title class_">BufferedWriter</span>(writer);</span><br><span class="line">   	<span class="keyword">for</span> (K k : results) &#123;</span><br><span class="line">		bufferedWriter.write(k.toString());</span><br><span class="line">		bufferedWriter.newLine();</span><br><span class="line">		bufferedWriter.flush();</span><br><span class="line">	&#125;</span><br><span class="line">	bufferedWriter.close();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/k-%E5%8C%BF%E5%90%8D%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4%E5%AE%9E%E9%AA%8C.html" title="k-匿名隐私保护实验">https://leeyuxun.github.io/k-匿名隐私保护实验.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/k-%E5%8C%BF%E5%90%8D%E7%AE%97%E6%B3%95/" rel="tag"><i class="fa fa-tag"></i> k-匿名算法</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/Apache-Sentry%E7%9A%84%E6%9D%83%E9%99%90%E5%88%86%E9%85%8D%E5%AE%9E%E9%AA%8C.html" rel="prev" title="Apache Sentry的权限分配实验">
+      <i class="fa fa-chevron-left"></i> Apache Sentry的权限分配实验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/OAuth-CSRF%E5%AE%9E%E9%AA%8C.html" rel="next" title="OAuth CSRF实验">
+      OAuth CSRF实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">2.</span> <span class="nav-text">实验环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">实验原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#k-%E5%8C%BF%E5%90%8D%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3"><span class="nav-number">3.1.</span> <span class="nav-text">k-匿名的核心思想</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%9A%84k-%E5%8C%BF%E5%90%8D%E7%AE%97%E6%B3%95"><span class="nav-number">3.2.</span> <span class="nav-text">基本的k-匿名算法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E8%A6%81%E6%B1%82"><span class="nav-number">4.</span> <span class="nav-text">实验要求</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%86%85%E5%AE%B9"><span class="nav-number">5.</span> <span class="nav-text">实验内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%AD%A5%E9%AA%A4"><span class="nav-number">6.</span> <span class="nav-text">实验步骤</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

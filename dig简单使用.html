@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="前言域名信息搜素器（Dig）是一个类似于nslookup的强大工具，它不仅支持运行命令行选项，而且还支持在查询多个域名时将文件通过管道直接导入，本文将大致介绍dig的一般使用方法；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="dig简单使用">
+<meta property="og:url" content="https://leeyuxun.github.io/dig%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="前言域名信息搜素器（Dig）是一个类似于nslookup的强大工具，它不仅支持运行命令行选项，而且还支持在查询多个域名时将文件通过管道直接导入，本文将大致介绍dig的一般使用方法；">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-01-19T01:35:29.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:45:54.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="dig">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://leeyuxun.github.io/dig%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>dig简单使用 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/dig%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          dig简单使用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-19 09:35:29" itemprop="dateCreated datePublished" datetime="2020-01-19T09:35:29+08:00">2020-01-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:45:54" itemprop="dateModified" datetime="2020-04-02T14:45:54+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tools/" itemprop="url" rel="index"><span itemprop="name">tools</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>域名信息搜素器（Dig）是一个类似于nslookup的强大工具，它不仅支持运行命令行选项，而且还支持在查询多个域名时将文件通过管道直接导入，本文将大致介绍dig的一般使用方法；</p>
+<span id="more"></span>
+
+<h1 id="语法"><a href="#语法" class="headerlink" title="语法"></a>语法</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dig [@global-server] [domain] [q-type] [q-class] &#123;q-opt&#125;</span><br><span class="line">    &#123;global-d-opt&#125; host [@local-server] &#123;local-d-opt&#125;</span><br><span class="line">    [ host [@local-server] &#123;local-d-opt&#125; [...]]</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p><code>domain</code></p>
+<p>域名</p>
+</li>
+<li><p><code>q-type</code></p>
+<p>(in,hs,ch,…) 之一[默认值: in]</p>
+</li>
+<li><p><code>q-class</code></p>
+<p>(a,any,mx,ns,soa,hinfo,axfr,txt,…) 之一[默认值:a]</p>
+<p>(Use ixfr=version for type ixfr)</p>
+</li>
+<li><p><code>q-opt</code></p>
+<table>
+<thead>
+<tr>
+<th>keyword</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-4</td>
+<td>仅使用IPv4查询传输</td>
+</tr>
+<tr>
+<td>-6</td>
+<td>仅使用IPv6查询传输</td>
+</tr>
+<tr>
+<td>-b address[#port]</td>
+<td>绑定到源地址/端口</td>
+</tr>
+<tr>
+<td>-c class</td>
+<td>缺省查询类(IN for internet)由选项-c重设。class 可以是任何合法类，比如查询 Hesiod 记录的 HS 类或查询 CHAOSNET 记录的 CH 类。</td>
+</tr>
+<tr>
+<td>-f filename</td>
+<td>使dig在批处理模式下运行，通过从文件filename读取一系列搜索请求加以处理。文件包含许多查询；每行一个。文件中的每一项都应该以和使用命令行接口对dig的查询相同的方法来组织。</td>
+</tr>
+<tr>
+<td>-i</td>
+<td>使用IP6.INT进行IPv6反向查找</td>
+</tr>
+<tr>
+<td>-k keyfile</td>
+<td>签署由dig发送的DNS查询以及对它们使用事务签名(TSIG)的响应时，指定TSIG密钥文件</td>
+</tr>
+<tr>
+<td>-m</td>
+<td>启用内存使用调试</td>
+</tr>
+<tr>
+<td>-p port</td>
+<td>查询一个非标准的端口号，port是dig将发送其查询的端口号，而不是标准的 DNS 端口号 53。该选项可用于测试已在非标准端口号上配置成侦听查询的域名服务器。</td>
+</tr>
+<tr>
+<td>-q name</td>
+<td>指定查询名称</td>
+</tr>
+<tr>
+<td>-t type</td>
+<td>设置查询类型为 type。可以是BIND9支持的任意有效查询类型。缺省查询类型是 A，除非提供-x选项来指示一个逆向查询。通过指定 AXFR的type可以请求一个区域传输。当需要增量区域传输（IXFR）时，type 设置为 ixfr=N。增量区域传输将包含自从区域的SOA记录中的序列号改为 N 之后对区域所做的更改。</td>
+</tr>
+<tr>
+<td>-u</td>
+<td>以usec代替msec显示时间</td>
+</tr>
+<tr>
+<td>-x dot-notation</td>
+<td>反 向查找的快捷方式</td>
+</tr>
+<tr>
+<td>-y[hmac:]name:key</td>
+<td>指定 TSIG 密钥；name是TSIG密码的名称，key是实际的密码。密码是64位加密字符串，通常由dnssec-keygen(8)生成。</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><code>d-opt</code>全局查询选项</p>
+<p>形式是<code>+keyword[=value]</code>，其中<code>keyword</code>如下</p>
+<table>
+<thead>
+<tr>
+<th>keyword</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>+[no]aaflag</td>
+<td>在查询中[不]设置AA标志</td>
+</tr>
+<tr>
+<td>+[no]aaonly</td>
+<td>在查询中[不]只设置AA标志</td>
+</tr>
+<tr>
+<td>+[no]additional</td>
+<td>显示 [不显示] 应答的附加部分。缺省显示。</td>
+</tr>
+<tr>
+<td>+[no]adflag</td>
+<td>在查询中设置 [不设置] AD（真实数据）位。目前 AD 位只在响应中有标准含义，而查询中没有，但是出于完整性考虑在查询中这种性能可以设置。</td>
+</tr>
+<tr>
+<td>+[no]all</td>
+<td>设置或清除所有显示标志。</td>
+</tr>
+<tr>
+<td>+[no]answer</td>
+<td>显示 [不显示] 应答的回答部分。缺省显示。</td>
+</tr>
+<tr>
+<td>+[no]authority</td>
+<td>显示 [不显示] 应答的权限部分。缺省显示。</td>
+</tr>
+<tr>
+<td>+[no]badcookie</td>
+<td>[不]重试badcookie响应</td>
+</tr>
+<tr>
+<td>+[no]besteffort</td>
+<td>是否 尝试解析非法消息</td>
+</tr>
+<tr>
+<td>+buffsize=###</td>
+<td>设置使用 EDNS0 的 UDP 消息缓冲区大小为###字节。缓冲区的最大值和最小值分别为 65535 和 0。超出这个范围的值自动舍入到最近的有效值。</td>
+</tr>
+<tr>
+<td>+[no]cdflag</td>
+<td>在查询中设置 [不设置] CD（检查禁用）位。它请求服务器不运行响应信息的 DNSSEC 合法性。</td>
+</tr>
+<tr>
+<td>+[no]class</td>
+<td>控制记录中class是否显示。</td>
+</tr>
+<tr>
+<td>+[no]cmd</td>
+<td>设定在输出中显示指出 dig 版本及其所用的查询选项的初始注释。缺省情况下显示注释。</td>
+</tr>
+<tr>
+<td>+[no]comments</td>
+<td>切换输出中的注释行显示。缺省值是显示注释。</td>
+</tr>
+<tr>
+<td>+[no]cookie</td>
+<td>是否向请求添加cookie选项。</td>
+</tr>
+<tr>
+<td>+[no]crypto</td>
+<td>控制记录中加密字段是否显示。</td>
+</tr>
+<tr>
+<td>+[no]defname</td>
+<td>是否使用搜索列表。</td>
+</tr>
+<tr>
+<td>+[no]dnssec</td>
+<td>是否请求dnssec记录。</td>
+</tr>
+<tr>
+<td>+domain=###</td>
+<td>设置默认域名为###。</td>
+</tr>
+<tr>
+<td>+[no]dscp[=###]</td>
+<td>是否设置dscp值为###。</td>
+</tr>
+<tr>
+<td>+[no]edns[=###]</td>
+<td>是否设置edns版本。</td>
+</tr>
+<tr>
+<td>+ednsflags=###</td>
+<td>设置EDNS标志位为###。</td>
+</tr>
+<tr>
+<td>+[no]ednsnegotiation</td>
+<td>是否设置EDNS版本协商。</td>
+</tr>
+<tr>
+<td>+ednsopt=###[:value]</td>
+<td>发送指定的EDNS选项。</td>
+</tr>
+<tr>
+<td>+noednsopt</td>
+<td>清除+ednsopt选项列表。</td>
+</tr>
+<tr>
+<td>+[no]expire</td>
+<td>是否请求过期时间。</td>
+</tr>
+<tr>
+<td>+[no]fail</td>
+<td>是否在SERVFAIL上尝试下一个服务器。</td>
+</tr>
+<tr>
+<td>+[no]identify</td>
+<td>当启用 +short 选项时，显示 [或不显示] 提供应答的 IP 地址和端口号。如果请求简短格式应答，缺省情况不显示提供应答的服务器的源地址和端口号。</td>
+</tr>
+<tr>
+<td>+[no]idnin</td>
+<td>是否解析IDN名称。</td>
+</tr>
+<tr>
+<td>+[no]idnout</td>
+<td>是否转换IDN响应。</td>
+</tr>
+<tr>
+<td>+[no]ignore</td>
+<td>忽略 UDP 响应的中断，而不是用 TCP 重试。缺省情况运行 TCP 重试。</td>
+</tr>
+<tr>
+<td>+[no]keepopen</td>
+<td>是否在查询之间保持TCP套接字打开。</td>
+</tr>
+<tr>
+<td>+[no]mapped</td>
+<td>是否允许通过IPv6映射IPv4。</td>
+</tr>
+<tr>
+<td>+[no]multiline</td>
+<td>以详细的多行格式显示类似 SOA 的记录，并附带可读注释。缺省值是每单个行上显示一条记录，以便于计算机解析 dig 的输出。</td>
+</tr>
+<tr>
+<td>+ndots=###</td>
+<td>出于完全考虑，设置必须出现在名称###的点数。缺省值是使用在 /etc/resolv.conf 中的 ndots 语句定义的，或者是  1，如果没有 ndots 语句的话。带更少点数的名称被解释为相对名称，并通过搜索列表中的域或文件 /etc/resolv.conf  中的域伪指令进行搜索。</td>
+</tr>
+<tr>
+<td>+[no]nsid</td>
+<td>是否请求名称服务器(NS)ID。</td>
+</tr>
+<tr>
+<td>+[no]nssearch</td>
+<td>这个选项被设置时，dig 试图寻找包含待搜名称的网段的权威域名服务器，并显示网段中每台域名服务器的 SOA 记录。</td>
+</tr>
+<tr>
+<td>+[no]onesoa</td>
+<td>AXFR是否只打印一个soa记录。</td>
+</tr>
+<tr>
+<td>+[no]opcode=###</td>
+<td>设置请求的操作码为###。</td>
+</tr>
+<tr>
+<td>+[no]qr</td>
+<td>该查询选项设定显示统计信息：查询进行时，应答的大小等等。缺省显示查询统计信息。</td>
+</tr>
+<tr>
+<td>+[no]question</td>
+<td>当返回应答时，显示 [不显示] 查询请求的问题部分。缺省作为注释显示问题部分。</td>
+</tr>
+<tr>
+<td>+[no]rdflag</td>
+<td>是否设置递归模式。</td>
+</tr>
+<tr>
+<td>+[no]recurse</td>
+<td>切换查询中的 RD（要求递归）位设置。在缺省情况下设置该位，也就是说 dig 正常情形下发送递归查询。当使用查询选项 +nssearch 或 +trace 时，递归自动禁用。</td>
+</tr>
+<tr>
+<td>+retry=###</td>
+<td>设置UDP重试次数为###。</td>
+</tr>
+<tr>
+<td>+[no]rrcomments</td>
+<td>是否控制每条记录注释的显示。</td>
+</tr>
+<tr>
+<td>+[no]search</td>
+<td>使用 [不使用] 搜索列表或 resolv.conf 中的域伪指令（如果有的话）定义的搜索列表。缺省情况不使用搜索列表。</td>
+</tr>
+<tr>
+<td>+[no]short</td>
+<td>提供简要答复。缺省值是以冗长格式显示答复信息。</td>
+</tr>
+<tr>
+<td>+[no]showsearch</td>
+<td>是否使用中间结果搜索。</td>
+</tr>
+<tr>
+<td>+[no]sigchase</td>
+<td>是否使用DNSSEC签名。</td>
+</tr>
+<tr>
+<td>+[no]split=##</td>
+<td>是否将十六进制/base64字段拆分为块</td>
+</tr>
+<tr>
+<td>+[no]stats</td>
+<td>该查询选项设定显示统计信息：查询进行时，应答的大小等等。缺省显示查询统计信息。</td>
+</tr>
+<tr>
+<td>+subent=addr</td>
+<td>设置edns客户端子网选项。</td>
+</tr>
+<tr>
+<td>+[no]tcp</td>
+<td>查询域名服务器时使用 [不使用] TCP。缺省行为是使用 UDP，除非是 AXFR 或 IXFR 请求，才使用 TCP 连接。</td>
+</tr>
+<tr>
+<td>+timeout=###</td>
+<td>设置查询超时时间为###。</td>
+</tr>
+<tr>
+<td>+[no]topdown</td>
+<td>是否设置自上而下的sigchase查询模式</td>
+</tr>
+<tr>
+<td>+[no]trace</td>
+<td>切换为待查询名称从根名称服务器开始的代理路径跟踪。缺省情况不使用跟踪。一旦启用跟踪，dig 使用迭代查询解析待查询名称。它将按照从根服务器的参照，显示来自每台使用解析查询的服务器的应答。</td>
+</tr>
+<tr>
+<td>+trusted-key=####</td>
+<td>设置与+sigchase一起使用的可信密钥为####。</td>
+</tr>
+<tr>
+<td>+tries=###</td>
+<td>设置UDP尝试次数为###。</td>
+</tr>
+<tr>
+<td>+[no]ttlid</td>
+<td>是否设置记录中ttls的控制显示。</td>
+</tr>
+<tr>
+<td>+[no]ttlunits</td>
+<td>是否设置以可读单位显示TTLs。</td>
+</tr>
+<tr>
+<td>+[no]unknownformat</td>
+<td>以RFC 3597“unknown”格式打印RDATA。</td>
+</tr>
+<tr>
+<td>+[no]vc</td>
+<td>查询名称服务器时使用 [不使用] TCP。+[no]tcp 的备用语法提供了向下兼容。 vc 代表虚电路。</td>
+</tr>
+<tr>
+<td>+[no]zflag</td>
+<td>是否在查询中设置Z标志。</td>
+</tr>
+</tbody></table>
+<p>全局<code>d-opts</code>和服务器（在主机名之前）影响所有查询；</p>
+<p>本地<code>d-opts</code>和服务器（在主机名之后）仅影响该查找；</p>
+</li>
+</ol>
+<h1 id="dig常用命令举例"><a href="#dig常用命令举例" class="headerlink" title="dig常用命令举例"></a>dig常用命令举例</h1><ol>
+<li><p>查询A/MX/NS记录</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dig www.baidu.com A/MX/NS +noall +answer</span><br><span class="line"><span class="comment">#查询所有记录</span></span><br><span class="line">dig www.baidu.com ANY +noall +answer</span><br></pre></td></tr></table></figure></li>
+<li><p>使用AAAA的选项查询主机的IPv6的AAAA记录，并使用精简答案</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dig www.baidu.com AAAA +short</span><br></pre></td></tr></table></figure></li>
+<li><p>跟踪dig的查询路径</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dig www.baidu.com +trace</span><br></pre></td></tr></table></figure></li>
+<li><p>用dig查看zone数据传输</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dig @server www.baidu.com AXFR</span><br></pre></td></tr></table></figure></li>
+<li><p>用dig查看zone数据的增量传输</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dig @server www.baidu.com AXFR=N</span><br></pre></td></tr></table></figure></li>
+<li><p>反向解析</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dig -x ip @server</span><br></pre></td></tr></table></figure></li>
+<li><p>查看使用的是哪个 <code>F root dns server</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dig +norec @F.ROOT-SERVERS.NET HOSTNAME.BIND CHAOS TXT</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ol>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/daxian2012/archive/2013/01/10/2854126.html">Dig HOWTO 中文手册</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.digwebinterface.com/">dig</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/dig%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html" title="dig简单使用">https://leeyuxun.github.io/dig简单使用.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/dig/" rel="tag"><i class="fa fa-tag"></i> dig</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/HTTrack%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html" rel="prev" title="HTTrack简单使用">
+      <i class="fa fa-chevron-left"></i> HTTrack简单使用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E5%A4%A7%E9%87%8F%E7%9F%AD%E9%9F%B3%E9%A2%91%E5%85%8D%E8%B4%B9%E5%BF%AB%E9%80%9F%E8%BD%AC%E6%96%87%E5%AD%97.html" rel="next" title="大量短音频免费快速转文字">
+      大量短音频免费快速转文字 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%AD%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">语法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dig%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E4%B8%BE%E4%BE%8B"><span class="nav-number">3.</span> <span class="nav-text">dig常用命令举例</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

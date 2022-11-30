@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="前言HTTrack是一个免费的（GPL，自由软件）和易于使用的离线浏览器工具。它可以爬取整站的网页，用于离线浏览，减少与目标系统交互。它可从Internet上下载万维网站点到本地目录，递归地构建所有目录，从服务器获取HTML、图像和其他文件到本地。HTTrack安排原始网站的相关链接结构。只需在浏览器中打开“镜像”网站的页面，即可从链接到链接浏览网站，就像在线查看网站一样。HTTrack也可以更新">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HTTrack简单使用">
+<meta property="og:url" content="https://leeyuxun.github.io/HTTrack%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="前言HTTrack是一个免费的（GPL，自由软件）和易于使用的离线浏览器工具。它可以爬取整站的网页，用于离线浏览，减少与目标系统交互。它可从Internet上下载万维网站点到本地目录，递归地构建所有目录，从服务器获取HTML、图像和其他文件到本地。HTTrack安排原始网站的相关链接结构。只需在浏览器中打开“镜像”网站的页面，即可从链接到链接浏览网站，就像在线查看网站一样。HTTrack也可以更新">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117195447.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117172009.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117171943.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117171926.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200710.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200731.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200756.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200814.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200836.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200903.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117201137.png">
+<meta property="article:published_time" content="2020-01-17T08:31:27.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:37:48.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="HTTrack">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117195447.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/HTTrack%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>HTTrack简单使用 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/HTTrack%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          HTTrack简单使用
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-17 16:31:27" itemprop="dateCreated datePublished" datetime="2020-01-17T16:31:27+08:00">2020-01-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:37:48" itemprop="dateModified" datetime="2020-04-02T14:37:48+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tools/" itemprop="url" rel="index"><span itemprop="name">tools</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p><code>HTTrack</code>是一个免费的（GPL，自由软件）和易于使用的离线浏览器工具。它可以爬取整站的网页，用于离线浏览，减少与目标系统交互。它可从<code>Internet</code>上下载万维网站点到本地目录，递归地构建所有目录，从服务器获取<code>HTML</code>、图像和其他文件到本地。<code>HTTrack</code>安排原始网站的相关链接结构。只需在浏览器中打开“镜像”网站的页面，即可从链接到链接浏览网站，就像在线查看网站一样。<code>HTTrack</code>也可以更新现有的镜像站点，并恢复中断的下载。<code>HTTrack</code>完全可配置，并具有集成的帮助系统。<span id="more"></span></p>
+<h1 id="HTTrack安装"><a href="#HTTrack安装" class="headerlink" title="HTTrack安装"></a><code>HTTrack</code>安装</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@kali:~<span class="comment"># apt-get install httrack</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="HTTrack交互模式使用步骤"><a href="#HTTrack交互模式使用步骤" class="headerlink" title="HTTrack交互模式使用步骤"></a><code>HTTrack</code>交互模式使用步骤</h1><ol>
+<li><p>创建目录存储复制网站</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@kali:~<span class="comment"># mkdir mywebsite</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117195447.png"></p>
+</li>
+<li><p>启动<code>HTTrack</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@kali:~<span class="comment"># httrack</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117172009.png"></p>
+</li>
+<li><p>输入项目名称</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Enter project name : blog	//blog为项目名称</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117171943.png"></p>
+</li>
+<li><p>选择存储网站目录</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Base path (<span class="built_in">return</span>=/root/websites/) :/root/mywebsite</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117171926.png"></p>
+</li>
+<li><p>输入网站的URL</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Enter URLs (separated by commas or blank spaces) :www.baidu.com</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200710.png"></p>
+</li>
+<li><p>选择操作(此处选择2)</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Action:</span><br><span class="line">(enter) 1	Mirror Web Site(s)		//直接镜像站点</span><br><span class="line">        2	Mirror Web Site(s) with Wizard		//用向导完成镜像</span><br><span class="line">        3	Just Get Files Indicated		//只get某种特定的文件</span><br><span class="line">        4	Mirror ALL links <span class="keyword">in</span> URLs (Multiple Mirror)//镜像在这个url下所有的链接</span><br><span class="line">        5	Test Links In URLs (Bookmark Test)	//测试在这个url下的链接</span><br><span class="line">        0	Quit	//退出</span><br><span class="line">: </span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200731.png"></p>
+</li>
+<li><p>指定是否在实施攻击时使用代理(此处默认输入none，不使用代理)</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Proxy (<span class="built_in">return</span>=none) :</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200756.png"></p>
+</li>
+<li><p>定义字符，爬取特定类型的数据(此处输入<code>*</code>表示爬取全部类型数据)</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">You can define wildcards, like: -*.gif +www.*.com/*.zip -*img_*.zip</span><br><span class="line">Wildcards (<span class="built_in">return</span>=none) :*</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200814.png"></p>
+</li>
+<li><p>设置更多选项，可以使用<code>help</code>查看(此处选择默认)</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">You can define additional options, such as recurse level (-r&lt;number&gt;), separated by blank spaces</span><br><span class="line">To see the option list, <span class="built_in">type</span> <span class="built_in">help</span></span><br><span class="line">Additional options (<span class="built_in">return</span>=none) :</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200836.png"></p>
+</li>
+<li><p>开始克隆网站</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117200903.png"></p>
+</li>
+<li><p>查看克隆的文件</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200117201137.png"></p>
+</li>
+</ol>
+<p>备注：<code>httrack</code>只能用于克隆静态内容，并且无法完全复制网站上的动态内容、中间部分(数据库)等内容。</p>
+<h1 id="HTTrack一般模式使用步骤"><a href="#HTTrack一般模式使用步骤" class="headerlink" title="HTTrack一般模式使用步骤"></a><code>HTTrack</code>一般模式使用步骤</h1><p><strong>语法</strong></p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">httrack &lt;URLs&gt; [-option] [+&lt;URL_FILTER&gt;] [-&lt;URL_FILTER&gt;] [+&lt;mime:MIME_FILTER&gt;] [-&lt;mime:MIME_FILTER&gt;]</span><br></pre></td></tr></table></figure>
+
+<p> 选项如下：（*为默认值） </p>
+<h2 id="一般选项"><a href="#一般选项" class="headerlink" title="一般选项"></a>一般选项</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">O  镜像路径/缓存和日志文件路径</span><br><span class="line">-O 镜像路径[,缓存和日志文件路径] (--path &lt;param&gt;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="行为选项"><a href="#行为选项" class="headerlink" title="行为选项"></a>行为选项</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">w  *镜像网站 (--mirror)</span><br><span class="line">W	镜像网站，半自动 (asks questions) (--mirror-wizard)</span><br><span class="line">g	只获取文件（保存在当前目录中） (--get-files)</span><br><span class="line">i	使用缓存继续中断的镜像 (--continue)</span><br><span class="line">Y	镜像所有位于第一级页面的链接 (镜像链接) (--mirrorlinks)</span><br></pre></td></tr></table></figure>
+
+<h2 id="代理选项"><a href="#代理选项" class="headerlink" title="代理选项"></a>代理选项</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">P   代理使用 (-P proxy:port or -P user:pass@proxy:port) (--proxy &lt;param&gt;)</span><br><span class="line">%f *使用ftp代理 (f0 don&#x27;t use) (--httpproxy-ftp[=N])</span><br><span class="line">%b  使用此本地主机名发出/发送请求 (-%b 主机名) (--bind &lt;param&gt;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="限制选项"><a href="#限制选项" class="headerlink" title="限制选项"></a>限制选项</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">rN	  将“镜像深度”设置为N (* r9999) (--depth[=N])</span><br><span class="line">%eN   将“外部链接深度”设置为N (* %e0) (--ext-depth[=N])</span><br><span class="line">mN    将非HTML文件的最大文件长度设置为N (--max-files[=N])</span><br><span class="line">mN,N2 将非HTML文件的最大文件长度设置为N、将HTML文件的最大文件长度设置为N2</span><br><span class="line">MN    将可上传/扫描的最大总长度设置为N (--max-size[=N])</span><br><span class="line">EN    将最大镜像传输时间设置为N秒 (60=1 minute, 3600=1 hour) (--max-time[=N])</span><br><span class="line">AN    将最大传输速率设置为N字节/秒 (1000=1KB/s max) (--max-rate[=N])</span><br><span class="line">%cN   将最大连接数设置为N个/秒 (*%c10) (--connection-per-second[=N])</span><br><span class="line">GN    设置如果达到N个字节，则暂停传输，并等待锁定文件被删除 (--max-pause[=N])</span><br></pre></td></tr></table></figure>
+
+<h2 id="流量控制"><a href="#流量控制" class="headerlink" title="流量控制"></a>流量控制</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">cN  设置连接数为N (*c8) (--sockets[=N])</span><br><span class="line">TN  设置关闭无响应链接N秒后超时 (--timeout)</span><br><span class="line">RN  设置超时或非致命错误情况下的重试次数为N (*R1) (--retries[=N])</span><br><span class="line">JN  流量阻塞控制，设置链路允许的最小传输速率为N字节/秒 (--min-rate[=N])</span><br><span class="line">HN  如果：0=从不、1=超时、2=慢、3=超时或慢，则放弃主机 (--host-control[=N])</span><br></pre></td></tr></table></figure>
+
+<h2 id="链接选项"><a href="#链接选项" class="headerlink" title="链接选项"></a>链接选项</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">%P        *扩展解析，尝试解析所有链接，即使是未知标记或Javascript标记 (%P0 don&#x27;t use) (--extended-parsing[=N])</span><br><span class="line">n          在html文件附近获取非html文件 (例如：位于外部的图像) (--near)</span><br><span class="line">t          测试所有url（即使url被禁止） (--test)</span><br><span class="line">%L &lt;file&gt;  添加位于此文本文件中的所有URL（每行一个URL）  (--list &lt;param&gt;)</span><br><span class="line">%S &lt;file&gt;  添加位于此文本文件中的所有扫描规则（每行一个扫描规则） (--urllist &lt;param&gt;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="构建选项"><a href="#构建选项" class="headerlink" title="构建选项"></a>构建选项</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">NN	结构类型 (0 *原始结构, 1+: 详见下文) (--structure[=N])</span><br><span class="line">    或用户定义的结构 (-N &quot;%h%p/%n%q.%t&quot;)</span><br><span class="line">%N  延迟类型检查，不进行任何链接测试，而是等待文件下载开始（实验性的）(N0 不使用，%N1 用于未知扩展名，*%N2 始终使用)</span><br><span class="line">%D  缓存的延迟类型检查，不要在更新期间等待远程类型，以加快更新速度 (%D0 等待, * %D1 不等待) (--cached-delayed-type-check)</span><br><span class="line">%M  生成RFC MIME封装的完整存档 (.mht) (--mime-html)</span><br><span class="line">LN	长名称 (L1 *长名称 / L0 8-3 转换 / L2 ISO9660 兼容) (--long-names[=N])</span><br><span class="line">KN	保留原始链接 (e.g. http://www.adr/link) (K0 *相对链接, K 绝对链接, K4 原始链接, K3 绝对URI链接, K5 透明代理链接) (--keep-links[=N])</span><br><span class="line">x	用错误页替换外部html链接 (--replace-external)</span><br><span class="line">%x	不包括受外部密码保护的网站的任何密码 (%x0 包括) (--disable-passwords)</span><br><span class="line">%q *包含本地文件的查询字符串 (无用,仅供参考) (%q0 不包含) (--include-query-string)</span><br><span class="line">o  *出错时生成输出html文件 (404..) (o0 不生成) (--generate-errors)</span><br><span class="line">X  *更新后清除旧文件 (X0 保持删除) (--purge-old[=N])</span><br><span class="line">%p	保留html文件“原样” (与&#x27;-K4 -%F &quot;&quot;&#x27;相同) (--preserve)</span><br><span class="line">%T	链接转换为UTF-8 (--utf8-conversion)</span><br></pre></td></tr></table></figure>
+
+<h2 id="蜘蛛选项"><a href="#蜘蛛选项" class="headerlink" title="蜘蛛选项"></a>蜘蛛选项</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">bN	接受cookies.txt中的cookies (0=不接受,* 1=接受) (--cookies[=N])</span><br><span class="line">u	检查未知文档类型 (cgi,asp..) (u0 不检查, * u1 检查除了 /, u2 始终检查) (--check-type[=N])</span><br><span class="line">j  *解析JAVA类 (j0 不解析, 位掩码: |1 解析默认值, |2 不解析.class文件 |4 不解析.js文件 |8 不越界解析) (--parse-java[=N])</span><br><span class="line">sN	遵循robots.txt和meta robots标记 (0=never,1=sometimes,* 2=always, 3=always (even strict rules)) (--robots[=N])</span><br><span class="line">%h  强制HTTP/1请求 (仅针对旧服务器或代理减少更新特性) (--http-10)</span><br><span class="line">%k	尽可能使用keep alive，大大减少小文件和测试请求的延迟 (%k0 不使用) (--keep-alive)</span><br><span class="line">%B  容忍请求 (在某些服务器上接受虚假响应，但不是标准的!) (--tolerant)</span><br><span class="line">%s  更新非法入侵：在更新时限制重新传输的各种非法入侵(相同大小，虚假响应…) (--updatehack)</span><br><span class="line">%u  url非法入侵：限制重复url的各种非法入侵 (strip //, www.foo.com==foo.com..) (--urlhack)</span><br><span class="line">%A  假设一个类型(cgi,asp..)总是与一个mime类型链接 (-%A php3,cgi=text/html;dat,bin=application/x-zip) (--assume &lt;param&gt;)</span><br><span class="line">     快捷方式：&#x27;--assume standard&#x27;相当于-%A php2 php3 php4 php cgi asp jsp pl cfm nsf=text/html</span><br><span class="line">     也可以用于强制特定的文件类型：-assume foo.cgi=text/html</span><br><span class="line">@iN	internet协议 (0=both ipv6+ipv4, 4=ipv4 only, 6=ipv6 only) (--protocol[=N])</span><br><span class="line">%w  禁用特定的外部mime模块 (-%w htsswf -%w htsjava) (--disable-module &lt;param&gt;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="浏览器ID"><a href="#浏览器ID" class="headerlink" title="浏览器ID"></a>浏览器ID</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">F   在HTTP头中发送的用户代理字段 (-F &quot;user-agent name&quot;) (--user-agent &lt;param&gt;)</span><br><span class="line">%R  在HTTP头中发送的默认referer字段 (--referer &lt;param&gt;)</span><br><span class="line">%E  从以HTTP头发送的电子邮件地址 (--from &lt;param&gt;)</span><br><span class="line">%F  Html代码中的页脚字符串 (-%F &quot;Mirrored [from host %s [file %s [at %s]]]&quot; (--footer &lt;param&gt;)</span><br><span class="line">%l  首选语言 (-%l &quot;fr, en, jp, *&quot; (--language &lt;param&gt;)</span><br><span class="line">%a  接受格式 (-%a &quot;text/html,image/png;q=0.9,*/*;q=0.1&quot; (--accept &lt;param&gt;)</span><br><span class="line">%X  附加的HTTP标题行 (-%X &quot;X-Magic: 42&quot; (--headers &lt;param&gt;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="日志、索引、缓存"><a href="#日志、索引、缓存" class="headerlink" title="日志、索引、缓存"></a>日志、索引、缓存</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">C   创建/使用缓存进行更新和重试 (C0 无缓存,C1 缓存优先,* C2 测试更新前) (--cache[=N])</span><br><span class="line">k   将所有文件存储在缓存中 (如果文件在磁盘上，则此功能不可用) (--store-all-in-cache)</span><br><span class="line">%n  不能重新下载本地删除的文件 (--do-not-recatch)</span><br><span class="line">%v  在屏幕上显示下载的文件名(实时) - * %v1 缩写版 - %v2 完整 (--display)</span><br><span class="line">Q   无日志-安静模式  (--do-not-log)</span><br><span class="line">q   无问题-安静模式 (--quiet)</span><br><span class="line">z   日志-附加信息 (--extra-log)</span><br><span class="line">Z   日志-debug (--debug-log)</span><br><span class="line">v   登录屏幕 (--verbose)</span><br><span class="line">f  *登录文件 (--file-log)</span><br><span class="line">f2  一个单一日志文件(--single-log)</span><br><span class="line">I  *编制索引 (I0 不编制索引) (--index)</span><br><span class="line">%i  为项目文件夹创建顶级索引 (* %i0 不创建) (--build-top-index)</span><br><span class="line">%I  为此镜像创建可搜索索引 (* %I0 不创建) (--search-index)</span><br></pre></td></tr></table></figure>
+
+<h2 id="专家选项"><a href="#专家选项" class="headerlink" title="专家选项"></a>专家选项</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">pN  优先模式: (* p3) (--priority[=N])</span><br><span class="line">     p0 只扫描，不保存任何内容 (用于检查链接)</span><br><span class="line">     p1 只保存html文件</span><br><span class="line">     p2 只保存非html文件</span><br><span class="line">    *p3 保存所有文件</span><br><span class="line">     p7 先获取html文件，然后处理其他文件</span><br><span class="line">S   保持在同一个目录 (--stay-on-same-dir)</span><br><span class="line">D  *只能进入子目录 (--can-go-down)</span><br><span class="line">U   只能进入父目录 (--can-go-up)</span><br><span class="line">B   可以上下进入目录结构 (--can-go-up-and-down)</span><br><span class="line">a  *保持在同一地址 (--stay-on-same-address)</span><br><span class="line">d   保持在同一主域 (--stay-on-same-domain)</span><br><span class="line">l   保持相同的TLD (eg: .com) (--stay-on-same-tld)</span><br><span class="line">e   go everywhere on the web (--go-everywhere)</span><br><span class="line">%H  在日志文件中调试HTTP头 (--debug-headers)</span><br></pre></td></tr></table></figure>
+
+<h2 id="权威选项"><a href="#权威选项" class="headerlink" title="权威选项"></a>权威选项</h2><p>（尽量避免使用）</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">#X  *使用优化引擎 (有限内存边界检查) (--fast-engine)</span><br><span class="line">#0   过滤测试 (-#0 &#x27;*.gif&#x27; &#x27;www.bar.com/foo.gif&#x27;) (--debug-testfilters &lt;param&gt;)</span><br><span class="line">#1   简化测试 (-#1 ./foo/bar/../foobar)</span><br><span class="line">#2   类型测试 (-#2 /foo/bar.php)</span><br><span class="line">#C   换成列表 (-#C &#x27;*.com/spider*.gif&#x27; (--debug-cache &lt;param&gt;)</span><br><span class="line">#R   缓存修复 (损坏缓存) (--repair-cache)</span><br><span class="line">#d   调试分析器 (--debug-parsing)</span><br><span class="line">#E   在meta.zip中提取new.zip缓存元数据</span><br><span class="line">#f   总是刷新日志文件 (--advanced-flushlogs)</span><br><span class="line">#FN  过滤器的最大过滤数目 (--advanced-maxfilters[=N])</span><br><span class="line">#h   版本信息 (--version)</span><br><span class="line">#K   扫描标准输入 (debug) (--debug-scanstdin)</span><br><span class="line">#L   最大链接数 (-#L1000000) (--advanced-maxlinks[=N])</span><br><span class="line">#p   显示进度信息 (--advanced-progressinfo)</span><br><span class="line">#P   抓取URL (--catch-url)</span><br><span class="line">#R   旧的FTP例程 (debug) (--repair-cache)</span><br><span class="line">#T   每分钟生成一次传输操作日志 (--debug-xfrstats)</span><br><span class="line">#u   等待时间 (--advanced-wait)</span><br><span class="line">#Z   每分钟生成传输速率的静态数据 (--debug-ratestats)</span><br></pre></td></tr></table></figure>
+
+<h2 id="危险选项"><a href="#危险选项" class="headerlink" title="危险选项"></a>危险选项</h2><p>（尽量避免使用）</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">%!  绕过旨在避免带宽滥用的内置安全限制 (带宽，并发连接) (--disable-security-limits)</span><br></pre></td></tr></table></figure>
+
+<p>危险选项，仅适用于专家；</p>
+<p>谨慎使用；</p>
+<h2 id="命令行特定选项"><a href="#命令行特定选项" class="headerlink" title="命令行特定选项"></a>命令行特定选项</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">V   执行每个文件后的系统命令 ($0 is the filename: -V &quot;rm \$0&quot;) (--userdef-cmd &lt;param&gt;)</span><br><span class="line">%W  使用外部库函数作为包装器 (-%W myfoo.so[,myparameters]) (--callback &lt;param&gt;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="选项N详情"><a href="#选项N详情" class="headerlink" title="选项N详情"></a>选项N详情</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">N0 站点结构 (默认)</span><br><span class="line">N1 HTML in web/, images/other files in web/images/</span><br><span class="line">N2 HTML in web/HTML, images/other in web/images</span><br><span class="line">N3 HTML in web/,  images/other in web/</span><br><span class="line">N4 HTML in web/, images/other in web/xxx, where xxx is the file extension (all gif will be placed onto web/gif, for example)</span><br><span class="line">N5 Images/other in web/xxx and HTML in web/HTML</span><br><span class="line">N99 All files in web/, with random names (gadget !)</span><br><span class="line">N100 站点结构，不包括www.domain.xxx/</span><br><span class="line">N101 Identical to N1 exept that &quot;web&quot; is replaced by the site&#x27;s name</span><br><span class="line">N102 Identical to N2 exept that &quot;web&quot; is replaced by the site&#x27;s name</span><br><span class="line">N103 Identical to N3 exept that &quot;web&quot; is replaced by the site&#x27;s name</span><br><span class="line">N104 Identical to N4 exept that &quot;web&quot; is replaced by the site&#x27;s name</span><br><span class="line">N105 Identical to N5 exept that &quot;web&quot; is replaced by the site&#x27;s name</span><br><span class="line">N199 Identical to N99 exept that &quot;web&quot; is replaced by the site&#x27;s name</span><br><span class="line">N1001 Identical to N1 exept that there is no &quot;web&quot; directory</span><br><span class="line">N1002 Identical to N2 exept that there is no &quot;web&quot; directory</span><br><span class="line">N1003 Identical to N3 exept that there is no &quot;web&quot; directory (option set for g option)</span><br><span class="line">N1004 Identical to N4 exept that there is no &quot;web&quot; directory</span><br><span class="line">N1005 Identical to N5 exept that there is no &quot;web&quot; directory</span><br><span class="line">N1099 Identical to N99 exept that there is no &quot;web&quot; directory</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="用户定义选项N详情"><a href="#用户定义选项N详情" class="headerlink" title="用户定义选项N详情"></a>用户定义选项N详情</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#x27;%n&#x27; 没有文件类型的文件名 (ex: image)</span><br><span class="line">&#x27;%N&#x27; 文件名，包括文件类型 (ex: image.gif)</span><br><span class="line">&#x27;%t&#x27; 文件类型 (ex: gif)</span><br><span class="line">&#x27;%p&#x27; 路径 [无结尾 /] (ex: /someimages)</span><br><span class="line">&#x27;%h&#x27; 主机名 (ex: www.someweb.com)</span><br><span class="line">&#x27;%M&#x27; URL MD5 (128位，32个ascii字节)</span><br><span class="line">&#x27;%Q&#x27; 查询字符串MD5 (128位，32个ascii字节)</span><br><span class="line">&#x27;%k&#x27; 完整查询字符串</span><br><span class="line">&#x27;%r&#x27; 协议名 (ex: http)</span><br><span class="line">&#x27;%q&#x27; 短查询字符串 (16位，4个ascii字节)</span><br><span class="line">	 &#x27;%s?&#x27; 短名称版本 (ex: %sN)</span><br><span class="line">&#x27;%[param]&#x27; 查询字符串中的param变量</span><br><span class="line">&#x27;%[param:before:after:empty:notfound]&#x27; 高级变量提取</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="用户定义的选项N和高级变量提取详情"><a href="#用户定义的选项N和高级变量提取详情" class="headerlink" title="用户定义的选项N和高级变量提取详情"></a>用户定义的选项N和高级变量提取详情</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">%[param:before:after:empty:notfound]</span><br><span class="line">param    参数名称</span><br><span class="line">before   如果找到参数，则在其前面加上字符串</span><br><span class="line">after    找到参数后要追加的字符串</span><br><span class="line">notfound 如果找不到参数，则替换字符串</span><br><span class="line">empty    如果参数为空，则替换字符串</span><br></pre></td></tr></table></figure>
+
+<p>除第一个字段（参数名）外，所有字段都可以为空</p>
+<h2 id="选项K详情"><a href="#选项K详情" class="headerlink" title="选项K详情"></a>选项K详情</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">K0  foo.cgi?q=45  -&gt;  foo4B54.html?q=45 (relative URI, default)</span><br><span class="line">K                 -&gt;  http://www.foobar.com/folder/foo.cgi?q=45 (absolute URL) (--keep-links[=N])</span><br><span class="line">K3                -&gt;  /folder/foo.cgi?q=45 (absolute URI)</span><br><span class="line">K4                -&gt;  foo.cgi?q=45 (original URL)</span><br><span class="line">K5                -&gt;  http://www.foobar.com/folder/foo4B54.html?q=45 (transparent proxy URL)</span><br></pre></td></tr></table></figure>
+
+<h2 id="快捷操作"><a href="#快捷操作" class="headerlink" title="快捷操作"></a>快捷操作</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">--mirror      &lt;URLs&gt; *制作站点的镜像 (default)</span><br><span class="line">--get         &lt;URLs&gt;  获取指定的文件，不要查找其他URL (-qg)</span><br><span class="line">--list   &lt;text file&gt;  添加此文本文件中的所有URL (-%L)</span><br><span class="line">--mirrorlinks &lt;URLs&gt;  镜像一级页面中的所有链接 (-Y)</span><br><span class="line">--testlinks   &lt;URLs&gt;  测试页面中的链接 (-r1p0C0I0t)</span><br><span class="line">--spider      &lt;URLs&gt;  爬取站点，用于测试链接:报告错误和警告 (-p0C0I0t)</span><br><span class="line">--testsite    &lt;URLs&gt;  与--spider相同</span><br><span class="line">--skeleton    &lt;URLs&gt;  创建镜像，但只获取html文件 (-p1)</span><br><span class="line">--update              更新镜像，无需确认 (-iC2)</span><br><span class="line">--continue            继续镜像，无需确认 (-iC1)</span><br><span class="line"></span><br><span class="line">--catchurl            创建一个临时代理来捕获一个URL或一个表单post URL</span><br><span class="line">--clean               删除缓存和日志文件</span><br><span class="line"></span><br><span class="line">--http10              强制http/1.0请求 (-%h)</span><br></pre></td></tr></table></figure>
+
+<h1 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h1><ol>
+<li><p>只镜像站点<code>www.someweb.com/bob/</code>；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">httrack www.someweb.com/bob/</span><br></pre></td></tr></table></figure></li>
+<li><p>将两个站点镜像在一起（带有共享链接），并接受.com站点上的任何.jpg文件；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">httrack www.someweb.com/bob/ www.anothertest.com/mike/ +*.com/*.jpg -mime:application/*</span><br></pre></td></tr></table></figure></li>
+<li><p>从bobby.html开始获取所有文件，具有6个链接深度，并且可以在web上到处访问；</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">httrack www.someweb.com/bob/bobby.html +* -r6</span><br></pre></td></tr></table></figure></li>
+<li><p>使用代理在<code>www.someweb.com/bob/bobby.html</code>上运行爬虫；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">httrack www.someweb.com/bob/bobby.html --spider -P proxy.myhost.com:8080</span><br></pre></td></tr></table></figure></li>
+<li><p>更新当前文件夹中的镜像 ；</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">httrack --update</span><br></pre></td></tr></table></figure></li>
+<li><p>进入交互模式；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">httrack</span><br></pre></td></tr></table></figure></li>
+<li><p>在当前文件夹中继续镜像；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">httrack --<span class="built_in">continue</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a target="_blank" rel="noopener" href="http://www.httrack.com/html/fcguide.html">Httrack Users Guide</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/HTTrack%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html" title="HTTrack简单使用">https://leeyuxun.github.io/HTTrack简单使用.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/HTTrack/" rel="tag"><i class="fa fa-tag"></i> HTTrack</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/Google-Hacking-%E6%80%BB%E7%BB%93.html" rel="prev" title="Google Hacking 总结">
+      <i class="fa fa-chevron-left"></i> Google Hacking 总结
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/dig%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8.html" rel="next" title="dig简单使用">
+      dig简单使用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#HTTrack%E5%AE%89%E8%A3%85"><span class="nav-number">2.</span> <span class="nav-text">HTTrack安装</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#HTTrack%E4%BA%A4%E4%BA%92%E6%A8%A1%E5%BC%8F%E4%BD%BF%E7%94%A8%E6%AD%A5%E9%AA%A4"><span class="nav-number">3.</span> <span class="nav-text">HTTrack交互模式使用步骤</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#HTTrack%E4%B8%80%E8%88%AC%E6%A8%A1%E5%BC%8F%E4%BD%BF%E7%94%A8%E6%AD%A5%E9%AA%A4"><span class="nav-number">4.</span> <span class="nav-text">HTTrack一般模式使用步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E8%88%AC%E9%80%89%E9%A1%B9"><span class="nav-number">4.1.</span> <span class="nav-text">一般选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%8C%E4%B8%BA%E9%80%89%E9%A1%B9"><span class="nav-number">4.2.</span> <span class="nav-text">行为选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%90%86%E9%80%89%E9%A1%B9"><span class="nav-number">4.3.</span> <span class="nav-text">代理选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%90%E5%88%B6%E9%80%89%E9%A1%B9"><span class="nav-number">4.4.</span> <span class="nav-text">限制选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E9%87%8F%E6%8E%A7%E5%88%B6"><span class="nav-number">4.5.</span> <span class="nav-text">流量控制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%93%BE%E6%8E%A5%E9%80%89%E9%A1%B9"><span class="nav-number">4.6.</span> <span class="nav-text">链接选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E9%80%89%E9%A1%B9"><span class="nav-number">4.7.</span> <span class="nav-text">构建选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%9C%98%E8%9B%9B%E9%80%89%E9%A1%B9"><span class="nav-number">4.8.</span> <span class="nav-text">蜘蛛选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8F%E8%A7%88%E5%99%A8ID"><span class="nav-number">4.9.</span> <span class="nav-text">浏览器ID</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E3%80%81%E7%B4%A2%E5%BC%95%E3%80%81%E7%BC%93%E5%AD%98"><span class="nav-number">4.10.</span> <span class="nav-text">日志、索引、缓存</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%93%E5%AE%B6%E9%80%89%E9%A1%B9"><span class="nav-number">4.11.</span> <span class="nav-text">专家选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%83%E5%A8%81%E9%80%89%E9%A1%B9"><span class="nav-number">4.12.</span> <span class="nav-text">权威选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%B1%E9%99%A9%E9%80%89%E9%A1%B9"><span class="nav-number">4.13.</span> <span class="nav-text">危险选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E8%A1%8C%E7%89%B9%E5%AE%9A%E9%80%89%E9%A1%B9"><span class="nav-number">4.14.</span> <span class="nav-text">命令行特定选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E9%A1%B9N%E8%AF%A6%E6%83%85"><span class="nav-number">4.15.</span> <span class="nav-text">选项N详情</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%AE%9A%E4%B9%89%E9%80%89%E9%A1%B9N%E8%AF%A6%E6%83%85"><span class="nav-number">4.16.</span> <span class="nav-text">用户定义选项N详情</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%AE%9A%E4%B9%89%E7%9A%84%E9%80%89%E9%A1%B9N%E5%92%8C%E9%AB%98%E7%BA%A7%E5%8F%98%E9%87%8F%E6%8F%90%E5%8F%96%E8%AF%A6%E6%83%85"><span class="nav-number">4.17.</span> <span class="nav-text">用户定义的选项N和高级变量提取详情</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E9%A1%B9K%E8%AF%A6%E6%83%85"><span class="nav-number">4.18.</span> <span class="nav-text">选项K详情</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BF%AB%E6%8D%B7%E6%93%8D%E4%BD%9C"><span class="nav-number">4.19.</span> <span class="nav-text">快捷操作</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BE%E4%BE%8B"><span class="nav-number">5.</span> <span class="nav-text">举例</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

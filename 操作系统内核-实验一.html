@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的 安装Red Hat Linux。 熟悉Linux目录结构以及目录功能简介。 熟悉Linux系统的基本操作。 Vi的熟悉与使用。 安装并使用Linux的编译器GCC，编写一个能通过编译且运行成功的小程序。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="操作系统内核-实验一">
+<meta property="og:url" content="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%80.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的 安装Red Hat Linux。 熟悉Linux目录结构以及目录功能简介。 熟悉Linux系统的基本操作。 Vi的熟悉与使用。 安装并使用Linux的编译器GCC，编写一个能通过编译且运行成功的小程序。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image004.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image006.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image008.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image010.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image012.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image014.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image016.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image018.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image020.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image022.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image024.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image026.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image028.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image030.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image032.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image034.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image036.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image038.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image040.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image042.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image044.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image046.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image048.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image050.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image052.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image054.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image056.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image058.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image060.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image062.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image064.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image066.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image068.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image070.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image072.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image074.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image074.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image078.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image080.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image082.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image084.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image086.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image088.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image090.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image092.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image094.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image096.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image098.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image100.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image102.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image104.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image106.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image108.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image110.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image112.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image114.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image116.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image118.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image120.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image122.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image124.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image126.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image128.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image130.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image132.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image134.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image136.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image138.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image140.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image142.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image144.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image146.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image148.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image150.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image152.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image154.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image156.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image158.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image160.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image162.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image164.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image166.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image168.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image170.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image172.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image174.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image176.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image178.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image180.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image182.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image184.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image186.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image188.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image190.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image192.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image194.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image196.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image198.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image200.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image202.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image204.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image206.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image208.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image210.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image212.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image214.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image216.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image218.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image220.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image222.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image224.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image226.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image228.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image230.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image232.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image234.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image236.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image238.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image240.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image242.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image244.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image246.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image248.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image250.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image252.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image254.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image256.jpg">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/1569573078991.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image260.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image262.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image264.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image265.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image266.jpg">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/1569484636627.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image268.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image262.jpg">
+<meta property="article:published_time" content="2019-09-29T02:36:56.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:33:14.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image004.jpg">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%80.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>操作系统内核-实验一 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%80.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          操作系统内核-实验一
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-09-29 10:36:56" itemprop="dateCreated datePublished" datetime="2019-09-29T10:36:56+08:00">2019-09-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:33:14" itemprop="dateModified" datetime="2020-04-02T14:33:14+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">操作系统内核实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><ol>
+<li>安装<code>Red Hat Linux</code>。</li>
+<li>熟悉<code>Linux</code>目录结构以及目录功能简介。</li>
+<li>熟悉<code>Linux</code>系统的基本操作。</li>
+<li><code>Vi</code>的熟悉与使用。</li>
+<li>安装并使用<code>Linux</code>的编译器<code>GCC</code>，编写一个能通过编译且运行成功的小程序。<span id="more"></span></li>
+</ol>
+<h1 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h1><h2 id="VMware-workstation-安装Red-Hat-Linux"><a href="#VMware-workstation-安装Red-Hat-Linux" class="headerlink" title="VMware workstation 安装Red Hat Linux"></a><code>VMware workstation</code> 安装<code>Red Hat Linux</code></h2><ol>
+<li><p>打开<code>VMware workstation</code>，一次选择“<strong>文件→新建虚拟机→自定义安装→下一步</strong>”，选择稍后安装操作系统，点击下一步；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image004.jpg" alt="img"></p>
+</li>
+<li><p>选择客户机操作系统为<code>Linux</code>，版本为<code>Red Hat Enterprise 6 64位</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image006.jpg" alt="img"></p>
+</li>
+<li><p>命名虚拟机为：<code>Red Hat Enterprise 6 64位</code>，设置虚拟机路径点击下一步；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image008.jpg" alt="img"></p>
+</li>
+<li><p>配置处理器数量为1，每个处理器的内核内核数量为1，点击下一步；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image010.jpg" alt="img"></p>
+</li>
+<li><p>设置虚拟机内存为<code>2GB</code>，点击下一步；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image012.jpg" alt="img"></p>
+</li>
+<li><p>设置网络类型为<code>NAT</code>模式，点击下一步；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image014.jpg" alt="img"></p>
+</li>
+<li><p>选择I/O控制器类型为<code>LSI Logic</code>，磁盘类型为<code>SCSI</code>,点击下一步；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image016.jpg" alt="img"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image018.jpg" alt="img"></p>
+</li>
+<li><p>选择创建新的虚拟磁盘，磁盘大小为<code>20GB</code>，将磁盘拆分成多个文件，点击下一步；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image020.jpg" alt="img"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image022.jpg" alt="img"></p>
+</li>
+<li><p>命名指定磁盘文件，点击下一步；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image024.jpg" alt="img"></p>
+</li>
+<li><p>点击自定义硬件，添加虚拟机ISO镜像路径，设备状态设置为已连接，否则无法检测到镜像，然后点击安装完成；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image026.jpg" alt="img"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image028.jpg" alt="img"></p>
+</li>
+<li><p>打开虚拟机，<code>Install or upgrade an existing system</code>进入图形安装界面；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image030.jpg" alt="img"></p>
+</li>
+<li><p>开始测试硬盘，选择OK；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image032.jpg" alt="img"></p>
+</li>
+<li><p>测试完成后进入安装界面，开始安装；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image034.jpg" alt="img"></p>
+</li>
+<li><p>选择语言为中文简体；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image036.jpg" alt="img"></p>
+</li>
+<li><p>选择安装键盘为美国英语式；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image038.jpg" alt="img"></p>
+</li>
+<li><p>选择安装将使用基本存储设备；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image040.jpg" alt="img"></p>
+</li>
+<li><p>提示存储设备警告，选择忽略所有数据；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image042.jpg" alt="img"></p>
+</li>
+<li><p>明明计算机为<code>localhost.leeyuxun</code>，网络设置选择有线<code>system the0；</code></p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image044.jpg" alt="img"></p>
+</li>
+<li><p>时区设置为上海；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image046.jpg" alt="img"></p>
+</li>
+<li><p>设置跟用户密码；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image048.jpg" alt="img"></p>
+</li>
+<li><p>安装种类选择创建自定义布局；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image050.jpg" alt="img"></p>
+</li>
+<li><p>创建一个<code>200M</code>的<code>ext4</code>分区，挂载到<code>/boot</code>下，依次点击<strong>创建→标准分区→创建</strong>，挂载点选择<code>/boot</code>；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image052.jpg" alt="img"></p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image054.jpg" alt="img"></p>
+</li>
+<li><p>用上述方法创建一个<code>swap</code>分区，不设置挂载点，大小为内存的2倍即4GB，再创建一个<code>ext4</code>分区，挂载到/目录下，选择“使用全部可用空间”；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image056.jpg" alt="img"></p>
+</li>
+<li><p>然后选择<strong>格式化→将修改写入磁盘</strong>，点击下一步；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image058.jpg" alt="img"></p>
+</li>
+<li><p>基本服务器安装软件组选择桌面，存储库选择自定义；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image060.jpg" alt="img"></p>
+</li>
+<li><p>左侧选择桌面，右侧全部选择；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image062.jpg" alt="img"></p>
+</li>
+<li><p>左侧选择开发，右侧选择桌面平台开发和开发工具；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image064.jpg" alt="img"></p>
+</li>
+<li><p>语言支持选择世界语和中文；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image066.jpg" alt="img"></p>
+</li>
+<li><p>点击下一步开始安装软件包；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image068.jpg" alt="img"></p>
+</li>
+<li><p>安装完成后选择重新引导；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image070.jpg" alt="img"></p>
+</li>
+<li><p>同意许可证信息；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image072.jpg" alt="img"></p>
+</li>
+<li><p>设置用户米、全名、密码，创建用户；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image074.jpg" alt="img"></p>
+</li>
+<li><p>设置日期和时间；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image074.jpg" alt="img"></p>
+</li>
+<li><p>设置<code>Kdump</code>内存为<code>128M</code>；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image078.jpg" alt="img"></p>
+</li>
+<li><p>重启后进入桌面，显示如下，安装完成；</p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image080.jpg" alt="img"></p>
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image082.jpg" alt="img"></p>
+</li>
+</ol>
+<h2 id="熟悉Linux目录结构以及目录功能简介"><a href="#熟悉Linux目录结构以及目录功能简介" class="headerlink" title="熟悉Linux目录结构以及目录功能简介"></a>熟悉<code>Linux</code>目录结构以及目录功能简介</h2><ol>
+<li><p>安装<code>tree</code>，在打开终端，顶级目录下输入<code>tree -L 1</code>，输出一级目录如下，包括文件夹有：<code>bin</code>、<code>boot</code>、<code>dev</code>、<code>etc</code>、<code>home</code>、<code>lib</code>、<code>lost+found</code>、<code>media</code>、<code>misc</code>、<code>mnt</code>、<code>opt</code>、<code>proc</code>、<code>root</code>、<code>sbin</code>、<code>selinux</code>、<code>srv</code>、<code>sys</code>、<code>tmp</code>、<code>usr</code>、<code>var</code>等；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image084.jpg" alt="img"></p>
+</li>
+<li><p>分析每个文件夹功能：</p>
+<ol>
+<li><p><code>/bin</code><br>文件内容如下，用于存放使用者最经常使用的命令，如：<code>cat</code>、<code>ls</code>、<code>vi</code>等<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image086.jpg" alt="img"></p>
+</li>
+<li><p><code>/boot</code><br>文件内容如下，这里存放的是启动<code>Linux</code>时使用的一些核心文件，包括一些连接文件以及镜像文件；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image088.jpg" alt="img"></p>
+</li>
+<li><p><code>/dev</code><br>文件内容如下，<code>dev</code>是**Device(设备)**的缩写，该目录下存放的是<code>Linux</code>的外部设备，在<code>Linux</code>中访问设备的方式和访问文件的方式是相同的；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image090.jpg" alt="img"></p>
+</li>
+<li><p><code>/etc</code><br>文件内容如下，这个目录用来存放所有的系统管理所需要的配置文件和子目录；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image092.jpg" alt="img"></p>
+</li>
+<li><p><code>/home</code><br>文件内容如下，是用户的主目录，在<code>Linux</code>中，每个用户都有一个自己的目录，一般该目录名是以用户的账号命名的，前面提到该机器用户的用户名为<code>levi</code>；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image094.jpg" alt="img"></p>
+<ol>
+<li><p><code>/lib</code><br>文件内容如下，这个目录里存放着系统最基本的动态连接共享库，其作用类似于<code>Windows</code>里的<code>DLL</code>文件。几乎所有的应用程序都需要用到这些共享库。<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image096.jpg" alt="img"></p>
+</li>
+<li><p><code>/lost+found</code><br>这个目录一般情况下是空的，当系统非法关机后，这里就存放了一些文件；</p>
+</li>
+<li><p><code>/media</code><br><code>Linux</code>系统会自动识别一些设备，例如U盘、光驱等等，当识别后，<code>Linux</code>会把识别的设备挂载到这个目录下；</p>
+</li>
+<li><p><code>/misc</code><br>该目录自动挂载服务目录，对应<code>autofs</code>服务；</p>
+</li>
+<li><p><code>/mnt</code><br>目录内容如下，系统提供该目录是为了让用户临时挂载别的文件系统的，我们可以将光驱挂载在<code>/mnt</code>上，然后进入该目录就可以查看光驱里的内容了。<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image098.jpg" alt="img"></p>
+</li>
+<li><p><code>/opt</code><br>文件内容如下，这是给主机额外安装软件所摆放的目录。比如安装一个<code>ORACLE</code>数据库则就可以放到这个目录下，默认是空的；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image100.jpg" alt="img"></p>
+</li>
+<li><p><code>/proc</code><br>这个目录的内容不在硬盘上而是在内存里，可以直接修改里面的某些文件，比如可以通过下面的命令来屏蔽主机的<code>ping</code>命令，使别人无法<code>ping</code>该机器；</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">echo 1 &gt; /proc/sys/net/ipv4/icmp_echo_ignore_all</span><br></pre></td></tr></table></figure></li>
+<li><p><code>/root</code><br>文件目录如下，该目录为系统管理员，也称作超级权限者的用户主目录；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image102.jpg" alt="img"></p>
+</li>
+<li><p><code>/sbin</code><br>文件目录如下，<code>s</code>就是<code>Super User</code>的意思，这里存放的是系统管理员使用的系统管理程序；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image104.jpg" alt="img"></p>
+</li>
+<li><p><code>/selinux</code><br> 文件目录如下，这个目录是<code>Redhat/CentOS</code>所特有的目录，<code>Selinux</code>是一个安全机制，类似于<code>windows</code>的防火墙，但是这套机制比较复杂，这个目录就是存放<code>selinux</code>相关的文件的；<br> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image106.jpg" alt="img"></p>
+</li>
+<li><p><code>/srv</code><br>  该目录存放一些服务启动之后需要提取的数据；</p>
+</li>
+<li><p><code>/sys</code><br>  文件目录如下，这是<code>linux2.6</code>内核的一个很大的变化，该目录下安装了<code>2.6</code>内核中新出现的一个文件系统<code>sysfs</code>，<code>sysfs</code>文件系统集成了下面3种文件系统的信息：针对进程信息的<code>proc</code>文件系统、针对设备的<code>devfs</code>文件系统以及针对伪终端的<code>devpts</code>文件系统。该文件系统是内核设备树的一个直观反映。当一个内核对象被创建的时候，对应的文件和目录也在内核对象子系统中被创建；<br>  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image108.jpg" alt="img"></p>
+</li>
+<li><p><code>/tmp</code><br>  这个目录是用来存放一些临时文件的；</p>
+</li>
+<li><p><code>/usr</code><br>  这是一个非常重要的目录，用户的很多应用程序和文件都放在这个目录下，类似于<code>windows</code>下的<code>program files</code>目录；<br>  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image110.jpg" alt="img"></p>
+<ol>
+<li><code>/usr/bin</code><br>该目录下存放着许多系统用户使用的应用程序</li>
+<li><code>/usr/include</code><br>改目录下存放LINUX下开发和编译应用程序需要的头文件</li>
+<li><code>/usr/lib</code><br>改目录下存放一些常用的动态链接共享库和静态档案库；</li>
+<li><code>/usr/local</code><br>提供给一般用户的/usr目录，在这安装软件最适合；</li>
+<li><code>/usr/man</code><br>该目录是帮助文档目录；</li>
+<li><code>/usr/sbin</code><br>改目录存放超级用户使用的比较高级的管理程序和系统守护程序；</li>
+<li><code>/usr/share</code><br>该目录包含 <code>/usr</code> 中的应用程序需要的所有只读、与硬件架构无关的数据，其中包括时区和地区信息(<code>zoneinfo</code> 和 <code>locale</code>)；</li>
+<li><code>/usr/src</code><br>这是内核源代码默认的放置目录； </li>
+</ol>
+</li>
+<li><p><code>/var</code><br>  文件目录如下，这是一个非常重要的目录，系统上跑了很多程序，那么每个程序都会有相应的日志产生，而这些日志就被记录到这个目录下，具体在<code>/var/log</code>目录下，另外mail的预设放置也是在这里；<br>  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image112.jpg" alt="img"></p>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="熟悉Linux系统的基本操作"><a href="#熟悉Linux系统的基本操作" class="headerlink" title="熟悉Linux系统的基本操作"></a>熟悉<code>Linux</code>系统的基本操作</h2><h3 id="Linux挂载"><a href="#Linux挂载" class="headerlink" title="Linux挂载"></a><code>Linux</code>挂载</h3><p>通过mount命令查看已挂载的文件系统，会输出丰富的信息，如下图所示<br> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image114.jpg" alt="img"></p>
+<ul>
+<li><p><strong>mount [-t</strong> <strong>系统类型] [-L 卷标名] [-o 特殊选项] [-n] 设备文件名 挂载点</strong></p>
+<p>各选项的含义：</p>
+<ul>
+<li>-t 系统类型：指定欲挂载的文件系统类型。Linux 常见的支持类型有 EXT2、EXT3、EXT4、iso9660（光盘格式）、vfat、reiserfs 等。如果不指定具体类型，挂载时 Linux 会自动检测；</li>
+</ul>
+</li>
+<li><p>-L 卷标名：除了使用设备文件名（例如 /dev/hdc6）之外，还可以利用文件系统的卷标名称进行挂载；</p>
+<ul>
+<li>-n：在默认情况下，系统会将实际挂载的情况实时写入 /etc/mtab 文件中，但在某些场景下（例如单人维护模式），为了避免出现问题，会刻意不写入，此时就需要使用这个选项；</li>
+<li>-o 特殊选项：可以指定挂载的额外选项，比如读写权限、同步/异步等，如果不指定，则使用默认值（defaults）；</li>
+</ul>
+</li>
+<li><p>命令尝试：<br>使用命令<code>mount -t iso9660 /dev/cdrom /mnt/cdrom</code>将<code>/dev/cdrom</code>下的<code>iso9660</code>文件挂载到<code>/mnt/cdrom</code>文件目录下；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image116.jpg" alt="img"><br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image118.jpg" alt="img"></p>
+</li>
+</ul>
+<h3 id="Linux系统的启动与退出"><a href="#Linux系统的启动与退出" class="headerlink" title="Linux系统的启动与退出"></a><code>Linux</code>系统的启动与退出</h3><ul>
+<li><strong>shutdown [-t seconds] [-rkhncfF] time [message]</strong><br>参数说明：<ul>
+<li>-t seconds，设定在几秒钟之后进行关机程序。</li>
+<li>-k，并不会真的关机，只是将警告讯息传送给所有使用者。</li>
+<li>-r，关机后重新开机。</li>
+<li>-h，关机后停机。</li>
+<li>-n，采用正常程序来关机，用强迫的方式杀掉所有执行中的程序后自行关机。</li>
+<li>-c，取消目前已经进行中的关机动作。</li>
+<li>-f，关机时，不做 fcsk 动作(检查 Linux 档系统)。</li>
+<li>-F，关机时，强迫进行 fsck 动作。</li>
+<li>time，设定关机的时间。</li>
+<li>message，传送给所有使用者的警告讯息。</li>
+</ul>
+</li>
+<li>命令尝试：<ul>
+<li>Shutdown now     //立刻关机</li>
+<li>shutdown +5 “System will shutdown after 5 minutes”    //    系统提示五分钟后关机，每分钟提醒一次<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image120.jpg" alt="img"></li>
+<li>shutdown –r now  //立即重启</li>
+<li>shutdown –r 23:59       //23:59重启</li>
+<li>shutdown –h now        //将系统的服务停掉之后立即关机</li>
+<li>shutdown -k now ‘this system will reboot’ //立刻发送警告信息<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image122.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+<h3 id="Linux系统对文件和目录的操作命令"><a href="#Linux系统对文件和目录的操作命令" class="headerlink" title="Linux系统对文件和目录的操作命令"></a>Linux系统对文件和目录的操作命令</h3><ol>
+<li><p>ls命令</p>
+<ul>
+<li><p>**ls [**<strong>选项] [目录或文件]</strong></p>
+<p>显示指定工作目录下的内容（列出目前工作目录所含之文件及子目录)</p>
+<p>选项包括：</p>
+<ul>
+<li><code>-a</code>，显示所有的文件，包括隐藏文件(以.开头的文件)；</li>
+<li><code>-A</code>，同 <code>-a</code> ，但不列出 “.” (目前目录) 及 “..” (父目录)；</li>
+<li><code>-c</code>，和<code>-lt</code>一起使用，显示列表并且以<code>ctime</code>(文件状态最后改变时间)排序。和<code>-l</code>一起使用：显示<code>ctime</code>并且以文件名排序。其他情况，以<code>ctime</code>排序；</li>
+<li><code>-d</code>，仅列出目录本身，而不是列出目录里的内容列表；</li>
+<li><code>-f</code>，直接列出结果，而不进行排序(<code>ls</code>默认会以文件名排序)；</li>
+<li><code>-F</code> 在列出的文件名称后加一符号；例如可执行档则加 “*”, 目录则加 “/“；</li>
+<li><code>-g</code>，列表显示结果，和<code>-l</code>类似，但是不显示文件所属者；</li>
+<li><code>-h</code>，将文件内容大小以<code>GB</code>、<code>KB</code>等易读的方式显示；</li>
+<li><code>-i</code>，结合<code>-l</code>参数，列出每个文件的<code>inode</code>；</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<ul>
+<li>-l：列出长数据串，显示出文件详细信息，依次为文件属性(占10个字符空间)、文件数、拥有者、所属的<code>group</code>、文件大小、建档日期、文件名；<ul>
+<li>实例如下<ul>
+<li><code>ls -l</code>     //将目录下的文件信息详细列出<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image124.jpg" alt="img"></li>
+<li><code>ls –ld media</code>   //列出文件目录下文件media的详细信息<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image126.jpg" alt="img"></li>
+<li><code>ls -as -S</code>        //列出所有文件及文件大小，并以文件大小进行排序<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image128.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ol start="2">
+<li><p>cp命令</p>
+<ul>
+<li><p>**cp [**<strong>选项] 源文件或目录 目标文件或目录</strong></p>
+<p>将源文件或目录拷贝到目标文件或目录</p>
+<p>选项包括：</p>
+<ul>
+<li>-a，此选项通常在复制目录时使用，它保留链接、文件属性，并复制目录下的所有内容；</li>
+<li>-d，复制时保留链接，这里所说的链接相当于Windows系统中的快捷方式；</li>
+<li>-f，覆盖已经存在的目标文件而不给出提示；</li>
+<li>-i，与-f选项相反，在覆盖目标文件之前给出提示，要求用户确认是否覆盖，回答”y”时目标文件将被覆盖；</li>
+<li>-p，除复制文件的内容外，还把修改时间和访问权限也复制到新文件中；</li>
+<li>-r，若给出的源文件是一个目录文件，此时将复制该目录下所有的子目录和文件；</li>
+<li>-l，不复制文件，只是生成链接文件；</li>
+</ul>
+</li>
+<li><p>实例如下：</p>
+<ul>
+<li><code>cp tree.txt tree1.txt</code>      //将tree.txt内容复制到tree1.txt里<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image130.jpg" alt="img"><br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image132.jpg" alt="img"></li>
+<li><code>cp -i /root/桌面/json/json.txt /root/桌面/tree/tree1.txt</code>         //将/root/桌面/json目录下的json.txt复制到/root/桌面/tree/tree1.txt并覆tree.txt内容；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image134.jpg" alt="img"><br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image136.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>mv命令</p>
+<ul>
+<li><p>**mv [**<strong>选项] 源文件或目录 目标文件或目录</strong></p>
+<table>
+<thead>
+<tr>
+<th align="center">结构</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">mv   文件名   文件名</td>
+<td align="center">将源文件名改为目标文件名</td>
+</tr>
+<tr>
+<td align="center">mv   文件名   目录名</td>
+<td align="center">将文件移动到目标目录</td>
+</tr>
+<tr>
+<td align="center">mv   目录名   目录名</td>
+<td align="center">目标目录已存在，将源目录移动到目标目录；   目标目录不存在则改名</td>
+</tr>
+<tr>
+<td align="center">mv   目录名   文件名</td>
+<td align="center">出错</td>
+</tr>
+</tbody></table>
+<p>选项包括：</p>
+<ul>
+<li>-i，若指定目录已有同名文件，则先询问是否覆盖旧文件;</li>
+<li>-f，在mv操作要覆盖某已有的目标文件时不给任何指示;</li>
+</ul>
+</li>
+<li><p>实例如下</p>
+<ul>
+<li><code>mv json.txt tree.txt</code>       //将json.txt改为tree.txt；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image138.jpg" alt="img"></li>
+<li><code>mv tree.txt ..</code>         //将tree.txt移动至父目录；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image140.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>rm命令</p>
+<ul>
+<li><p>**rm [**<strong>选项] 文件名|目录名</strong></p>
+<p>选项包括：</p>
+<ul>
+<li>-i，删除前逐一询问确认；</li>
+<li>-f，即使原档案属性设为唯读，亦直接删除，无需逐一确认；</li>
+<li>-r，将目录及以下之档案亦逐一删除；</li>
+</ul>
+</li>
+<li><p>实例如下</p>
+<ul>
+<li>rm tree.txt     //删除tree.txt文件<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image142.jpg" alt="img"></li>
+<li>rm –i *           //删除目录下所有文件并在删除前询问<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image144.jpg" alt="img"></li>
+<li>rm -rf tree     //删除目录下的tree文件，不询问，即使tree是只读文件<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image146.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><code>mkdir</code>命令</p>
+<ul>
+<li><p>**mkdir [**<strong>选项] dir-name</strong></p>
+<p>用于建立子目录</p>
+<p>选项包括：</p>
+<ul>
+<li>-p，确保目录名称存在，不存在的就建一个；</li>
+<li>-m，设定权限（类似chmod）;</li>
+<li>-v，每次创建目录都显示信息；</li>
+</ul>
+</li>
+<li><p>实例如下</p>
+<ul>
+<li>mkdir tree     //目录下新建名为tree的子目录<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image148.jpg" alt="img"></li>
+<li>mkdir -p mine/tree             //在工作目录的mine目录下新建名为tree的子目录<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image150.jpg" alt="img"></li>
+<li>mkdir -m 744 list  //创建权限为774的目录<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image152.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>rmdir命令</p>
+<ul>
+<li><p>**rmdir [**<strong>选项] dir-name</strong></p>
+<p>删除空目录，无法删除非空目录；</p>
+<p>选项包括：</p>
+<ul>
+<li>-p，递归删除目录dirname，当子目录删除后其父目录为空时，也一同被删除；</li>
+<li>-v，显示指令执行过程；</li>
+</ul>
+</li>
+<li><p>实例如下：</p>
+<ul>
+<li>rmdir tree             //删除目录tree<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image154.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>cd命令</p>
+<ul>
+<li><p><strong>cd [dirName]</strong></p>
+<p>切换目录，dirName表示要切换的目标目录</p>
+</li>
+<li><p>实例如下：</p>
+<ul>
+<li>cd ..        //返回到上一级目录<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image156.jpg" alt="img"></li>
+<li>cd /root  //进入到root目录<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image158.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>pwd命令</p>
+<p>​        用于显示工作目录</p>
+<ul>
+<li><p>实例如下：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image160.jpg" alt="img"></p>
+</li>
+</ul>
+</li>
+<li><p>cat命令</p>
+<ul>
+<li><p>**cat [**<strong>选项] 文件列表</strong></p>
+<p>用于连接文件并打印到标准输出设备上；</p>
+<p>选项包括：</p>
+<ul>
+<li>-n，由 1 开始对所有输出的行数编号；</li>
+<li>-b，和 -n 相似，只不过对于空白行不编号；</li>
+<li>-s，当遇到有连续两行以上的空白行，就代换为一行的空白行；</li>
+<li>-v，使用 ^ 和 M- 符号，除了 LFD 和 TAB 之外；</li>
+<li>-E，在每行结束处显示 $；</li>
+<li>-T，将 TAB 字符显示为 ^I；</li>
+<li>-A，等价于 -vET；</li>
+<li>-e，等价于”-vE”选项； </li>
+<li>-t，等价于”-vT”选项；</li>
+</ul>
+</li>
+<li><p>实例如下：</p>
+<ul>
+<li>cat –b tree.txt        //输出tree.txt内容，且不对空行进行编号；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image162.jpg" alt="img"></li>
+<li>cat &gt; mine.txt //清空mine.txt内容<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image164.jpg" alt="img"><br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image166.jpg" alt="img"></li>
+<li>Zcat file1 file2 &gt; file3     //file1和file2的文档内容，附加到file3里；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image168.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>find命令</p>
+<ul>
+<li><p><strong>find path -option [-print] [-exec -ok |xargs |grep] [command {} ;]</strong></p>
+<p>用来在指定目录下查找文件，任何位于参数之前的字符串都将被视为欲查找的目录名，如果使用该命令时，不设置任何参数，则find命令将在当前目录下查找子目录与文件，并且将查找到的子目录和文件全部进行显示；</p>
+<p>选项包括：</p>
+<ul>
+<li>path<ul>
+<li>~表示$HOME目录;</li>
+<li>**.**表示当前目录</li>
+<li>/表示根目录</li>
+</ul>
+</li>
+<li>-print，<strong>表示将结果输出到标准输出</strong>；</li>
+<li>-exec，对匹配的文件执行该参数所给出的shell命令，形式为”command {} ;”；</li>
+<li>-ok，与exec作用相同，区别在于，在执行命令之前，会给出提示，让用户确认是否执行；</li>
+<li>|xargs，与exec作用相同 ，起承接作用，区别在于 |xargs 主要用于承接删除操作，而-exec都可用，如复制、移动、重命名等；</li>
+<li>option，表示查找方式：<ul>
+<li>-name filename    //查找名为filename的文件</li>
+<li>-perm    //按执行权限来查找</li>
+<li>-user username    //按文件属主来查找</li>
+<li>-group groupname     //按组来查找</li>
+<li>-mtime -n +n       //按文件更改时间来查找文件，-n指n天以内，+n指n天以前</li>
+<li>-atime -n +n        //按文件访问时间来查找文件，-n指n天以内，+n指n天以前</li>
+<li>-ctime -n +n        //按文件创建时间来查找文件，-n指n天以内，+n指n天以前</li>
+<li>-nogroup      //查无有效属组的文件，即文件的属组在/etc/groups中不存在</li>
+<li>-nouser         //查无有效属主的文件，即文件的属主在/etc/passwd中不存</li>
+<li>-type b/d/c/p/l/f         //查是块设备、目录、字符设备、管道、符号链接、普通文件</li>
+<li>-size n[c]       //查长度为n块[或n字节]的文件</li>
+<li>-mount  //查文件时不跨越文件系统mount点</li>
+<li>-follow   //如果遇到符号链接文件，就跟踪链接所指的文件</li>
+<li>-prune   //忽略某个目录</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>实例如下：</p>
+<ul>
+<li>find / -name a.txt        //在根目录查找名字为file1.txt的文件；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image170.jpg" alt="img"></li>
+<li>find / -name <em>.htm –a –user leeyuxun       //在根目录下查找属主为leeyuxun的htm文件<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image172.jpg" alt="img"></em></li>
+<li>find . –name &quot;*.txt&quot; -print    //在当前目录查找txt文件并打印<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image174.jpg" alt="img"></li>
+<li>find /dev -user leeyuxun -print         //查找dev目录下的属主为leeyuxun的文件并打印；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image176.jpg" alt="img"></li>
+<li>find . -name “*.o” -mtime +1 -mtime -7 -print      //查找7天以内1天以前的o文件并打印；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image178.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>grep命令</p>
+<ul>
+<li><p><strong>grep [-abcEFGhHilLnqrsvVwxy][-A&lt;****显示列数&gt;][-B&lt;显示列数&gt;][-C&lt;显示列数&gt;][-d&lt;进行动作&gt;][-e&lt;范本样式&gt;][-f&lt;范本文件&gt;][–help][范本样式][文件或目录…]</strong></p>
+<p>选项内容：</p>
+<ul>
+<li>-a，不要忽略二进制的数据；</li>
+<li>-A，除了显示符合范本样式的那一列之外，并显示该行之后的内容</li>
+<li>-b，在显示符合样式的那一行之前，标示出该行第一个字符的编号</li>
+<li>-B，除了显示符合样式的那一行之外，并显示该行之前的内容</li>
+<li>-c，计算符合样式的列数；</li>
+<li>-C，除了显示符合样式的那一行之外，并显示该行之前后的内容；</li>
+<li>-d，当指定要查找的是目录而非文件时，必须使用这项参数，否则grep指令将回报信息并停止动作；</li>
+<li>-e，指定字符串做为查找文件内容的样式；</li>
+<li>-E，将样式为延伸的正则表达式来使用；</li>
+<li>-f，指定规则文件，其内容含有一个或多个规则样式，让grep查找符合规则条件的文件内容，格式为每行一个规则样式；</li>
+<li>-F，将样式视为固定字符串的列表；</li>
+<li>-G，将样式视为普通的表示法来使用；</li>
+<li>-h，在显示符合样式的那一行之前，不标示该行所属的文件名称；</li>
+<li>-H，在显示符合样式的那一行之前，表示该行所属的文件名称；</li>
+<li>-i，忽略字符大小写的差别；</li>
+<li>-I，列出文件内容符合指定的样式的文件名称；</li>
+<li>-L，列出文件内容不符合指定的样式的文件名称；</li>
+<li>-n，在显示符合样式的那一行之前，标示出该行的列数编号；</li>
+<li>-o，只显示匹配PATTERN 部分；</li>
+<li>-q，不显示任何信息；</li>
+<li>-r，此参数的效果和指定”-d recurse”参数相同；</li>
+<li>-s，不显示错误信息；</li>
+<li>-v，显示不包含匹配文本的所有行；</li>
+<li>-V，显示版本信息；</li>
+<li>-w，只显示全字符合的列；</li>
+<li>-x，只显示全列符合的列；</li>
+<li>-y，此参数的效果和指定”-i”参数相同；</li>
+</ul>
+</li>
+<li><p>实例如下：</p>
+<ul>
+<li>grep mine *          //在该目录下查找包含mine内容的文件；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image180.jpg" alt="img"></li>
+<li>grep ‘text file’ example        //在mine.txt中搜索字符串‘mine 12’并打印；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image182.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>more命令</p>
+<ul>
+<li><p>**more [**<strong>选项] 文件名</strong></p>
+<p>类似 cat ，不过会以一页一页的形式显示，更方便使用者逐页阅读，而最基本的指令就是按空白键（space）就往下一页显示，按 b 键就会往回（back）一页显示，而且还有搜寻字串的功能（与 vi 相似）</p>
+<p>选项内容：</p>
+<ul>
+<li>-num，一次显示的行数；</li>
+<li>-d，提示使用者，在画面下方显示 [Press space to continue, ‘q’ to quit.] ，如果使用者按错键，则会显示 [Press ‘h’ for instructions.] 而不是 ‘哔’ 声；</li>
+<li>-l，取消遇见特殊字元 ^L（送纸字元）时会暂停的功能；</li>
+<li>-f，计算行数时，以实际上的行数，而非自动换行过后的行数（有些单行字数太长的会被扩展为两行或两行以上）；</li>
+<li>-p，不以卷动的方式显示每一页，而是先清除萤幕后再显示内容；</li>
+<li>-c，跟-p相似，不同的是先显示内容再清除其他旧资料；</li>
+<li>-s，当遇到有连续两行以上的空白行，就代换为一行的空白行；</li>
+<li>-u，不显示下引号 （根据环境变数 TERM 指定的 terminal 而有所不同）；</li>
+<li>+/pattern，在每个文档显示前搜寻该字串（pattern），然后从该字串之后开始显示；</li>
+<li>+num，从第 num 行开始显示；</li>
+<li>fileNames，欲显示内容的文档，可为复数个数；</li>
+</ul>
+</li>
+<li><p>实例如下：</p>
+<ul>
+<li>more mine.txt       //打开mine.txt文件<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image184.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="文档备份与压缩命令"><a href="#文档备份与压缩命令" class="headerlink" title="文档备份与压缩命令"></a>文档备份与压缩命令</h3><ol>
+<li><p>tar命令</p>
+<ul>
+<li><p><strong>tar [</strong> <strong>主选项+辅选项] 文件或者目录</strong></p>
+<p>用于备份文件；</p>
+<p>主选项包括：</p>
+<ul>
+<li>-A，新增文件到已存在的备份文件；</li>
+<li>-B，读取数据时重设区块大小；</li>
+<li>-c，建立新的备份文件；</li>
+<li>-d，对比备份文件内和文件系统上的文件的差异； </li>
+<li>-g，处理GNU格式的大量备份；</li>
+<li>-G，处理旧的GNU格式的大量备份； </li>
+<li>-i，忽略备份文件中的0 Byte区块，也就是EOF；</li>
+<li>-j，支持bzip2解压文件；</li>
+<li>-k，解开备份文件时，不覆盖已有的文件； </li>
+<li>-l，复制的文件或目录存放的文件系统，必须与tar指令执行时所处的文件系统相同，否则不予复制；</li>
+<li>-m，还原文件时，不变更文件的更改时间；</li>
+<li>-r，添加文件到已经压缩的文件；</li>
+<li>-t，显示压缩文件的内容；</li>
+<li>-u，添加改变了和现有的文件到已经存在的压缩文件；</li>
+<li>-v，显示操作过程；</li>
+<li>-W，确认压缩文件的正确性；</li>
+<li>-x，从压缩的文件中提取文件；</li>
+<li>-z，支持compress解压文件；</li>
+</ul>
+<p>辅选项包括</p>
+<ul>
+<li>-b&lt;区块数目&gt;，设置每笔记录的区块数目，每个区块大小为12Bytes；</li>
+<li>-C，切换到指定目录</li>
+<li>-f，指定压缩文件</li>
+</ul>
+</li>
+<li><p>实例如下：</p>
+<ul>
+<li>tar -cvf data.tar *         //将目录下的所有文件打包成data.tar；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image186.jpg" alt="img"></li>
+<li>tar -cvzf data.tar.gz *          //将目录下的所有文件打包成data.tar.gz；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image188.jpg" alt="img"></li>
+<li>tar -tvf data.tar            //查看data.tar中文件：所属权限、用户名用户组、日期等<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image190.jpg" alt="img"></li>
+<li>tar -xvf data.tar    //解压data.tar包<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image192.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>gzip命令</p>
+<ul>
+<li><p>**gzip [**<strong>选项] 压缩(解压缩)的文件名</strong></p>
+<p>gzip是个使用广泛的压缩程序，文件经它压缩过后，其名称后面会多出”.gz”的扩展名</p>
+<p>选项包括：</p>
+<ul>
+<li>-a，使用ASCII文字模式；</li>
+<li>-c，把压缩后的文件输出到标准输出设备，不去变动原始文件；</li>
+<li>-d，解开压缩文件；</li>
+<li>-r，递归处理，将指定目录下的所有文件及子目录一并处理；</li>
+<li>-f，强行压缩文件。不理会文件名称或硬连接是否存在以及该文件是否为符号连接；</li>
+<li>-l，列出压缩文件的相关信息；</li>
+<li>-n，压缩文件时，不保存原来的文件名称及时间戳记；</li>
+<li>-N，压缩文件时，保存原来的文件名称及时间戳记；</li>
+<li>-q，不显示警告信息；</li>
+<li>-S&lt;压缩字尾字符串&gt;，更改压缩字尾字符串；</li>
+<li>-t，测试压缩文件是否正确无误；</li>
+<li>-v，显示指令执行过程；</li>
+<li>-V，显示版本信息；</li>
+<li>-L，显示版本与版权信息；</li>
+<li>-num，用指定的数字num调整压缩的速度，-1或–fast表示最快压缩方法（低压缩比），-9或–best表示最慢压缩方法（高压缩比），系统缺省值为6；</li>
+<li>-h，在线帮助；</li>
+</ul>
+</li>
+<li><p>实例如下：</p>
+<ul>
+<li>gzip –best mine.txt    //高压缩比压缩mine.txt文件；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image194.jpg" alt="img"></li>
+<li>gzip -l mine.txt.gz //列出mine.txt.gz相关信息；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image196.jpg" alt="img"></li>
+<li>gzip -d mine.txt.gz             //解压缩mine.txt.gz；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image198.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>unzip命令</p>
+<ul>
+<li><p>**unzip [**<strong>选项] 压缩文件名.zip</strong></p>
+<p>用于解压缩zip文件;</p>
+<p>选项包括：</p>
+<ul>
+<li>-c，将解压缩的结果显示到屏幕上，并对字符做适当的转换；</li>
+<li>-f，更新现有的文件；</li>
+<li>-l，显示压缩文件内所包含的文件；</li>
+<li>-p，与-c参数类似，会将解压缩的结果显示到屏幕上，但不会执行任何的转换；</li>
+<li>-t，检查压缩文件是否正确；</li>
+<li>-u，与-f参数类似，但是除了更新现有的文件外，也会将压缩文件中的其他文件解压缩到目录中；</li>
+<li>-v，执行是时显示详细的信息；</li>
+<li>-z，仅显示压缩文件的备注文字；</li>
+<li>-a，对文本文件进行必要的字符转换；</li>
+<li>-b，不要对文本文件进行字符转换；</li>
+<li>-C, 压缩文件中的文件名称区分大小写;</li>
+<li>-j, 不处理压缩文件中原有的目录路径；</li>
+<li>-L，将压缩文件中的全部文件名改为小写；</li>
+<li>-M，将输出结果送到more程序处理；</li>
+<li>-n，解压缩时不要覆盖原有的文件；</li>
+<li>-o，不必先询问用户，unzip执行后覆盖原有文件；</li>
+<li>-P&lt;密码&gt;，使用zip的密码选项；</li>
+<li>-q，执行时不显示任何信息；</li>
+<li>-s，将文件名中的空白字符转换为底线字符；</li>
+<li>-V，保留VMS的文件版本信息；</li>
+<li>-X，解压缩时同时回存文件原来的UID/GID；</li>
+<li>-d&lt;目录&gt;，指定文件解压缩后所要存储的目录；</li>
+<li>-x&lt;文件&gt;，指定不要处理.zip压缩文件中的哪些文件；</li>
+</ul>
+</li>
+<li><p>示例如下：</p>
+<ul>
+<li>unzip tree.zip -d mine //将tree.zip解压到mine目录；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image200.jpg" alt="img"></li>
+<li>unzip -j tree.zip    //解压tree.zip到tree.zip同一目录下，不新建目录；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image202.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="Linux权限改变命令"><a href="#Linux权限改变命令" class="headerlink" title="Linux权限改变命令"></a>Linux权限改变命令</h3><ol>
+<li><p>chmod [操作符] [mode] 文件名</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image204.jpg" alt="img"></p>
+<p>Linux下文件的权限类型一般包括读，写，执行。对应字母为 r、w、x；<br>Linux下权限的属组有 拥有者 、群组 、其它组 三种。每个文件都可以针对这三个属组（粒度），设置不同的rwx(读写执行)权限。通常情况下，一个文件只能归属于一个用户和组， 如果其它的用户想有这个文件的权限，则可以将该用户加入具备权限的群组，一个用户可以同时归属于多个组；</p>
+<ul>
+<li>常见的权限表示形式有：<ul>
+<li>-rw——- (600)      只有拥有者有读写权限。</li>
+<li>-rw-r–r– (644)      只有拥有者有读写权限；而属组用户和其他用户只有读权限。</li>
+<li>-rwx—— (700)     只有拥有者有读、写、执行权限。</li>
+<li>-rwxr-xr-x (755)    拥有者有读、写、执行权限；而属组用户和其他用户只有读、执行权限。</li>
+<li>-rwx–x–x (711)    拥有者有读、写、执行权限；而属组用户和其他用户只有执行权限。</li>
+<li>-rw-rw-rw- (666)   所有用户都有文件读、写权限。</li>
+<li>-rwxrwxrwx (777)  所有用户都有读、写、执行权限。</li>
+</ul>
+</li>
+<li>示例如下：<ul>
+<li>chmod o+w file5         //表示其他人增加对file5的写权限<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image206.jpg" alt="img"></li>
+<li>chmod g=x file5          //表示群体可以执行file5；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image208.jpg" alt="img"></li>
+<li>chmod go-rwx file6            //表示拥有者、群体减少对file6的读写执行权限；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image210.jpg" alt="img"></li>
+<li>chmod 751 file6           //表示拥有者为rwx，群体为rx，其他人为x权限；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image212.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>chgrp [选项] 组 文件</p>
+<p>​    用于变更文件或目录的所属群组;</p>
+<ul>
+<li>​    选项包括：<ul>
+<li>-c，效果类似”-v”参数，但仅回报更改的部分；</li>
+<li>-f，不显示错误信息；</li>
+<li>-h，只对符号连接的文件作修改，而不更动其他任何相关文件；</li>
+<li>-R，递归处理，将指定目录下的所有文件及子目录一并处理；</li>
+<li>-v，显示指令执行过程；</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>chgrp leeyuxun file6     //将file6的用户组权限改为leeyuxun;<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image214.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>chown [选项] 用户或组 文件</p>
+<p>​    将指定文件的拥有者改为指定的用户或组;</p>
+<ul>
+<li>选项包括：<ul>
+<li>-c，显示更改的部分的信息</li>
+<li>-f，忽略错误信息</li>
+<li>-h，修复符号链接</li>
+<li>-v，显示详细的处理信息</li>
+<li>-R，处理指定目录以及其子目录下的所有文件</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>chown leeyuxun file6   //将file6的拥有者改为leeyuxun；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image216.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="Linux与用户有关的命令"><a href="#Linux与用户有关的命令" class="headerlink" title="Linux与用户有关的命令"></a>Linux与用户有关的命令</h3><ol>
+<li><p>passwd [-k] [-l] [-u [-f]] [-d] [-S] [用户名]</p>
+<p>​    更改用户密码；</p>
+<ul>
+<li>​    参数含义：<ul>
+<li>-d，删除密码；</li>
+<li>-f，强制执行；</li>
+<li>-k，更新只能发送再过期之后；</li>
+<li>-l，停止账号使用；</li>
+<li>-S，显示密码信息；</li>
+<li>-u，启用已被停止的账户；</li>
+<li>-x，设置密码的有效期；</li>
+<li>-g，修改群组密码；</li>
+<li>-i，过期后停止用户账号；</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>passwd -S leeyuxun     //显示用户leeyuxun的密码信息；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image218.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>su [-fmp] [-c command] [-s shell] [–help] [–version] [-] [使用者账号]</p>
+<p>​    用于变更为其他使用者的身份，除 root 外，需要键入该使用者的密码。使用权限：所有使用者。</p>
+<ul>
+<li>参数说明：<ul>
+<li>-f，不必读启动档（如 csh.cshrc 等），仅用于 csh 或 tcsh；</li>
+<li>-m -p，执行 su 时不改变环境变数；</li>
+<li>-c command，变更为帐号为 USER 的使用者并执行指令（command）后再变回原来使用者；</li>
+<li>-s shell，指定要执行的 shell （bash csh tcsh 等），预设值为 /etc/passwd 内的该使用者（USER） shell；</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>su root          //更换为root账号；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image220.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="Linux系统管理命令"><a href="#Linux系统管理命令" class="headerlink" title="Linux系统管理命令"></a>Linux系统管理命令</h3><ol>
+<li><p>write 用户账号 [终端名称]</p>
+<p>​    用于传讯息给其他使用者。使用权限：所有使用者。</p>
+<ul>
+<li>参数说明：<ul>
+<li>用户账号：预备传讯息的使用者帐号；</li>
+<li>终端名称：如果使用者同时有两个以上的 tty 连线，可以自行选择合适的 tty 传讯息；</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>mesg [y/n]</p>
+<p>​    用于设置终端机的写入权限；</p>
+<ul>
+<li>参数如下：<ul>
+<li>n，不允许其他用户将信息直接显示在你的屏幕上；</li>
+<li>y，允许其他用户将信息直接显示在你的屏幕上；</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>free  [-b | -k | -m]</p>
+<p>​        用于显示内存状态。free指令会显示内存的使用情况，包括实体内存，虚拟的交换文件内存，共享内存区段，以及系统核心使用的缓冲区等。</p>
+<ul>
+<li>参数如下：<ul>
+<li>-b，以Byte为单位显示内存使用情况。</li>
+<li>-k，以KB为单位显示内存使用情况。</li>
+<li>-m，以MB为单位显示内存使用情况。</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>free -k           //以kb显示内存<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image222.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="Linux磁盘管理命令"><a href="#Linux磁盘管理命令" class="headerlink" title="Linux磁盘管理命令"></a>Linux磁盘管理命令</h3><ol>
+<li><p>df  [选项] [文件]</p>
+<p>​    命令用于显示目前在Linux系统上的文件系统的磁盘使用情况统计；</p>
+<ul>
+<li>选项包括：<ul>
+<li>-a，包含所有的具有 0 Blocks 的文件系统；</li>
+<li>–block-size={SIZE}，使用{SIZE}大小的Blocks；</li>
+<li>-h，使用人类可读的格式(预设值是不加这个选项的…)；</li>
+<li>-H，很像 -h, 但是用 1000 为单位而不是用 1024；</li>
+<li>-i，列出 inode 资讯，不列出已使用 block；</li>
+<li>-k，就像是 –block-size=1024；</li>
+<li>-l，限制列出的文件结构；</li>
+<li>-m，就像 –block-size=1048576；</li>
+<li>-P，使用 POSIX 输出格式；</li>
+<li>-t，限制列出文件系统的TYPE；</li>
+<li>-T，显示文件系统的形式；</li>
+<li>-x，限制列出文件系统不要显示 TYPE；</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>df -aT     //显示目录下包含所有的具有 0 Blocks 的文件系统，及其系统形式；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image224.jpg" alt="img"></li>
+<li>df -t ext4              //只显示ext4类型的文件系统；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image226.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>du [选项] [目录名或文件名] </p>
+<p>​    用于显示目录或文件的大小；</p>
+<ul>
+<li>选项包括：<ul>
+<li>-a，显示目录中个别文件的大小；</li>
+<li>-b，显示目录或文件大小时，以byte为单位；</li>
+<li>-c，除了显示个别目录或文件的大小外，同时也显示所有目录或文件的总和；</li>
+<li>-D，显示指定符号连接的源文件大小；</li>
+<li>-h，以K，M，G为单位，提高信息的可读性；</li>
+<li>-H，与-h参数相同，但是K，M，G是以1000为换算单位；</li>
+<li>-k，以1024 bytes为单位；</li>
+<li>-l，重复计算硬件连接的文件</li>
+<li>-L&lt;符号连接&gt;，显示选项中所指定符号连接的源文件大小；</li>
+<li>-m，以1MB为单位；</li>
+<li>-s，仅显示总计；</li>
+<li>-S，显示个别目录的大小时，并不含其子目录的大小；</li>
+<li>-x，以一开始处理时的文件系统为准，若遇上其它不同的文件系统目录则略过</li>
+<li>-X&lt;文件&gt;，在&lt;文件&gt;指定目录或文件；</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>du –a /          //显示目录下所有文件大小；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image228.jpg" alt="img"></li>
+<li>du -s leeyuxun            //显示属于leeyuxun的文件总数；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image230.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>dd [选项]</p>
+<p>​    用于读取、转换并输出数据；</p>
+<ul>
+<li>选项如下：<ul>
+<li>if=文件名，输入文件名，默认为标准输入。即指定源文件。</li>
+<li>of=文件名，输出文件名，默认为标准输出。即指定目的文件。</li>
+<li>ibs=bytes，一次读入bytes个字节，即指定一个块大小为bytes个字节。</li>
+<li>obs=bytes，一次输出bytes个字节，即指定一个块大小为bytes个字节。</li>
+<li>bs=bytes，同时设置读入/输出的块大小为bytes个字节。</li>
+<li>cbs=bytes，一次转换bytes个字节，即指定转换缓冲区大小。</li>
+<li>skip=blocks，从输入文件开头跳过blocks个块后再开始复制。</li>
+<li>seek=blocks，从输出文件开头跳过blocks个块后再开始复制。</li>
+<li>count=blocks，仅拷贝blocks个块，块大小等于ibs指定的字节数。</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>dd if=/dev/fd of=/dev/fd1 bs=5120         //将dev下的fd复制到fd1中，设置输入块大小为5120字节；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image232.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>fdformat [−n] 设备名</p>
+<p>​    用于对指定的软碟机装置进行低阶格式化；</p>
+<p>​    -n，关闭确认功能。这个选项会关闭格式化之后的确认步骤；</p>
+</li>
+</ol>
+<h3 id="Linux进程管理命令"><a href="#Linux进程管理命令" class="headerlink" title="Linux进程管理命令"></a>Linux进程管理命令</h3><ol>
+<li><p>at [选项] 时间 </p>
+<p>​    设置在指定时间执行指定的命令；</p>
+<ul>
+<li>选项包括：<ul>
+<li>-l，显示等待执行的调度作业；</li>
+<li>-d，删除指定的调度作业；</li>
+<li>-v，显示作业执行的时间；</li>
+<li>-m，作业结束后发送邮件给执行的at命令的用户；</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>bg，fg</p>
+<p>​    前后台切换；</p>
+<ul>
+<li>前台作业切换到后台运行：bg [作业号]；</li>
+<li>后台作业切换到前台运行：fg [作业号]；</li>
+<li>显示当前所有作业：jobs [选项]；</li>
+</ul>
+</li>
+<li><p>ps [选项]</p>
+<p>​    显示系统中当前的进程及其状态;</p>
+<ul>
+<li>选项包括：<ul>
+<li>-a，显示当前终端上所有用户的进程；</li>
+<li>-e，显示所有进程的信息；</li>
+<li>-f，显示完整格式的输出；</li>
+<li>-l，显示进程的详细信息，包括父进程号、登录的终端号、进程优先级等；</li>
+<li>-u，显示指定用户的所有进程；</li>
+<li>-C &lt;命令&gt;，列出指定命令的状况；</li>
+<li>-x，显示后台进程的信息；</li>
+<li>-t &lt;终端号&gt;，显示指定终端上的进程信息；</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>ps          //列出所有进程<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image234.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>pstree [选项]</p>
+<p>​    树形图形显示进程之间的相互关系;</p>
+<ul>
+<li>选项包括<ul>
+<li>-a，显示启动进程的命令行；</li>
+<li>-n，按照进程号进行排序；</li>
+<li>-p，显示进程号；</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>pstree -p              //列出进程树，并显示进程号；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image236.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>kill命令</p>
+<p><strong>kill [-s &lt;****信息名称或编号&gt;] [程序]或kill [-l &lt;信息编号&gt;]</strong></p>
+<ul>
+<li>参数说明：<ul>
+<li>-l &lt;信息编号&gt;，若不加&lt;信息编号&gt;选项，则-l参数会列出全部的信息名称；</li>
+<li>-s &lt;信息名称或编号&gt;，指定要送出的信息；</li>
+<li>[程序]，可以是程序的PID或是PGID，也可以是工作编号；</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="Linux其他命令"><a href="#Linux其他命令" class="headerlink" title="Linux其他命令"></a>Linux其他命令</h3><ol>
+<li><p>echo [-n] 字符串 </p>
+<p>​    输出字符串；</p>
+<ul>
+<li>-n，不在末尾换行；</li>
+<li>示例显示：<ul>
+<li>echo Hello world!        //打印字符串“Hello world!”<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image238.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>cal [选项] [月份] [年]</p>
+<p>​    用于查看日历信息；</p>
+<ul>
+<li>实例如下：<ul>
+<li>cal 9 2019            //打印2019年9月日历；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image240.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>date [选项] +显示时间格式</p>
+<p>​    用来显示或设定系统的日期与时间;</p>
+<ul>
+<li>选项包括：<ul>
+<li>-d&lt;字符串&gt;：显示字符串所指的日期与时间。字符串前后必须加上双引号； </li>
+<li>-s&lt;字符串&gt;：根据字符串来设置日期与时间。字符串前后必须加上双引号； </li>
+<li>-u：显示GMT；</li>
+</ul>
+</li>
+<li>实例如下：<ul>
+<li>date 08211550            //显示8月21日15:50;<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image242.jpg" alt="img"></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>clear</p>
+<p>​    用于清除屏幕;</p>
+</li>
+</ol>
+<h2 id="Vi的熟悉与使用"><a href="#Vi的熟悉与使用" class="headerlink" title="Vi的熟悉与使用"></a>Vi的熟悉与使用</h2><p>vi共分为三种模式：分别是<strong>命令模式（Command mode）</strong>，<strong>插入模式（Insert mode）</strong>和<strong>末行模式（Last line mode）</strong></p>
+<h3 id="命令模式"><a href="#命令模式" class="headerlink" title="命令模式"></a>命令模式</h3><p>用户刚刚启动vi，即可进入命令模式。</p>
+<p>此状态下敲击键盘动作会被vi识别为命令，而非输入字符。比如我们此时按下i，并不会输入一个字符，i被当作了一个命令。</p>
+<p>以下是常用的几个命令：</p>
+<ul>
+<li>i，切换到插入模式，以输入字符;</li>
+<li>x，删除当前光标所在处的字符;</li>
+<li>:，切换到末行模式，以在最底一行输入命令</li>
+</ul>
+<p>若想要编辑文本：启动vi，进入了命令模式，按下i，切换到插入模式；</p>
+<p>命令模式只有一些最基本的命令，因此仍要依靠末行模式输入更多命令；</p>
+<h3 id="插入模式"><a href="#插入模式" class="headerlink" title="插入模式"></a>插入模式</h3><p>在命令模式下按下i就进入了插入模式。</p>
+<p>在插入模式中，可以使用以下按键：</p>
+<ul>
+<li><strong>字符按键以及Shift组合</strong>，输入字符；</li>
+<li><strong>ENTER</strong>，回车键，换行；<strong>BACK SPACE</strong>，退格键，删除光标前一个字符；</li>
+<li><strong>DEL</strong>，删除键，删除光标后一个字符；<strong>方向键</strong>，在文本中移动光标；</li>
+<li><strong>HOME</strong>/<strong>END</strong>，移动光标到行首/行尾；</li>
+<li><strong>Page Up</strong>/<strong>Page Down</strong>，上/下翻页；</li>
+<li><strong>Insert</strong>，切换光标为输入/替换模式，光标将变成竖线/下划线；</li>
+<li><strong>ESC</strong>，退出插入模式，切换到命令模式；</li>
+</ul>
+<h3 id="末行模式"><a href="#末行模式" class="headerlink" title="末行模式"></a>末行模式</h3><p>在命令模式下按下:（英文冒号）进入末行模式。</p>
+<p>末行模式可以输入单个或多个字符的命令，可用的命令非常多。</p>
+<p>在末行模式中，基本的命令有（已经省略了冒号）：</p>
+<ul>
+<li><p>q，退出程序；</p>
+</li>
+<li><p>w，保存文件</p>
+</li>
+</ul>
+<p>按ESC键可随时退出末行模式；</p>
+<h3 id="实例演示"><a href="#实例演示" class="headerlink" title="实例演示"></a>实例演示</h3><ol>
+<li>使用命令vi mine.txt，新建txt文件，并打开进入命令模式；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image244.jpg" alt="img"><br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image246.jpg" alt="img"></li>
+<li>按下i，进入插入模式，开始编辑文字；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image248.jpg" alt="img"></li>
+<li>按下esc，回到命令模式，在命令模式中按下:wq，保存并离开，如果只输入:q，是直接离开，不保存；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image250.jpg" alt="img"></li>
+</ol>
+<h3 id="命令说明"><a href="#命令说明" class="headerlink" title="命令说明"></a>命令说明</h3><ol>
+<li><p>命令模式可用的光标移动、复制粘贴、搜索替换等按钮</p>
+<ol>
+<li><p>移动光标的方法</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>h 或 向左箭头键(←)</td>
+<td>光标向左移动一个字符</td>
+</tr>
+<tr>
+<td>j 或 向下箭头键(↓)</td>
+<td>光标向下移动一个字符</td>
+</tr>
+<tr>
+<td>k 或 向上箭头键(↑)</td>
+<td>光标向上移动一个字符</td>
+</tr>
+<tr>
+<td>l 或 向右箭头键(→)</td>
+<td>光标向右移动一个字符</td>
+</tr>
+<tr>
+<td>如向下移动 30 行，可以使用 “30j” 或 “30↓” 的组合按键</td>
+<td></td>
+</tr>
+<tr>
+<td>[Ctrl] + [f]</td>
+<td>屏幕『向下』移动一页，相当于   [Page Down]按键 (常用)</td>
+</tr>
+<tr>
+<td>[Ctrl] + [b]</td>
+<td>屏幕『向上』移动一页，相当于 [Page Up] 按键 (常用)</td>
+</tr>
+<tr>
+<td>[Ctrl] + [d]</td>
+<td>屏幕『向下』移动半页</td>
+</tr>
+<tr>
+<td>[Ctrl] + [u]</td>
+<td>屏幕『向上』移动半页</td>
+</tr>
+<tr>
+<td>+</td>
+<td>光标移动到非空格符的下一行</td>
+</tr>
+<tr>
+<td>-</td>
+<td>光标移动到非空格符的上一行</td>
+</tr>
+<tr>
+<td>n<space></td>
+<td>n 表示『数字』，按下数字后再按空格键，光标会向右移动这一行的 n 个字符。例如 20<space> 则光标会向后面移动 20 个字符距离。</td>
+</tr>
+<tr>
+<td>0 或功能键[Home]</td>
+<td>移动到这一行的最前面字符处   (常用)</td>
+</tr>
+<tr>
+<td>$ 或功能键[End]</td>
+<td>移动到这一行的最后面字符处(常用)</td>
+</tr>
+<tr>
+<td>H</td>
+<td>光标移动到这个屏幕的最上方那一行的第一个字符</td>
+</tr>
+<tr>
+<td>M</td>
+<td>光标移动到这个屏幕的中央那一行的第一个字符</td>
+</tr>
+<tr>
+<td>L</td>
+<td>光标移动到这个屏幕的最下方那一行的第一个字符</td>
+</tr>
+<tr>
+<td>G</td>
+<td>移动到这个档案的最后一行(常用)</td>
+</tr>
+<tr>
+<td>nG</td>
+<td>移动到这个档案的第 n 行。例如 20G 则会移动到这个档案的第 20 行(可配合 :set nu)</td>
+</tr>
+<tr>
+<td>gg</td>
+<td>移动到这个档案的第一行，相当于 1G</td>
+</tr>
+<tr>
+<td>N<Enter></td>
+<td>光标向下移动 n 行(常用)</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>复制、粘贴、删除</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>X，x</td>
+<td>在一行字当中，x 为向后删除一个字符 (相当于 [del] 按键)， X 为向前删除一个字符(相当于   [backspace] 亦即是退格键) (常用)</td>
+</tr>
+<tr>
+<td>nx</td>
+<td>连续向后删除 n 个字符</td>
+</tr>
+<tr>
+<td>dd</td>
+<td>删除游标所在的那一整行(常用)</td>
+</tr>
+<tr>
+<td>ndd</td>
+<td>删除光标所在的向下 n 行</td>
+</tr>
+<tr>
+<td>d1G</td>
+<td>删除光标所在到第一行的所有数据</td>
+</tr>
+<tr>
+<td>dG</td>
+<td>删除光标所在到最后一行的所有数据</td>
+</tr>
+<tr>
+<td>d$</td>
+<td>删除游标所在处，到该行的最后一个字符</td>
+</tr>
+<tr>
+<td>d0</td>
+<td>那个是数字的 0 ，删除游标所在处，到该行的最前面一个字符</td>
+</tr>
+<tr>
+<td>yy</td>
+<td>复制游标所在的那一行(常用)</td>
+</tr>
+<tr>
+<td>nyy</td>
+<td>复制光标所在的向下 n 行</td>
+</tr>
+<tr>
+<td>y1G</td>
+<td>复制游标所在行到第一行的所有数据</td>
+</tr>
+<tr>
+<td>yG</td>
+<td>复制游标所在行到最后一行的所有数据</td>
+</tr>
+<tr>
+<td>y0</td>
+<td>复制光标所在的那个字符到该行行首的所有数据</td>
+</tr>
+<tr>
+<td>Y$</td>
+<td>复制光标所在的那个字符到该行行尾的所有数据</td>
+</tr>
+<tr>
+<td>P，p</td>
+<td>p 为将已复制的数据在光标下一行贴上，P 则为贴在游标上一行</td>
+</tr>
+<tr>
+<td>J</td>
+<td>将光标所在行与下一行的数据结合成同一行</td>
+</tr>
+<tr>
+<td>c</td>
+<td>重复删除多个数据，例如向下删除 10 行，[ 10cj ]</td>
+</tr>
+<tr>
+<td>u</td>
+<td>复原前一个动作</td>
+</tr>
+<tr>
+<td>[Ctrl]+r</td>
+<td>重做上一个动作</td>
+</tr>
+<tr>
+<td>.</td>
+<td>重复前一个动作</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>搜索、替换</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>/word</td>
+<td>向光标之下寻找一个名称为   word 的字符串</td>
+</tr>
+<tr>
+<td>?word</td>
+<td>向光标之上寻找一个字符串名称为 word 的字符串</td>
+</tr>
+<tr>
+<td>n</td>
+<td>重复前一个搜寻的动作</td>
+</tr>
+<tr>
+<td>N</td>
+<td>『反向』进行前一个搜寻动作</td>
+</tr>
+<tr>
+<td>:n1,n2s/word1/word2/g</td>
+<td>在第 n1 与 n2 行之间寻找 word1 这个字符串，并将该字符串取代为 word2</td>
+</tr>
+<tr>
+<td>:1,$s/word1/word2/g 或 :%s/word1/word2/g</td>
+<td>从第一行到最后一行寻找   word1 字符串，并将该字符串取代为 word2</td>
+</tr>
+<tr>
+<td>:1,$s/word1/word2/gc 或 :%s/word1/word2/gc</td>
+<td>从第一行到最后一行寻找   word1 字符串，并将该字符串取代为 word2 ，且在取代前显示提示字符给用户确认 (confirm) 是否需要取代</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>命令模式切换到插入模式的可用的按钮</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>I，i</td>
+<td>进入插入模式(Insert   mode)：    i 为『从目前光标所在处输入』；    I 为『在目前所在行的第一个非空格符处开始输入』</td>
+</tr>
+<tr>
+<td>A，a</td>
+<td>进入插入模式(Insert   mode)：    a 为『从目前光标所在的下一个字符处开始输入』；     A 为『从光标所在行的最后一个字符处开始输入』</td>
+</tr>
+<tr>
+<td>O，o</td>
+<td>进入插入模式(Insert   mode)：    o 为『在目前光标所在的下一行处输入新的一行』；    O 为在目前光标所在处的上一行输入新的一行</td>
+</tr>
+<tr>
+<td>R，r</td>
+<td>进入取代模式(Replace mode)：   r 只会取代光标所在的那一个字符一次；    R会一直取代光标所在的文字，直到按下 ESC 为止；</td>
+</tr>
+<tr>
+<td>vi 画面的左下角处会出现『–INSERT–』或『–REPLACE–』的字样，一定要在左下角处看到 INSERT 或 REPLACE 才能输入字符</td>
+<td></td>
+</tr>
+<tr>
+<td>[Esc]</td>
+<td>退出编辑模式，回到命令模式中</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>末行模式切换到指令行模式的可用的按钮</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>:w</td>
+<td>保存文件</td>
+</tr>
+<tr>
+<td>:w!</td>
+<td>若文件属性为『只读』时，强制写入保存文件</td>
+</tr>
+<tr>
+<td>:q</td>
+<td>退出vi</td>
+</tr>
+<tr>
+<td>:q!</td>
+<td>强制退出</td>
+</tr>
+<tr>
+<td>:wq</td>
+<td>保存并退出</td>
+</tr>
+<tr>
+<td>ZZ</td>
+<td>文件没有更动，则不储存离开，若文件已经被更动过，则储存后离开</td>
+</tr>
+<tr>
+<td>:w [filename]</td>
+<td>编辑的数据另存为filename</td>
+</tr>
+<tr>
+<td>:r [filename]</td>
+<td>编辑的数据中，读入另一个filename</td>
+</tr>
+<tr>
+<td>:n1,n2 w [filename]</td>
+<td>将 n1 到 n2 的内容储存成 filename</td>
+</tr>
+<tr>
+<td>:! Command</td>
+<td>暂时离开 vi 到指令行模式下执行 command 的显示结果</td>
+</tr>
+<tr>
+<td>:set nu</td>
+<td>显示行号，设定之后，会在每一行的前缀显示该行的行号</td>
+</tr>
+<tr>
+<td>:set nonu</td>
+<td>取消行号</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="安装Linux的编译器GCC"><a href="#安装Linux的编译器GCC" class="headerlink" title="安装Linux的编译器GCC"></a>安装<code>Linux</code>的编译器<code>GCC</code></h2><ol>
+<li><p>打开<code>Linux</code>终端，输入命令如下，发现已经安装<code>gcc</code>；</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc –version</span><br></pre></td></tr></table></figure>
+
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image252.jpg" alt="img"></p>
+</li>
+<li><p>在终端输入命令如下，卸载<code>gcc</code>；</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum remove gcc --skip -broken</span><br></pre></td></tr></table></figure>
+
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image254.jpg" alt="img"></p>
+</li>
+<li><p>下载安装<code>gcc</code>、<code>g++</code>的必要<code>rpm</code>包</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">binutils-2.20.51.0.2-5.36.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">cloog-ppl-0.15.7-1.2.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">cpp-4.4.7-3.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">gcc-4.4.7-3.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">gcc-c++-4.4.7-3.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">glibc-devel-2.12-1.107.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">glibc-headers-2.12-1.107.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">kernel-headers-2.6.32-358.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">libstdc++-devel-4.4.7-3.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">mpfr-2.4.1-6.el6.x86_64.rpm</span></span><br><span class="line"><span class="string">ppl-0.10.2-11.el6.x86_64.rpm</span></span><br></pre></td></tr></table></figure>
+
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image256.jpg" alt="img"></p>
+</li>
+<li><p>在终端输入命令如下，安装上述安装包；</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm -ivh (rpm包名称)</span><br></pre></td></tr></table></figure>
+
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\1569573078991.png" alt="1569573078991"></p>
+</li>
+<li><p>在终端输入如下命令，查看<code>gcc</code>版本为<code>4.4.7</code>，安装成功</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc --version</span><br><span class="line">g++ --version</span><br></pre></td></tr></table></figure>
+
+<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image260.jpg" alt="img"></p>
+</li>
+</ol>
+<h2 id="熟悉使用GCC编译环境"><a href="#熟悉使用GCC编译环境" class="headerlink" title="熟悉使用GCC编译环境"></a>熟悉使用GCC编译环境</h2><ol>
+<li><p><code>gcc</code>编译的四个步骤</p>
+<ol>
+<li><p>预处理</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -o mine.i mine.c -E</span><br><span class="line">*.c --&gt; *.i</span><br></pre></td></tr></table></figure>
+
+<p>主要是把头文件展开，完成函数或结构体等的声明;</p>
+</li>
+<li><p>编译</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -o mine.s mine.i -S</span><br><span class="line">*.i --&gt; *.s</span><br></pre></td></tr></table></figure>
+
+<p>主要是把c源码文件翻译成汇编文件;</p>
+</li>
+<li><p>汇编</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -o mine.o mine.s -c</span><br><span class="line">*.s --&gt; *.o</span><br></pre></td></tr></table></figure>
+
+<p>主要是把汇编文件翻译成二进制的目标文件;</p>
+</li>
+<li><p>链接</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">*.o --&gt; *.bin</span><br></pre></td></tr></table></figure>
+
+<p>把所有的目标文件添加上和系统对接的代码，最后生成可执行程序;</p>
+</li>
+</ol>
+<p>编译总过程为</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -o ****.i  ****.c -E</span><br><span class="line">gcc -o ****.s  ****.i -S</span><br><span class="line">gcc -o ****.o  ****.s -c</span><br><span class="line">gcc -o ****.bin  ****.o</span><br></pre></td></tr></table></figure></li>
+<li><p>新建<code>mine.c</code>文件，编写代码如下</p>
+</li>
+</ol>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image262.jpg" alt="img"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image264.jpg" alt="img"></p>
+<h1 id="实验关键里程碑数据与结果"><a href="#实验关键里程碑数据与结果" class="headerlink" title="实验关键里程碑数据与结果"></a>实验关键里程碑数据与结果</h1><ol>
+<li>安装<code>red hat linux</code>分区和选取服务</li>
+</ol>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image265.jpg" alt="img"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image266.jpg" alt="img"></p>
+<ol start="2">
+<li><p>熟悉<code>Linux</code>文件目录的用途</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\1569484636627.png" alt="1569484636627"></p>
+</li>
+<li><p>熟悉常用命令，<code>mount</code>较难理解</p>
+</li>
+</ol>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image268.jpg" alt="img"></p>
+<ol start="4">
+<li><p><code>GCC</code>使用，了解编译过程如下</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gcc -o mine.i  mine.c -E</span><br><span class="line">gcc -o mine.s  mine.i -S</span><br><span class="line">gcc -o mine.o  mine.s -c</span><br><span class="line">gcc -o mine.bin  mine.o</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/clip_image262.jpg" alt="img"></p>
+<h1 id="实验难点与收获"><a href="#实验难点与收获" class="headerlink" title="实验难点与收获"></a>实验难点与收获</h1><h2 id="难点"><a href="#难点" class="headerlink" title="难点"></a>难点</h2><ol>
+<li>安装磁盘时，分区与挂载过程中操作复杂，理解困难；</li>
+<li><code>usr</code>目录和根目录名称相同的目录代表的意义不相同；</li>
+<li><code>gcc</code>安装与配置需要的<code>rpm</code>包比较多，容易漏装；</li>
+</ol>
+<h2 id="收获"><a href="#收获" class="headerlink" title="收获"></a>收获</h2><ol>
+<li>之前<code>VMware</code>安装虚拟机，一直使用简易安装，这次学会了使用自定义安装虚拟机；</li>
+<li>熟悉了<code>linux</code>基本命令，基本学会使用命令行，思维从图形化界面到命令行有了一定的转换；</li>
+<li>对<code>Linux</code>目录结构有了一定的了解，与<code>windows</code>目录结构有一定的区别；</li>
+<li>基本学会使用<code>vi</code>编辑器；</li>
+<li>了解了<code>linux</code>中<code>GCC</code>编译执行<code>c</code>语言文件的过程；</li>
+</ol>
+<h1 id="实验思考"><a href="#实验思考" class="headerlink" title="实验思考"></a>实验思考</h1><p>该实验主要目的是熟悉<code>linux</code>虚拟机安装、目录结构、基本命令、<code>GCC</code>使用。实验内容相对基础，但是比较繁琐，尤其是熟悉基本命令，觉得可以适当精简；实验整体思路符合逻辑。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%80.html" title="操作系统内核-实验一">https://leeyuxun.github.io/操作系统内核-实验一.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/Hexo%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2%E5%B9%B6%E9%83%A8%E7%BD%B2%E5%88%B0github%E4%B8%8A.html" rel="prev" title="Hexo搭建博客并部署到github上">
+      <i class="fa fa-chevron-left"></i> Hexo搭建博客并部署到github上
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%8C.html" rel="next" title="操作系统内核-实验二">
+      操作系统内核-实验二 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4"><span class="nav-number">2.</span> <span class="nav-text">步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#VMware-workstation-%E5%AE%89%E8%A3%85Red-Hat-Linux"><span class="nav-number">2.1.</span> <span class="nav-text">VMware workstation 安装Red Hat Linux</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%86%9F%E6%82%89Linux%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84%E4%BB%A5%E5%8F%8A%E7%9B%AE%E5%BD%95%E5%8A%9F%E8%83%BD%E7%AE%80%E4%BB%8B"><span class="nav-number">2.2.</span> <span class="nav-text">熟悉Linux目录结构以及目录功能简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%86%9F%E6%82%89Linux%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%93%8D%E4%BD%9C"><span class="nav-number">2.3.</span> <span class="nav-text">熟悉Linux系统的基本操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E6%8C%82%E8%BD%BD"><span class="nav-number">2.3.1.</span> <span class="nav-text">Linux挂载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%90%AF%E5%8A%A8%E4%B8%8E%E9%80%80%E5%87%BA"><span class="nav-number">2.3.2.</span> <span class="nav-text">Linux系统的启动与退出</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E7%B3%BB%E7%BB%9F%E5%AF%B9%E6%96%87%E4%BB%B6%E5%92%8C%E7%9B%AE%E5%BD%95%E7%9A%84%E6%93%8D%E4%BD%9C%E5%91%BD%E4%BB%A4"><span class="nav-number">2.3.3.</span> <span class="nav-text">Linux系统对文件和目录的操作命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E6%A1%A3%E5%A4%87%E4%BB%BD%E4%B8%8E%E5%8E%8B%E7%BC%A9%E5%91%BD%E4%BB%A4"><span class="nav-number">2.3.4.</span> <span class="nav-text">文档备份与压缩命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E6%9D%83%E9%99%90%E6%94%B9%E5%8F%98%E5%91%BD%E4%BB%A4"><span class="nav-number">2.3.5.</span> <span class="nav-text">Linux权限改变命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E4%B8%8E%E7%94%A8%E6%88%B7%E6%9C%89%E5%85%B3%E7%9A%84%E5%91%BD%E4%BB%A4"><span class="nav-number">2.3.6.</span> <span class="nav-text">Linux与用户有关的命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E7%B3%BB%E7%BB%9F%E7%AE%A1%E7%90%86%E5%91%BD%E4%BB%A4"><span class="nav-number">2.3.7.</span> <span class="nav-text">Linux系统管理命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E7%A3%81%E7%9B%98%E7%AE%A1%E7%90%86%E5%91%BD%E4%BB%A4"><span class="nav-number">2.3.8.</span> <span class="nav-text">Linux磁盘管理命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%E5%91%BD%E4%BB%A4"><span class="nav-number">2.3.9.</span> <span class="nav-text">Linux进程管理命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux%E5%85%B6%E4%BB%96%E5%91%BD%E4%BB%A4"><span class="nav-number">2.3.10.</span> <span class="nav-text">Linux其他命令</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Vi%E7%9A%84%E7%86%9F%E6%82%89%E4%B8%8E%E4%BD%BF%E7%94%A8"><span class="nav-number">2.4.</span> <span class="nav-text">Vi的熟悉与使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.4.1.</span> <span class="nav-text">命令模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E5%85%A5%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.4.2.</span> <span class="nav-text">插入模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AB%E8%A1%8C%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.4.3.</span> <span class="nav-text">末行模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E4%BE%8B%E6%BC%94%E7%A4%BA"><span class="nav-number">2.4.4.</span> <span class="nav-text">实例演示</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E8%AF%B4%E6%98%8E"><span class="nav-number">2.4.5.</span> <span class="nav-text">命令说明</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Linux%E7%9A%84%E7%BC%96%E8%AF%91%E5%99%A8GCC"><span class="nav-number">2.5.</span> <span class="nav-text">安装Linux的编译器GCC</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%86%9F%E6%82%89%E4%BD%BF%E7%94%A8GCC%E7%BC%96%E8%AF%91%E7%8E%AF%E5%A2%83"><span class="nav-number">2.6.</span> <span class="nav-text">熟悉使用GCC编译环境</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%85%B3%E9%94%AE%E9%87%8C%E7%A8%8B%E7%A2%91%E6%95%B0%E6%8D%AE%E4%B8%8E%E7%BB%93%E6%9E%9C"><span class="nav-number">3.</span> <span class="nav-text">实验关键里程碑数据与结果</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E9%9A%BE%E7%82%B9%E4%B8%8E%E6%94%B6%E8%8E%B7"><span class="nav-number">4.</span> <span class="nav-text">实验难点与收获</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9A%BE%E7%82%B9"><span class="nav-number">4.1.</span> <span class="nav-text">难点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B6%E8%8E%B7"><span class="nav-number">4.2.</span> <span class="nav-text">收获</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%80%9D%E8%80%83"><span class="nav-number">5.</span> <span class="nav-text">实验思考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

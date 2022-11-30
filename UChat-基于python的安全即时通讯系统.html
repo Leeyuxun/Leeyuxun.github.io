@@ -1,0 +1,2171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="目的设计完成简易的安全即时通讯系统，实现类似于QQ的聊天软件；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="UChat-基于python的安全即时通讯系统">
+<meta property="og:url" content="https://leeyuxun.github.io/UChat-%E5%9F%BA%E4%BA%8Epython%E7%9A%84%E5%AE%89%E5%85%A8%E5%8D%B3%E6%97%B6%E9%80%9A%E8%AE%AF%E7%B3%BB%E7%BB%9F.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="目的设计完成简易的安全即时通讯系统，实现类似于QQ的聊天软件；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714124535.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714124653.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714133500.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134257.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134437.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134505.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134543.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134625.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134751.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134808.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134732.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714140712.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145452.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145528.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145654.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145755.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145832.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145916.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150022.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150145.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150237.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150347.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150443.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150547.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150653.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150733.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150811.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150901.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714151012.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714151144.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714151209.png">
+<meta property="article:published_time" content="2020-07-14T07:52:20.000Z">
+<meta property="article:modified_time" content="2020-07-14T08:17:04.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="安全即时通讯软件">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714124535.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/UChat-%E5%9F%BA%E4%BA%8Epython%E7%9A%84%E5%AE%89%E5%85%A8%E5%8D%B3%E6%97%B6%E9%80%9A%E8%AE%AF%E7%B3%BB%E7%BB%9F.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>UChat-基于python的安全即时通讯系统 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/UChat-%E5%9F%BA%E4%BA%8Epython%E7%9A%84%E5%AE%89%E5%85%A8%E5%8D%B3%E6%97%B6%E9%80%9A%E8%AE%AF%E7%B3%BB%E7%BB%9F.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          UChat-基于python的安全即时通讯系统
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-14 15:52:20 / 修改时间：16:17:04" itemprop="dateCreated datePublished" datetime="2020-07-14T15:52:20+08:00">2020-07-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/personal-tools/" itemprop="url" rel="index"><span itemprop="name">personal tools</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h2><p>设计完成简易的安全即时通讯系统，实现类似于QQ的聊天软件；<span id="more"></span></p>
+<h2 id="需求分析"><a href="#需求分析" class="headerlink" title="需求分析"></a>需求分析</h2><h3 id="功能需求"><a href="#功能需求" class="headerlink" title="功能需求"></a>功能需求</h3><ol>
+<li><p>聊天客户端</p>
+<ol>
+<li>注册：用户与集中服务器通信完成注册，包括用户名、密码、邮箱、性别、年龄、数字证书等信息传输，其中数字证书包含公钥、用户名、邮箱等信息。私钥单独保存在客户端一个文件夹下不进行传输；能显示用户名、邮箱不符合格式规范或者重复，空输入等错误信息。</li>
+<li>认证登录：客户端与集中服务器通信完成用户名、口令认证登录；能显示用户名、密码错误导致的登录错误信息。还有已登录账号再次登录时的多重登录检验，并将之前登陆的账号顶下去。</li>
+<li>好友管理：用户可通过服务器进行搜索、添加、删除好友。</li>
+<li>即时通信：用户通过客户端实现与好友的聊天，包括文字、图片传输。文字可实现字体颜色和大小的改变。</li>
+<li>聊天记录：客户端能够保存聊天记录并且可以查看聊天记录。</li>
+<li>消息加解密：采用D-H体制协商加密秘钥，用对称密码AES算法进行加解密。</li>
+<li>消息摘要：使用MD5算法实现消息摘要认证功能，确保发送消息的完整性。</li>
+<li>用户未读消息提醒：红点标注未读消息数目，并按最后发送消息时间排列好友列表。</li>
+<li>用户离线后消息处理：用户上线后及时接收到离线时好友发送的消息。</li>
+</ol>
+<p>功能结构图</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714124535.png"></p>
+</li>
+<li><p>集中服务器</p>
+<ol>
+<li>用户注册：与用户通信完成注册，对用户名和邮箱格式、是否重复，输入不规范等做必要的检验，接收客户端的数字证书，发送服务端数字证书。</li>
+<li>登录验证：用户登录时，验证用户名和密码是否正确，并向客户端返回登录结果。如信息正确，就将在线好友用户发给该用户，将该用户的状态发给各在线好友用户，同时在服务器端显示出来。</li>
+<li>用户公钥，证书提供：用户向好友发送消息时，与服务器建立安全连接获取好友的证书信息，服务器控制client.socket像好友用户发送信息，实现用户之间的通信。</li>
+<li>用户在线状态维护：当用户在线时，记录保存用户的在线状态、IP地址、端口号。</li>
+<li>用户消息列表实时发放：由监听函数将操作实时加入到执行函数列表中递归执行。向用户发送其好友列表的在线离线情况，包括好友用户名、IP地址、端口号。并按照最后发消息的时间对好友消息列表进行排序。</li>
+</ol>
+<p>功能结构图</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714124653.png"></p>
+</li>
+<li><p>高级功能</p>
+<ol>
+<li>离线用户消息通知：暂时存储离线用户的消息，用户上线后，显示未读的消息并用红点标注；</li>
+<li>好友在线离线功能实时更新；</li>
+<li>限制账号只能一处登录：一个账号只能在一处登录，在别处登录时会把原先的登录踢下线；</li>
+<li>支持群聊功能：可以创建群聊，并根据群号加入群聊；</li>
+<li>聊天时字体大小颜色可更改；</li>
+<li>支持聊天各类图像文件的缓存。</li>
+</ol>
+</li>
+</ol>
+<h3 id="数据需求"><a href="#数据需求" class="headerlink" title="数据需求"></a>数据需求</h3><ol>
+<li><p>客户端</p>
+<p>客户端登录后加过的好友和加入的群聊需要从数据库中调出信息并在前端反馈呈现出来。客户端的聊天记录可以存储在数据库中，用到时直接读取返回消息历史。</p>
+</li>
+<li><p>集中服务器</p>
+<ol>
+<li><p>users表：用户信息表，存储用户基本信息，包括用户ID(id)、用户名(username)、密码(password)、电子邮箱(email)、用户登录IP地址(ip)、用户登录端口(port)、性别(sex)、年龄(age)、公钥(pk)。</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>数据类型</th>
+<th>主键</th>
+<th>是否唯一</th>
+<th>是否为空</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>INTEGER</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td>用户id</td>
+</tr>
+<tr>
+<td>username</td>
+<td>TEXT</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>用户名</td>
+</tr>
+<tr>
+<td>password</td>
+<td>TEXT</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>密码</td>
+</tr>
+<tr>
+<td>email</td>
+<td>TEXT</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>邮箱</td>
+</tr>
+<tr>
+<td>ip</td>
+<td>TEXT</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>登录IP</td>
+</tr>
+<tr>
+<td>port</td>
+<td>TEXT</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>登录端口</td>
+</tr>
+<tr>
+<td>sex</td>
+<td>TEXT</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>性别</td>
+</tr>
+<tr>
+<td>age</td>
+<td>TEXT</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>姓名</td>
+</tr>
+<tr>
+<td>pk</td>
+<td>TEXT</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>公钥</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>friends表：存储用户的好友信息，包括用户id(from_user_id)、好友id(to_user_id)、加好友请求是否接受(accepted)。</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>数据类型</th>
+<th>主键</th>
+<th>是否唯一</th>
+<th>是否为空</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>from_user_id</td>
+<td>INTEGER</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td>本人ID</td>
+</tr>
+<tr>
+<td>to_user_id</td>
+<td>INTEGER</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td>好友ID</td>
+</tr>
+<tr>
+<td>accept</td>
+<td>BOOLEAN</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>接受状态</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>chat_history表：存储好友的聊天记录，包括发送方ID(user_id)、接收方(target_id)ID(target_type)、聊天数据(data)(BLOB类型存储二进制大对象，可以实现文件数据的直接存储)，sent(用于标识消息是否已发送，若未发送，先存储这个操作，在某一次事件再次触发时检查标志位，操作服务端再次控制client.socket发送消息)。</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>数据类型</th>
+<th>主键</th>
+<th>是否唯一</th>
+<th>是否为空</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>INTEGER</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td>消息ID</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>INTEGER</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>用户ID</td>
+</tr>
+<tr>
+<td>target_id</td>
+<td>INTEGER</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>消息目标ID</td>
+</tr>
+<tr>
+<td>target_type</td>
+<td>TEXT</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>目标类型：群/用户</td>
+</tr>
+<tr>
+<td>data</td>
+<td>BLOB</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>消息体</td>
+</tr>
+<tr>
+<td>sent</td>
+<td>BOOLEAN</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>发送是否成功</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>rooms表：群组表，包括该群组的主键ID(id)、群组的名称(room_name)。</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>数据类型</th>
+<th>主键</th>
+<th>是否唯一</th>
+<th>是否为空</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>INTEGER</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td>群聊ID</td>
+</tr>
+<tr>
+<td>room_name</td>
+<td>TEXT</td>
+<td>N</td>
+<td>Y</td>
+<td>N</td>
+<td>群聊名</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>room_user表：群组用户表，包括群组的ID，群聊房间号(room_id)、加入该群组的用户(user_id)。</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>数据类型</th>
+<th>主键</th>
+<th>是否唯一</th>
+<th>是否为空</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>INTEGER</td>
+<td>Y</td>
+<td>Y</td>
+<td>N</td>
+<td>ID</td>
+</tr>
+<tr>
+<td>room_id</td>
+<td>INTEGER</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>群聊ID</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>INTEGER</td>
+<td>N</td>
+<td>N</td>
+<td>N</td>
+<td>用户ID</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="性能需求"><a href="#性能需求" class="headerlink" title="性能需求"></a>性能需求</h3><ol>
+<li><p>可靠性需求</p>
+<p>保证一个用户只能同时使用一个IP地址登录，客户端不会出现闪退、加密无效的情况。</p>
+</li>
+<li><p>安全性需求</p>
+<p>客户端做好完整的封装；传输信息采用经过公钥加密机制协商的AES对称加密秘钥；服务器及时更新客户端IP地址等信息。</p>
+</li>
+<li><p>可维护性与可扩展性需求</p>
+<p>对于软件功能方面，采用高内聚低耦合的模块化设计，包括登录模块、注册模块、好友列表模块、聊天模块等，确保每个模块的具有较高的独立性，使软件源码便于维护，同时便于后期添加聊天群等更多扩展内容，保证软件可以进行更新换代。</p>
+</li>
+<li><p>运行环境需求</p>
+<ol>
+<li><p>客户端：python3</p>
+</li>
+<li><p>服务端：</p>
+<p>python3</p>
+<p>PC硬盘容量：50G<br>运行内存：2G</p>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="UI需求"><a href="#UI需求" class="headerlink" title="UI需求"></a>UI需求</h3><ol>
+<li>页面内容：聊天字体大小和颜色可更改，主题突出，语言简单明了易懂，菜单设置合理、页面布局规范，文字准确，语言流畅。</li>
+<li>技术环境：页面大小合适，无错误链接和空链接。</li>
+<li>艺术风格：界面版面形象清晰，布局合理，字号大小适宜，字体选择合理，前后一致，动静搭配恰当，色彩和谐自然，与主题内容协调。</li>
+</ol>
+<h3 id="操作需求"><a href="#操作需求" class="headerlink" title="操作需求"></a>操作需求</h3><ol>
+<li>所有弹出的窗口不超过一层，无层层堆叠的现象，不能无故为操作增加复杂度。</li>
+<li>用户注册、用户登录、添加好友、删除好友聊天窗口的开启等所有操作务必要简单、快捷，限制在两次点击以内。</li>
+<li>考虑到操作人员工作的实际环境状况，就要保证设计的按键足够的清晰足够大。</li>
+</ol>
+<h2 id="详细设计"><a href="#详细设计" class="headerlink" title="详细设计"></a>详细设计</h2><h3 id="系统结构说明"><a href="#系统结构说明" class="headerlink" title="系统结构说明"></a>系统结构说明</h3><p>本系统的核心控制逻辑在于C-S-C之间发送的数据中包含了操作码，接收方通过对接收码的识别作出规定的操作。例如服务端接收添加好友的操作码会执行add_friend.py。客户端接收操作码并不断把对应函数放入递归函数的队列中，由递归函数逐一执行队列中的函数。</p>
+<p>系统主要分为三个部分：</p>
+<ul>
+<li>聊天客户端(client)</li>
+<li>集中服务器(server)</li>
+<li>相互通信时的共同部分(common)</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line">Uchat</span><br><span class="line">│	config.json</span><br><span class="line">│	run_client.py</span><br><span class="line">│	run_server.py</span><br><span class="line">│</span><br><span class="line">├─client</span><br><span class="line">││		__init__.py</span><br><span class="line">││</span><br><span class="line">│├─components</span><br><span class="line">││		contact_item.py<span class="comment">//联系人列表UI</span></span><br><span class="line">││		vertical_scrolled_frame.py<span class="comment">//Tkinter可滚动框架</span></span><br><span class="line">││		__init__.py</span><br><span class="line">││</span><br><span class="line">│├─forms</span><br><span class="line">│││		chat_form.py<span class="comment">//聊天界面及处理与聊天相关的事件</span></span><br><span class="line">│││		contacts_form.py<span class="comment">//联系人列表</span></span><br><span class="line">│││		login_form.py<span class="comment">//登录界面</span></span><br><span class="line">│││		register_form.py<span class="comment">//注册界面</span></span><br><span class="line">│││		__init__.py</span><br><span class="line">│││</span><br><span class="line">││└───images<span class="comment">//背景图片</span></span><br><span class="line">││		contacts_bg.gif</span><br><span class="line">││		contacts_bg.png</span><br><span class="line">││		login_bg.gif</span><br><span class="line">││		register_bg.gif</span><br><span class="line">││		VerticalScrolled.png</span><br><span class="line">││</span><br><span class="line">│├─memory</span><br><span class="line">││		__init__.py<span class="comment">//缓存数据</span></span><br><span class="line">││</span><br><span class="line">│└─util</span><br><span class="line">│	│	__init__.py</span><br><span class="line">│	└─	socket_listener</span><br><span class="line">│			__init__.py<span class="comment">//监听socket的线程</span></span><br><span class="line">│</span><br><span class="line">├─common</span><br><span class="line">││		config.py<span class="comment">//获取配置信息</span></span><br><span class="line">││		global_vars.py<span class="comment">//全局变量</span></span><br><span class="line">││		__init__.py</span><br><span class="line">││</span><br><span class="line">│├─cryptography</span><br><span class="line">││		crypt.py<span class="comment">//密钥协商相关函数</span></span><br><span class="line">││		prime.py<span class="comment">//随机生成一个大素数</span></span><br><span class="line">││		__init__.py</span><br><span class="line">││</span><br><span class="line">│├─message</span><br><span class="line">││		__init__.py<span class="comment">//消息处理(消息类型定义，序列化过程等)</span></span><br><span class="line">││</span><br><span class="line">│├─transmission</span><br><span class="line">││		secure_channel.py<span class="comment">//安全信道的建立和传输</span></span><br><span class="line">││		__init__.py</span><br><span class="line">││</span><br><span class="line">│└─util</span><br><span class="line">│	│	__init__.py</span><br><span class="line">│	│</span><br><span class="line">│	└─	socket_listener</span><br><span class="line">│			__init__.py<span class="comment">//客户端socket监听</span></span><br><span class="line">│</span><br><span class="line">└─server</span><br><span class="line">	│	database.db</span><br><span class="line">	│	main.sql</span><br><span class="line">	│	__init__.py</span><br><span class="line">	│</span><br><span class="line">	├─broadcast</span><br><span class="line">	│	__init__.py<span class="comment">//广播消息</span></span><br><span class="line">	│</span><br><span class="line">	├─event_handler</span><br><span class="line">	│	add_friend.py<span class="comment">//加好友</span></span><br><span class="line">	│	bad.py<span class="comment">//出现错误操作使程序走向可处理除0操作</span></span><br><span class="line">	│	client_echo.py<span class="comment">//测试CS通信</span></span><br><span class="line">	│	create_room.py<span class="comment">//创建群聊</span></span><br><span class="line">	│	del_friend.py<span class="comment">//删除好友</span></span><br><span class="line">	│	join_room.py<span class="comment">//加入群聊</span></span><br><span class="line">	│	login.py<span class="comment">//登录</span></span><br><span class="line">	│	query_room_users.py<span class="comment">//执行群聊中发消息的操作</span></span><br><span class="line">	│	<span class="keyword">register</span>.py<span class="comment">//注册</span></span><br><span class="line">	│	resolve_friend_request.py<span class="comment">//处理加好友请求</span></span><br><span class="line">	│	send_message.py<span class="comment">//发消息</span></span><br><span class="line">	│	__init__.py</span><br><span class="line">	│</span><br><span class="line">	├─memory</span><br><span class="line">	│	__init__.py<span class="comment">//缓存数据</span></span><br><span class="line">	│</span><br><span class="line">	└─util</span><br><span class="line">		│__init__.py<span class="comment">//添加对象类型</span></span><br><span class="line">		│</span><br><span class="line">		└─database</span><br><span class="line">			__init__.py<span class="comment">//数据库操作</span></span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>聊天客户端client</p>
+<p>实现安全即时通信系统的客户端，主要功能是通过界面与用户实现交互；通过socket与集中服务器进行通信，获得集中服务器的服务，实现用户的注册登录等功能。与好友即时通信和加入群聊通信。</p>
+<ol>
+<li>登录模块LoginForm<br>该模块创建登录界面并可链接到注册界面，若输入为空则报错，否则将获取用户输入的用户名和密码打包成登录请求消息(MessageType.login)发送给服务器，服务器根据消息类型和数据包中的内容以及在数据库查找到的结果进行判断，根据不同情况发送不同的反馈给客户端。客户端收到反馈消息，若data[‘type’]为login_failed，则用户名和密码输入有误；若为data[‘type’]为login_successful则根据memory进入登录后显示好友列表的ContractsForm界面。</li>
+<li>注册模块RegisterForm<br>该模块只有在登录界面点击注册按钮时才会显示。通过注册窗口获得用户输出的个人信息：用户名、密码、邮箱、性别、年龄，若其中用户名、邮箱、密码为空或两次密码输入不一致则会提示相应的错误以引导用户进行正确的输入，否则将获取用户输入打包成注册请求消息(MessageType.register)发送给服务器。服务器查找数据库判断是否用户名已经注册过，发送不同反馈给用户，若data[‘type’]为username_taken，则用户名已被注册，若data[‘type’]为MessageType.register_successful则注册成功，并且在客户端生成证书包含用户的用户名，邮箱，公钥。</li>
+<li>主界面ContactsForm<br>该模块在用户登录成功以后显示。显示好友列表中好友的用户名、在线状态，ip地址及端口号等。下方的按钮有添加好友、删除好友、添加群聊、创建群聊。可以点击相应的按钮进行相应的操作，发给服务器相应的数据包，服务器接收到数据包后进行解析，根据不同类型进行event_handler。若点击好友列表或群聊即可跳出聊天界面进行聊天。未读的消息会用红点标注，根据最后一条消息的发送时间来对好友列表排序。</li>
+<li>.聊天界面ChatForm<br>该模块是用户与好友聊天的界面。当用户在好友列表中点击好友列表时，即向好友发出聊天，服务器收到聊天请求后寻找对方的证书，找到对方的公钥，双方使用Diffie-Hellman算法协商算法，然后利用AES加密消息保证消息的机密性，MD5生成消息摘要验证保证消息的完整性。另外还可以更改聊天过程中字体的大小和颜色，支持多行输入，支持发送文件，以图片为例，将保存聊天过程中的接收到的图片，并识别其格式。</li>
+<li>客户端部件(components)模块<br>该模块实现tkinter静态部件添加和滚动模块的实现。</li>
+<li>客户端memory管理模块(memory)<br>该模块用于初始化tkinter对象tk的属性，如窗口，secure_channel对象等。</li>
+<li>多用(util)中的socket_listener模块<br>该模块用于客户端处理消息类型，文本或其他。以及不断循环建立连接socket接收消息，实现数据包的完整接收。定义处理给好友框，消息框更新历史消息的函数，事件操作的监听函数和移除函数，消息的监听函数和移除函数。可以实现接收数据并且拼成块，更新聊天的历史记录，通知客户端更新contacts界面上的最后一条消息的内容，时间，未读消息的数目等。</li>
+</ol>
+</li>
+<li><p>集中服务器server</p>
+<ol>
+<li>event_handler模块<br>该模块分为11个部分，分别具体处理客户端发来的各个操作事件。如登录加好友删除好友等操作。</li>
+<li>database数据库模块<br>该模块主要是根据客户端触发的事件对数据库的各种操作。</li>
+<li>broadcast广播模块<br>该模块主要是针对群聊，为群组中的每个在线用户广播发送消息。</li>
+<li>memory模块<br>定义用户与secure_channel对象互相映射的字典列表，所有已经建立的secure_channel对象，以及用户下线后将其从在线secure_channel对象列表中移除的操作。</li>
+</ol>
+</li>
+<li><p>客户端服务器公用模块common</p>
+<ol>
+<li>message模块<br>将变量数据等变成可存储或者传输的过程即序列化，同时还将各个事件的类型变为枚举变量保存，将收到的数据包反序列化进行恢复，再提取数据包中Message的类型。</li>
+<li>cryptography模块<br>用于调用其生成公钥，然后从证书中获取公钥，再使用D-H算法协商生成共享密钥。</li>
+<li>prime模块<br>该模块主要是判断是否为素数，生成大素数，为证书的生成提供基础。</li>
+<li>secure_channel模块<br>该模块主要是定义secure_channel类，即包裹了socket和参数秘钥的封装对象。在通信对象之间协商好对称加密秘钥之后封装在这个新的对象中。并且这个对象对数据有新的函数功能：<ul>
+<li>send函数<br>用于对发送的序列化之后的数据用对称加密秘钥进行AES加密并用struct结构体将其打包成自设协议格式的数据包。</li>
+<li>on_data<br>函数主要用于接受数据的逆向解析。按照要求配置socket和数据传输的格式进行规则化。数据包的格式为前四个字节为消息体的长度，接着一字节存储AES加密时的消息填充长度，然后16字节AES加密时所需要的初始值，再接着是32字节的消息摘要，最后才是加密后的消息体。</li>
+</ul>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="重要数据说明"><a href="#重要数据说明" class="headerlink" title="重要数据说明"></a>重要数据说明</h3><ol>
+<li><p>发送接收的数据格式</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714133500.png"></p>
+</li>
+<li><p>接收数据时的三个字典</p>
+<ol>
+<li>bytes_to_receive={}——用于存储对应用户id或者服务器的将要接收的数据；</li>
+<li>bytes_received={}——用于标识已经接收的数据；</li>
+<li>data_buffer={}——用于将已经接收的数据解密，反序列化生成最初的数据字符串。</li>
+</ol>
+</li>
+<li><p>全局都在引用的数据</p>
+<ol>
+<li>sc_to_user_id={}——表示映射关系为sc-&gt;user_id的字典；</li>
+<li>user_id_to_sc={}——表示映射关系为user_id-&gt;的字典；</li>
+<li>socket_to_sc={}——表示socket和已生成sc对象的映射关系字典；</li>
+<li>scs=[]——存储所有运行出来的sc(secure_channel)对象；</li>
+<li>chat_history=[]——用于暂时存储聊天信息历史。</li>
+</ol>
+</li>
+<li><p>客户端接收到的数据data</p>
+<p>data是一部字典，它包括key:parameters，type.parameters也是一部字典，内部包括key:target_type，time，sender_id(发送者id)，target_id(接收方id)，sender_name(接收者姓名，message字典(内含数据内容，字体，字体大小颜色)。而外层的这个type存储的是交给server的MessageType类型，如果是不同的MessageType会进行不同的数据库操作和客户端操作。具体实例如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">data={</span><br><span class="line">	'parameters':{</span><br><span class="line">        'target_type':0,</span><br><span class="line">        'time':1562754761321,</span><br><span class="line">        'sender_id':1,</span><br><span class="line">        'target_id':2,</span><br><span class="line">        'sender_name':'1',</span><br><span class="line">        'message'{</span><br><span class="line">            'data':'hello',</span><br><span class="line">            'fontsize':10,</span><br><span class="line">            'type':0,</span><br><span class="line">            'fontcolor':'#000000'</span><br><span class="line">        }</span><br><span class="line">    },</span><br><span class="line">	'type':&lt;MessageType.on_new_message:109&gt;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<p>例子中data[‘parameters’][‘target_type’]=0表示文本信息，从id为1的用户发出信息，发给id标号为2的人，发送方昵称为‘1’。给服务器发送的操作码为109。</p>
+</li>
+</ol>
+<h3 id="安全传输"><a href="#安全传输" class="headerlink" title="安全传输"></a>安全传输</h3><ol>
+<li><p>数据包结构</p>
+<ol>
+<li><p>消息加密算法：AES对称加密算法，保证消息机密性</p>
+</li>
+<li><p>消息摘要算法：MD5算法，保证消息的完整性</p>
+</li>
+<li><p>包结构分析</p>
+<ol>
+<li><p>第一层(解密前)</p>
+<p>通过函数struct.pack()构造加密的数据包，结构如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134257.png"></p>
+<p>相关代码如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">iv1=<span class="built_in">bytes</span>(os.urandom(<span class="number">16</span>))</span><br><span class="line">	data_to_encrypt=serialize_message(message_type,parameters)</span><br><span class="line">length_of_message=<span class="built_in">len</span>(data_to_encrypt)</span><br><span class="line">padding_n=math.ceil(length_of_message/<span class="number">16</span>)*<span class="number">16</span>-length_of_message</span><br><span class="line">	foriinrange(<span class="number">0</span>,padding_n):</span><br><span class="line">		data_to_encrypt+=<span class="string">b'\0'</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>其中iv1是16字节随机数作为初始向量。要加密的数据是序列化的初始数据。获取长度后用\0填充。然后将数据用python库函数aes，cbc模式加密得到加密数据。</p>
+</li>
+<li><p>第二层(解密后)</p>
+<p>结构如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134437.png"></p>
+<ul>
+<li><p>MessageType：event_handler_map()规定的操作码</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134505.png"></p>
+</li>
+<li><p>Parameter：字典参数，包含target_type(标志群聊或者私聊)等</p>
+</li>
+</ul>
+</li>
+<li><p>第三层，序列化数据的安排格式</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134543.png"></p>
+</li>
+<li><p>第四层，基础数据部分</p>
+<p>包括int、str、bool、float、binary等</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134625.png"></p>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>密钥分发</p>
+<ol>
+<li><p>协商过程</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134751.png"></p>
+<p>客户端的证书、公钥、私钥</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134808.png"></p>
+</li>
+<li><p>加密算法</p>
+<p>采用DH协商对称加密的共享密钥，具体过程如下</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714134732.png"></p>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="程序函数清单"><a href="#程序函数清单" class="headerlink" title="程序函数清单"></a>程序函数清单</h3><h4 id="客户端函数"><a href="#客户端函数" class="headerlink" title="客户端函数"></a>客户端函数</h4><ol>
+<li><p>socket_listener(self,data)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/register_form.py</li>
+<li>client/forms/login_form.py</li>
+<li>client/forms/contacts_form.py</li>
+<li>client/forms/chat_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在的类的自身</li>
+<li>data：监听数据</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>在注册、登录、好友列表、聊天框四个页面建立事件监听，解析监听data，确定数据中MessageType的类型，在register_form.py文件中用于判断用户名是否被占用、返回注册结果；在login_form.py中用于返回登录结果；在contacts_form.py文件中用于判断是否处理添加、删除好友、添加、创建群聊以及执行操作的结果、判断好友是否下线并刷新好友列表。</p>
+</li>
+</ul>
+</li>
+<li><p>remove_socket_listener_and_close(self)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/register_form.py</li>
+<li>client/forms/login_form.py</li>
+<li>client/forms/contacts_form.py</li>
+<li>client/forms/chat_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在的类的自身：RegisterForm、LoginForm、ContactsForm、ChatForm</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>通过调用util/socket_listener文件下的remove_listener函数来关闭事件监听，同时调用库函数destroy()关闭窗口、清空客户端缓存信息。</p>
+</li>
+</ul>
+</li>
+<li><p>_<em>init</em>_(self,master=None)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/register_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类RegisterForm自身</li>
+<li>master：注册主窗口用来容纳其他组件,默认一个窗口master=None</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>通过库函数super()实现子类__init__()对父类__init__()的继承；对注册窗口进行布局，包括确定注册界面的长宽，确定背景、标签、输入框、按钮等的位置、颜色、类型、链接等；初始化安全信道；通过socket_listener()函数和remove_socket_listener_and_close()函数控制对客户端socket事件监听和关闭。</p>
+</li>
+</ul>
+</li>
+<li><p>do_register(self)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/register_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类RegisterForm自身</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>检查输入的用户名、密码、邮箱是否合法；判断两次输入的密码是否相同；调用get_ip()函数获取客户端的IP地址和端口号；向服务器发送注册请求，并通过调用函数send()将注册输入的用户名、密码、邮箱、性别、年龄以及用户的IP地址和端口号等信息发送给服务器；构造数字证书，命名为IP地址+“——cert.pem”，内容为用户名+邮箱+用户公钥</p>
+</li>
+</ul>
+</li>
+<li><p>._<em>init</em>_(self,master=None)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/login_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类RegisterForm自身</li>
+<li>master：登录主窗口用来容纳其他组件,默认一个窗口master=None</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>通过库函数super()实现子类__init__()对父类_<em>init</em>_()的继承；对登录窗口进行布局，包括确定注册界面的长宽，确定背景、标签、输入框、按钮等的位置、颜色、类型、链接等；初始化安全信道；通过socket_listener()函数和add_listener()函数将服务器端加入到监听列表中。</p>
+</li>
+</ul>
+</li>
+<li><p>do_login(self)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/login_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>参数self：所在类LoginForm自身</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>检查输入的用户名、密码是否合法；通过调用函数send()向服务器发送登录请求，并将输入的用户名、密码等信息发送给服务器。</p>
+</li>
+</ul>
+</li>
+<li><p>show_register(self)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/login_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类LoginForm自身</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>与注册按钮关联，通过点击按钮调用库函数Toplevel()跳转到注册页面。</p>
+</li>
+</ul>
+</li>
+<li><p>._<em>init</em>_(self,master=None)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/contacts_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类ContactsForm自身</li>
+<li>master：登录主窗口用来容纳其他组件,默认一个窗口master=None。</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>通过库函数super()实现子类_<em>init__()对父类__init</em>_()的继承；对好友列表窗口布局，确定好友列表的长宽、按钮的位置、颜色、类型、链接等；调用VerticalScrolledFrame()函数，将列表设置滚动条＋图片背景；初始化安全信道；通过socket_listener()函数和remove_socket_listener_and_close()函数控制对客户端socket事件监听和关闭。</p>
+</li>
+</ul>
+</li>
+<li><p>refresh_contacts(self)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/contacts_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类ContactsForm自身</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>通过比较与好友或群聊最近一次发消息的时间last_message_timestamp和好友的在线情况刷新好友列表，根据好友或群聊发送消息的时间远近对好友列表进行排列，并将在线好友移至列表顶部</p>
+</li>
+</ul>
+</li>
+<li><p>on_add_friend(self)/on_del_friend(self)/on_add_room(self)on_create_room(self)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/contacts_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类ContactsForm自身</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>与添加好友、删除好友、添加群聊、创建群聊四个按钮链接；使用库函数simpledialog.askstring()弹出输入框，并对输入的内容进行检验；使用函数send()向服务器发送操作请求。</p>
+</li>
+</ul>
+</li>
+<li><p>handle_new_contact(self,data)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/contacts_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类ContactsForm自身</li>
+<li>data：接收的数据</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>被该文件下的另一个函数__init__()调用用来添加或删除列表中的好友。</p>
+</li>
+</ul>
+</li>
+<li><p>_<em>init</em>_(self,target,master=None)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/chat_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类ChatFrame自身</li>
+<li>target：一个用来暂时存储消息的列表</li>
+<li>master：聊天框主窗口用来容纳其他组件,默认一个窗口master=None</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>对聊天框布局，确定聊天框的长宽、输入框、消息框、按钮的位置、颜色、类型、链接等；分辨私人聊天和群聊；利用append_to_chat_box()函数加载、更新历史消息。</p>
+</li>
+</ul>
+</li>
+<li><p>send_message(self)/send_file(self)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/chat_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类ChatFrame自身</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>通过调用input_textbox.get()函数和filedialog.askopenfilename()函数实现发送消息和文件。</p>
+</li>
+</ul>
+</li>
+<li><p>digest_message(self,data)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/forms/chat_form.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类ChatFrame自身</li>
+<li>data：传输的数据</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>通过分析传输的数据包，摘取消息的时间戳、发送者、消息类型，为布局做准备。</p>
+</li>
+</ul>
+</li>
+<li><p>_<em>init</em>_(self,parent,onclick)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/components/contact_item.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类ContactItem自身</li>
+<li>parent：向函数内定义的子类传递的参数</li>
+<li>onclick：跳转动作</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>位于ContactItem类中，对好友列表中的每一行进行布局如</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714140712.png"></p>
+</li>
+</ul>
+</li>
+<li><p>_<em>init</em>_(self,parent,*args,**kw)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>client/components/vertical_scrolled_frame.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self：所在类VerticalScrolledFrame自身</li>
+<li>parent：向函数内定义的子类传递的参数</li>
+<li>*args：可变参数</li>
+<li>**kw：关键字参数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>利用Scrollbar()函数创建一个带有滚动条的画布，并可以通过滚动条对画布及时更新。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="common函数"><a href="#common函数" class="headerlink" title="common函数"></a>common函数</h4><ol>
+<li><p>gen_secret()</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\cryptography\crypt.py</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>产生用户的公钥私钥</p>
+</li>
+<li><p>算法描述</p>
+<p>利用prime.generate_big_prime()函数产生一个大的素数作为私钥，然后利用相应算法计算出自己的公钥，将公钥和私钥保存成文件，公钥可写入证书，私钥单独保存不传输</p>
+</li>
+</ul>
+</li>
+<li><p>_serialize_xxx(xxx)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\message_<em>init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数：要序列化的数据类型</p>
+</li>
+<li><p>功能</p>
+<p>针对传入的不同数据类型进行序列化算法描述：对不同数据类型进行序列化成二进制然后返回统一格式的数据，方便进行数据的传输和存好友的用户名和在线状态最近一次消息时间好友的IP地址和端口号消息内容未读消息计数储。每个序列化后的数据格式为：|——VAR_TYPE(1Byte)——|——DATA_LEN(4Bytes)——|——DATA——|。即1字节数据类型，4字节数据长度和数据部分。</p>
+<p>主要用_serialize_list(list):_serialize_list(list)数据打包格式如下：|——1ByteTypeofparams——|——4BytesLengthofbody——|——Body(self-evidentlength)——|——Body(selfevidentlength)——|——Body(self-evidentlength)——|..即第一字节为列表类型，然后4字节的数据长度，由每种数据类型占用长度不同分配不同的BODY长度，每一个BODY可以是如list,int,float等数据类型。</p>
+</li>
+</ul>
+</li>
+<li><p>_deserialize_xxx(bytes)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\message_<em>init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数：二进制数据</p>
+</li>
+<li><p>功能</p>
+<p>针对传入的不同数据类型数据进行反序列化成原本数据</p>
+</li>
+<li><p>算法描述</p>
+<p>对二进制进行反序列成指定的数据类型，即是_serialize_xxx的逆过程，可用于解析数据包。</p>
+</li>
+</ul>
+</li>
+<li><p>send(self,message_type,parameters=None)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\transmission\secure_channel.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self即为SecureChannel类</li>
+<li>message_type即为消息的类型</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>按照自制的协议组织数据包发送数据包</p>
+</li>
+<li><p>算法描述</p>
+<p>数据包的格式为前四个字节为消息体的长度，接着一字节存储AES加密时的消息填充长度，然后16字节AES加密时所需要的初始值，再接着是32字节的消息摘要，最后才是加密后的消息体。</p>
+</li>
+</ul>
+</li>
+<li><p>on_data(self,data_array)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\transmission\secure_channel.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>self即为SecureChannel类</li>
+<li>data_array即为字节数组</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>解析数据包，并利用mac验证消息的完整性</p>
+</li>
+<li><p>算法描述</p>
+<p>首先把bytes([padding_n])+iv1+encrypted_message传给本函数，然后得到消息体，和消息摘要，接收方对消息利用相同的算法计算其消息摘要，验证消息是否被篡改最后对消息解密，返回解密后的反序列化后的原始数据。</p>
+</li>
+</ul>
+</li>
+<li><p>establish_secure_channel_to_server()</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\transmission\secure_channel.py</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>与集中服务器建立安全信道</p>
+</li>
+<li><p>算法描述</p>
+<p>客户端首先获取本机的ip地址，生成自己的私钥公钥和证书，首次连接的时候要给服务器发送证书，计算出二者的共同密钥。</p>
+</li>
+</ul>
+</li>
+<li><p>accept_client_to_secure_channel(socket)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\transmission\secure_channel.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>socket：客户端和服务器通信的socket</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>服务器接收客户端建立安全信道</p>
+</li>
+<li><p>算法描述</p>
+<p>首次连接，客户端会发送公钥，把服务器的证书发送给客户端，二者计算出共同密钥。</p>
+</li>
+</ul>
+</li>
+<li><p>gen_last_message(obj)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\utli\socket_listener\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>obj为传输数据data的obj类型</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>获取对象中message的类型，0表示文字信息，1表示图片信息</p>
+</li>
+<li><p>算法描述</p>
+<p>obj[‘message’][‘type’]判断0与1.type0-文字消息1-图片消息。</p>
+</li>
+</ul>
+</li>
+<li><p>socket_listener_thread(sc,tk_root)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\socket_listener__init.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>sc是已经建立的C-S安全socket，socket_channel,带有对称秘钥</li>
+<li>tk_root是tkinter界面对象。</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>循环接收信息，进入socket监听状态，当接受到信息后完整的接收数据包并从中获取操作码，根据操作码的不同进行不同的处理。</p>
+</li>
+<li><p>算法描述</p>
+<p>使用select.select函数阻塞运行，当有处理时不会被其他人占用。其中接受数据有三个变量：</p>
+<ul>
+<li>bytes_to_receive=0</li>
+<li>bytes_received=0</li>
+<li>data_buffer=bytes()</li>
+</ul>
+<p>当bytes_to_receive=0、bytes_received=0时表示正准备接受一个新的socket数据。开始接收后会通过数据包前四个字节判断长度。如果长度小于四字节说明是损坏的包或者是空包，没有数据，表示服务器已关闭。通过指针[0]+1+16使指针指向数据部分。+1是aes的填充部分1字节，+16是aes初始向量4字节。直到接收完毕为止。接受完会把数据包解包取出数据部分，并不断拼接形成完整数据字符串。</p>
+</li>
+</ul>
+</li>
+<li><p>digest_message(data,update_unread_count=True)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\socket_listene\__init__.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>data是要放入的历史数据</li>
+<li>update_unread_count初始参数设置为True使消息未读数自增</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>实现将历史数据放入chat_history列表中，更新最新消息，消息时间，消息未读数量，并更新用户的好友列表，在前端进行刷新，更新聊天窗口。</p>
+</li>
+<li><p>算法描述</p>
+<p>通过if像chat_history中的数据填入以前的数据。将data更新用于发送。</p>
+</li>
+</ul>
+</li>
+<li><p>add_listener(func)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\socket_listener\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>func是一个函数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>将某一函数事件放入执行列表中，之后会被逐个调用</p>
+</li>
+<li><p>算法描述</p>
+<p>将func函数append到callback_funcs待执行函数列表中。</p>
+</li>
+</ul>
+</li>
+<li><p>remove_listener(func)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>common\socket_listener__init__.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>func是一个函数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>将某一函数事件从执行列表中移除</p>
+</li>
+<li><p>算法描述</p>
+<p>列表的remove操作</p>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="服务器端函数"><a href="#服务器端函数" class="headerlink" title="服务器端函数"></a>服务器端函数</h4><ol>
+<li><p>handler_event</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\event_handler_<em>init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>sc：即为相应的socket；</li>
+<li>event_type：即为事件的类型；</li>
+<li>parameters：相应事件中包含的参数。</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>将不同类型的event映射到相应的事件处理操作上，比如将MessageType.login映射到执行login的处理操作上。</p>
+</li>
+<li><p>算法描述</p>
+<p>主要是利用map根据提供的函数对指定事件做映射。</p>
+</li>
+</ul>
+</li>
+<li><p>run</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\event_handler\login.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>sc：相应的socket</li>
+<li>parameters：从客户端传入的相关参数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>客户端点击登录按钮后，集中服务器进行用户登录后的相关操作。</p>
+</li>
+<li><p>算法描述</p>
+<p>首先从传入的参数中得到用户的username和对应的password，继而得到对数据库的控制操作权限，查询该用户是否存在，用户名和密码是否匹配。若返回值为0，则为客户端发送MessageType.login_failed。下一步查看该用户是否已经登入，若已登入则踢下线，否则登录成功，向客户端发送MessageType.login_successful。登录成功后向客户端发送好友列表，通知他的好友他已上线，最后从数据库中读出他的聊天记录，将其和好友列表一起作为login_bundle的参数发送给客户端。</p>
+</li>
+</ul>
+</li>
+<li><p>run</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\event_handler\register.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>sc：相应的socket；</li>
+<li>parameters：从客户端传入的相关参数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>客户端点击注册按钮后，集中服务器进行用户注册后的相关操作</p>
+</li>
+<li><p>算法描述</p>
+<p>首先从传入的参数中获取用户名，继而得到对数据库的控制操作权限，查询该用户名是否已被注册，若被注册则向客户端发送MessageType.username_taken，否则的话传入的参数中获取用户的ip，重写用户生成的证书，然后再把用户的信息插入到数据库中。</p>
+</li>
+</ul>
+</li>
+<li><p>run</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\event_handler\add_friend.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>sc：相应的socket；</li>
+<li>parameters：从客户端传入的相关参数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>客户端点击添加好友输入好友用户名后，集中服务器进行用户添加好友后的相关操作</p>
+</li>
+<li><p>算法描述</p>
+<p>首先从传入的参数中得到用户的username，继而得到对数据库的控制操作权限，查询该用户是否存在，若不存在向客户端发送MessageType.add_friend_result，并提示用户“用户名不存在”，否则根据用户名找到用户id，判断其是否为自己的id，则提示用户”不能加自己为好友“。再下一步查询用户自己的id和好友id是否已在friends表中，若存在，则提示用户“已经是好友/已经发送过好友请求”，否则的话将用户自己的id和好友id插入到friends表中，但是accpted的值为0，因为此时还不清楚对方是否同意添加你为好友。然后向用户发送MessageType.add_friend_result，值为true。最后若对方在线，则向其发送MessageType.incoming_friend_request，让对方处理添加好友的请求。</p>
+</li>
+</ul>
+</li>
+<li><p>run</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\event_handler\resolve_friend_request.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>sc：相应的socket；</li>
+<li>parameters：从客户端传入的相关参数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>当有用户向目标用户发送好友添加请求时,服务器处理好友请求操作</p>
+</li>
+<li><p>算法描述</p>
+<p>首先从传入的参数中得到uid，继而得到对数据库的控制操作权限，查询friends表中好友关系(accepted状态为0)是否在数据库中已存在，若不存在也不进行相关操作。若拒绝添加好友，则将数据库中的该条数据删除，若同意加为好友，则更新friends表accepted为1，并且在数据库中添加双向关系。并给客户端发送MessageType.contact_info，在好友列表中显示添加成功的好友。若对方在线，也发送MessageType.contact_info，在好友列表中显示添加成功的新好友。</p>
+</li>
+</ul>
+</li>
+<li><p>run</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\event_handler\del_friend.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>sc：相应的socket；</li>
+<li>parameters：从客户端传入的相关参数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>客户端点击删除好友，输入好友用户名后，集中服务器进行用户删除好友后的相关操作。</p>
+</li>
+<li><p>算法描述</p>
+<p>首先从传入的参数中得到用户的username，继而得到对数据库的控制操作权限，查询该用户是否存在，若不存在向客户端发送MessageType.add_friend_result，并提示用户“用户名不存在”，否则根据用户名找到用户id，判断其是否为自己的id，则提示用户”不能删除自己“。再下一步判断对方是否是自己的好友，查询用户自己的id和好友id是否已在friends表中，若不存在，则提示用户“该用户还不是您的好友”，若对方是自己的好友，则在friends表中删除二者的好友关系，并向客户端发送MessageType.del_info，使删除的好友在好友列表中消失。若对方在线，也发送MessageType.del_info，使自己在对方好友列表中也消失，实现双向的删好友功能。</p>
+</li>
+</ul>
+</li>
+<li><p>run</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\event_handler\create_room.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>sc：相应的socket；</li>
+<li>parameters：从客户端传入的相关参数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>客户端点击创建群组聊天，输入群组名后，集中服务器进行创建群组的相关操作。</p>
+</li>
+<li><p>算法描述</p>
+<p>首先获取user_id，然后将该群聊加入数据库rooms中，并且向客户端发送MessageType.contact_info，使用户在好友列表中显示群聊。最后向客户端发送MessageType.general_msg，提示用户创建群聊成功，并显示群号。</p>
+</li>
+</ul>
+</li>
+<li><p>run</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\event_handler\join_room.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>sc：相应的socket；</li>
+<li>parameters：从客户端传入的相关参数</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>客户端点击添加群组聊天，输入群组名后，集中服务器进行添加群聊的相关操作。</p>
+</li>
+<li><p>算法描述</p>
+<p>首先获取user_id，调用数据库的in_room函数判断用户是否已在群中，若已在则提示用户“已在群里了“，调用数据库的get_room函数判断群聊是否存在，若不存在提示用户”群不存在“，否则调用add_to_room将用户加入到群聊中，并向客户端发送MessageType.contact_info，使用户在好友列表中显示该群聊。</p>
+</li>
+</ul>
+</li>
+<li><p>get_user(user_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\__init__.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>int型，表示该用户的用户id</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>获取数据库中users表中id值为user_id的那一行的所有数据。</p>
+</li>
+<li><p>算法描述</p>
+<p>执行数据库查询语句返回一行结果。若无结果返回空。</p>
+</li>
+</ul>
+</li>
+<li><p>get_pending_friend_request(user_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>user_Id,int类型，表示某一个用户的id值。</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>返回一个列表，列表中的内容为加user_id的用户的好友们的个人信息。</p>
+</li>
+<li><p>算法描述</p>
+<p>从数据库中查询friends表，to_user_id为user_id的行中且为accepted=1的获取from_user，用get_user函数查询他们的信息并append到列表中。</p>
+</li>
+</ul>
+</li>
+<li><p>get_friends(user_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>user_Id,int类型，表示某一个用户的id值。</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>类似get_pending_friend_request(user_id)函数，只是会返回‘我’加谁为好友且accept的用户信息。</p>
+</li>
+<li><p>算法描述</p>
+<p>从数据库中查询friends表，from_user_id为user_id的行中且为accepted=1的获取to_user，用get_user函数查询他们的信息并append到列表中。</p>
+</li>
+</ul>
+</li>
+<li><p>get_room(room_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>room_id，int类型，表示一个room的id值</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>返回群聊id为room_id的群聊房间在rooms表中的所有信息的字典，包括id,名字</p>
+</li>
+<li><p>算法描述</p>
+<p>从数据库中查询room表，返回对应room_id的room的全部信息，压缩为字典并返回。</p>
+</li>
+</ul>
+</li>
+<li><p>get_user_rooms(user_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>user_Id,int类型，表示某一个用户的id值。</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>返回一个字典，列表中内容为user_id用户加入的群聊的room的全部信息。</p>
+</li>
+<li><p>算法描述</p>
+<p>从数据库中查询room_user表，返回对应user_id的room的全部信息值，变成字典中并返回。</p>
+</li>
+</ul>
+</li>
+<li><p>get_user_rooms_id(user_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>user_Id,int类型，表示某一个用户的id值。</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>返回一个列表，列表中内容为user_id用户加入的群聊的room_id。</p>
+</li>
+<li><p>算法描述</p>
+<p>从数据库中查询room_user表，返回对应user_id的room_id的全部信息值，append入列表中并返回。</p>
+</li>
+</ul>
+</li>
+<li><p>is_friend_with(from_user_id,to_user_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>from_user_id为好友发起请求方</li>
+<li>to_user_id为接收好友请求方</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>返回一个判断值1或者0.判断两者是否为朋友。</p>
+</li>
+<li><p>算法描述</p>
+<p>从friends表中查询有无两者建立关系的一行，若没有，则返回0表示不是好友。</p>
+</li>
+</ul>
+</li>
+<li><p>in_room(user_id,room_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>user_id为待检查用户</li>
+<li>room_id为待检查群聊号</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>判断user_id用户是否在room_id的群聊中。</p>
+</li>
+<li><p>算法描述</p>
+<p>从room_user表中查询有无两者建立关系的一行，若没有，则返回0表示不是不在群聊中。</p>
+</li>
+</ul>
+</li>
+<li><p>add_to_room(user_id,room_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>user_id为待检查用户</li>
+<li>room_id为待检查群聊号</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>将用户id为user_id的用户加入到room_id的群聊中。</p>
+</li>
+<li><p>算法描述</p>
+<p>数据库insert将user_id插入到room_id的room_user表中。</p>
+</li>
+</ul>
+</li>
+<li><p>get_room_members_id(room_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>room_id为待检查群聊号</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>获取群聊中的所有用户id。</p>
+</li>
+<li><p>算法描述</p>
+<p>select逐一查询，将结果返回入列表。</p>
+</li>
+</ul>
+</li>
+<li><p>add_to_chat_history(user_id,target_id,target_type,data,sent)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>user_Id是发送者id</li>
+<li>target_id是目标用户id</li>
+<li>target_type是数据类型，0表示文本信息，1表示图像文件信息</li>
+<li>data是传输存储的数据</li>
+<li>sent标志位记录是否发送成功。若为0，下一次还会再发送。</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>将聊天信息加入到正确用户的数据库中。</p>
+</li>
+<li><p>算法描述</p>
+<p>将相关信息insert入表chat_history中。</p>
+</li>
+</ul>
+</li>
+<li><p>get_chat_history(user_id)</p>
+<ul>
+<li><p>位置</p>
+<ul>
+<li>server\util\database\<em>_init</em>_.py</li>
+</ul>
+</li>
+<li><p>参数</p>
+<ul>
+<li>user_id为待检查用户</li>
+</ul>
+</li>
+<li><p>功能</p>
+<p>获取user_id用户的聊天记录。</p>
+</li>
+<li><p>算法描述</p>
+<p>select查询并更新sent标志位。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="实现效果"><a href="#实现效果" class="headerlink" title="实现效果"></a>实现效果</h2><ol>
+<li><p>注册页面</p>
+<p>对输入的用户名、密码、邮箱、确认密码等进行检查，用户名和密码限制输入非法字符，邮箱限制输入为 <a href="mailto:&#120;&#120;&#x78;&#x40;&#120;&#120;&#120;&#46;&#120;&#120;&#120;">xxx@xxx.xxx</a> 形式，同时限制输入的用户名长度不大于 8 个，允许中文输入。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145452.png"></p>
+</li>
+<li><p>登录页面</p>
+<p>对输入的用户名和密码进行检查，限制输入非法字符，同 时限制输入的用户名长度不大于 8 个，允许中文输入。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145528.png"></p>
+</li>
+<li><p>好友列表</p>
+<p>好友列表会显示所有好友的在线状态、IP 地址、端口号、最新消息和未读消息， 好友列表根据用户离线、在线情况对列表进行刷新,将在线和最近聊天用户置顶。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145654.png"></p>
+</li>
+<li><p>添加好友</p>
+<ol>
+<li><p>添加好友时需要输入用户名，同时会对输入的信息进行合法性检查，不能添加自 己为好友。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145755.png"></p>
+</li>
+<li><p>要添加的好友用户名必须为已经注册的用户，否则会显示用户名不存在。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145832.png"></p>
+</li>
+<li><p>输入正确用户名并点击 OK 后，会显示好友请求已发送。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714145916.png"></p>
+</li>
+<li><p>如果在线，会显示好友请求，点击 YSE 后，会在双方的好友列表中添加；点击 NO 后两个用户无法成为好友；点击 cancle 后，下次登陆时会再次弹出好友请求框。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150022.png"></p>
+</li>
+</ol>
+</li>
+<li><p>删除好友</p>
+<ol>
+<li><p>与添加好友相同，需要输入用户名，同时会对输入的信息进行合法性检查，不能删 除自己。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150145.png"></p>
+</li>
+<li><p>不能删除好友列表中不存在的用户。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150237.png"></p>
+</li>
+<li><p>输入正确用户名并点击 OK 后，会显示成功删除好友，并且好友列表进行刷新删除 刚刚删除的好友信息，删除用户也会对好友列表进行刷新,即双方向删除。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150347.png"></p>
+</li>
+</ol>
+</li>
+<li><p>添加群聊</p>
+<p>需要输入要添加的群聊的群号，同时会对输入的信息进行合法性检查，如果群号 不存在则无法添加，同样如果已经在群聊中，会显示已经在群聊中。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150443.png"></p>
+</li>
+<li><p>创建群聊</p>
+<p>需要输入创建的群聊的群名称，同时会对输入的信息进行合法性检查，如果群名 称已存在，则无法创建，创建成功后会分配一个群号。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150547.png"></p>
+</li>
+<li><p>群聊界面</p>
+<ol>
+<li><p>在群聊界面中，用户可以直接发送消息，也可以点击发送文件按钮发送文件，聊天 框会显示用户名、发送时间和消息内容，不同用户名颜色不同，历史消息会进行缓 存，用户再次打开聊天框时会直接显示。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150653.png"></p>
+</li>
+<li><p>用户可以根据自己的习惯更改字体大小。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150733.png"></p>
+</li>
+<li><p>用户可以根据自己的习惯更改字体颜色。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150811.png"></p>
+</li>
+</ol>
+</li>
+<li><p>用户聊天界面</p>
+<p>和群聊界面基本相同，用户聊天内容会缓存到客户端文件夹中，发送的文件会存 储到专用文件夹中，如下图。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714150901.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714151012.png"></p>
+</li>
+</ol>
+<h2 id="待优化"><a href="#待优化" class="headerlink" title="待优化"></a>待优化</h2><p>正常信息交互流程，server 端会返回加密数据，此时 client 会一直等待接收 （while true）。如果发的太大，server 端加密不出来，client 一直监听，导致 client 无法再次发起操作。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714151144.png"></p>
+<p>以正常的发送图片数据抓包为例子，server 会不断接收，然后做加密。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200714151209.png"></p>
+<h2 id="附件"><a href="#附件" class="headerlink" title="附件"></a>附件</h2><p><a target="_blank" rel="noopener" href="https://github.com/Leeyuxun/UChat">源代码</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/UChat-%E5%9F%BA%E4%BA%8Epython%E7%9A%84%E5%AE%89%E5%85%A8%E5%8D%B3%E6%97%B6%E9%80%9A%E8%AE%AF%E7%B3%BB%E7%BB%9F.html" title="UChat-基于python的安全即时通讯系统">https://leeyuxun.github.io/UChat-基于python的安全即时通讯系统.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E5%AE%89%E5%85%A8%E5%8D%B3%E6%97%B6%E9%80%9A%E8%AE%AF%E8%BD%AF%E4%BB%B6/" rel="tag"><i class="fa fa-tag"></i> 安全即时通讯软件</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E5%88%9D%E8%AF%86Docker.html" rel="prev" title="初识Docker">
+      <i class="fa fa-chevron-left"></i> 初识Docker
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E7%BD%91%E7%BB%9C%E5%B1%82%E3%80%81%E4%BC%A0%E8%BE%93%E5%B1%82%E3%80%81%E5%BA%94%E7%94%A8%E5%B1%82%E5%B8%B8%E7%94%A8%E5%8D%8F%E8%AE%AE.html" rel="next" title="网络层、传输层、应用层常用协议">
+      网络层、传输层、应用层常用协议 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">目的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">需求分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD%E9%9C%80%E6%B1%82"><span class="nav-number">2.1.</span> <span class="nav-text">功能需求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9C%80%E6%B1%82"><span class="nav-number">2.2.</span> <span class="nav-text">数据需求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E9%9C%80%E6%B1%82"><span class="nav-number">2.3.</span> <span class="nav-text">性能需求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UI%E9%9C%80%E6%B1%82"><span class="nav-number">2.4.</span> <span class="nav-text">UI需求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E9%9C%80%E6%B1%82"><span class="nav-number">2.5.</span> <span class="nav-text">操作需求</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1"><span class="nav-number">3.</span> <span class="nav-text">详细设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E7%BB%93%E6%9E%84%E8%AF%B4%E6%98%8E"><span class="nav-number">3.1.</span> <span class="nav-text">系统结构说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E6%95%B0%E6%8D%AE%E8%AF%B4%E6%98%8E"><span class="nav-number">3.2.</span> <span class="nav-text">重要数据说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E4%BC%A0%E8%BE%93"><span class="nav-number">3.3.</span> <span class="nav-text">安全传输</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%87%BD%E6%95%B0%E6%B8%85%E5%8D%95"><span class="nav-number">3.4.</span> <span class="nav-text">程序函数清单</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%87%BD%E6%95%B0"><span class="nav-number">3.4.1.</span> <span class="nav-text">客户端函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#common%E5%87%BD%E6%95%B0"><span class="nav-number">3.4.2.</span> <span class="nav-text">common函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%AB%AF%E5%87%BD%E6%95%B0"><span class="nav-number">3.4.3.</span> <span class="nav-text">服务器端函数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%95%88%E6%9E%9C"><span class="nav-number">4.</span> <span class="nav-text">实现效果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%85%E4%BC%98%E5%8C%96"><span class="nav-number">5.</span> <span class="nav-text">待优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E4%BB%B6"><span class="nav-number">6.</span> <span class="nav-text">附件</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

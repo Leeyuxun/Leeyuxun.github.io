@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验内容 在Windows IPSEC配置实验中，通过抓包工具抓取IKE SA和IPSEC SA建立过程的数据包，并进行分析。 思考：IKE密钥协商过程是否存在安全威胁。 PacketTracer里VPN配置实验">
+<meta property="og:type" content="article">
+<meta property="og:title" content="VPN配置实验">
+<meta property="og:url" content="https://leeyuxun.github.io/VPN%E9%85%8D%E7%BD%AE%E5%AE%9E%E9%AA%8C.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验内容 在Windows IPSEC配置实验中，通过抓包工具抓取IKE SA和IPSEC SA建立过程的数据包，并进行分析。 思考：IKE密钥协商过程是否存在安全威胁。 PacketTracer里VPN配置实验">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750367517.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750386129.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750413150.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750451406.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750472492.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750521942.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750573154.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750733585.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750738506.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750726353.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750719310.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750713094.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750707568.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750867578.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750894238.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750912175.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750927973.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751013806.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751045367.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751059737.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751094123.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751203055.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751209608.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751231217.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751256734.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751296152.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751303769.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751347220.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751382839.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751410628.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751464369.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751469876.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751524436.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751552052.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751600836.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751605269.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751650128.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751654675.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751806471.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751818033.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751825295.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751889825.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751893903.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751913263.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751919016.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752070936.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752499838.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752762492.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752769614.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752775749.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752781587.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752791438.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752837430.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752870121.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752887288.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752901653.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753153340.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753169156.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753230234.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753259250.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753295977.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753335417.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753354773.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753392229.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753511671.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753557584.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753568432.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753573910.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753598090.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753735869.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753789862.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753835594.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753900939.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753905408.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753915519.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753921041.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753925827.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754108455.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754214633.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754280097.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754404902.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754395872.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754412022.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754476249.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754507611.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754534083.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754619936.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754651966.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754673001.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754694830.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754841629.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754877800.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754906347.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754947901.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565761734124.png">
+<meta property="article:published_time" content="2019-08-14T04:11:31.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:36:00.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="VPN配置">
+<meta property="article:tag" content="IPSec">
+<meta property="article:tag" content="PacketTracer">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750367517.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/VPN%E9%85%8D%E7%BD%AE%E5%AE%9E%E9%AA%8C.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>VPN配置实验 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/VPN%E9%85%8D%E7%BD%AE%E5%AE%9E%E9%AA%8C.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          VPN配置实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-14 12:11:31" itemprop="dateCreated datePublished" datetime="2019-08-14T12:11:31+08:00">2019-08-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:36:00" itemprop="dateModified" datetime="2020-04-02T14:36:00+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">网络安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验内容"><a href="#实验内容" class="headerlink" title="实验内容"></a>实验内容</h1><ol>
+<li>在<code>Windows IPSEC</code>配置实验中，通过抓包工具抓取<code>IKE SA</code>和<code>IPSEC SA</code>建立过程的数据包，并进行分析。</li>
+<li>思考：IKE密钥协商过程是否存在安全威胁。</li>
+<li><code>PacketTracer</code>里VPN配置实验<span id="more"></span></li>
+</ol>
+<h1 id="Windows-IPSEC配置"><a href="#Windows-IPSEC配置" class="headerlink" title="Windows IPSEC配置"></a>Windows IPSEC配置</h1><ol>
+<li><p>配置环境：<code>windows xp</code> &amp; <code>windows 10</code></p>
+</li>
+<li><p>打开<code>Windows xp</code>虚拟机，通过<code>secpol.msc</code>打开本地安全设置。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750367517.png" alt="1565750367517"></p>
+</li>
+<li><p>在IP安全策略下右键，创建安全策略</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750386129.png" alt="1565750386129"></p>
+</li>
+<li><p>设置配置名称为<code>Levi</code>（个人随意）</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750413150.png" alt="1565750413150"></p>
+<p>激活默认响应规则</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750451406.png" alt="1565750451406"></p>
+<p>身份认证方法采用<code>此字符串用来保护密钥交换</code>，输入<code>123456</code>（可以换成其他内容）</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750472492.png" alt="1565750472492"></p>
+</li>
+<li><p>回到原来窗口，鼠标右键，指派</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750521942.png" alt="1565750521942"></p>
+</li>
+<li><p>鼠标右键，属性，添加规则并进行相应的配置</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750573154.png" alt="1565750573154"></p>
+<p>选择此规则不指定隧道</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750733585.png" alt="1565750733585"></p>
+<p>选择所有网络连接</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750738506.png" alt="1565750738506"></p>
+<p>身份验证方法采用<code>此字符串用来保护密钥交换</code>，输入字符串：<code>abcdef</code>（可换成其它内容）</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750726353.png" alt="1565750726353"></p>
+<p>IP筛选列表选择<code>所有IP通讯量</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750719310.png" alt="1565750719310"></p>
+<p>筛选器操作选择<code>需要安全</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750713094.png" alt="1565750713094"></p>
+<p>点击下一步完成</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750707568.png" alt="1565750707568"></p>
+</li>
+<li><p>至此，<code>Windows xp</code>下的<code>IPSEC</code>配置完成，操作过程中没有报错。</p>
+</li>
+<li><p>以同样的方式配置<code>windows 10</code>下的<code>IPSEC</code>，这里与<code>windows xp</code>配置大致相同，截图只用于说明不同点。通过<code>secpol.msc</code>打开<code>windows 10</code>本地安全设置</p>
+</li>
+<li><p>在IP安全策略下右键，创建安全策略</p>
+</li>
+<li><p>设置配置名称为<code>Levis</code>（个人随意），由于激活默认响应规则仅限于windows早期版本，故不选择激活默认响应规则，过程中，没有身份认证选择</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750867578.png" alt="1565750867578"></p>
+</li>
+<li><p>点击默认设置，一直到属性窗口，添加规则：选择此规则不指定隧道、选择所有网络连接、在IP筛选列表中点击添加，名称为<code>新IP筛选列表</code>，并点击添加，之后选择默认操作</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750894238.png" alt="1565750894238"></p>
+</li>
+<li><p>选择刚刚建立的IP筛选列表，点击下一步</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750912175.png" alt="1565750912175"></p>
+<p>选择<code>添加IP筛选器</code>操作, 选择<code>协商安全</code>,继续默认操作</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565750927973.png" alt="1565750927973"></p>
+</li>
+<li><p>选择刚刚建立的新筛选器操作，点击下一步</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751013806.png" alt="1565751013806"></p>
+<p>身份验证方法采用<code>此字符串用来保护密钥交换</code>，输入字符串：<code>abcdef</code>(与上面的相同)</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751045367.png" alt="1565751045367"></p>
+<p>单击下一步，选择默认操作直至筛选器配置完成</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751059737.png" alt="1565751059737"></p>
+</li>
+<li><p>回到原来窗口，鼠标右键，分配，至此，<code>Windows 10</code>下的<code>IPSEC</code>配置完成，操作过程中没有报错</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751094123.png" alt="1565751094123"></p>
+</li>
+</ol>
+<h1 id="开始通信"><a href="#开始通信" class="headerlink" title="开始通信"></a>开始通信</h1><ol>
+<li><p>查看<code>win xp</code>和<code>win 10</code>的IP地址分别为<code>192.168.88.150</code>和<code>192.168.88.1</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751203055.png" alt="1565751203055"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751209608.png" alt="1565751209608"></p>
+</li>
+<li><p>关闭<code>win 10</code>的<code>IPSEC服务</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751231217.png" alt="1565751231217"></p>
+</li>
+<li><p>使用<code>win 10</code> <code>ping</code> <code>win xp</code>，请求超时，<code>ping</code>不通</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751256734.png" alt="1565751256734"></p>
+</li>
+<li><p>对通信过程进行抓包，可以看到<code>win 10</code>一直请求<code>IPsec SA</code>但总不成功</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751296152.png" alt="1565751296152"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751303769.png" alt="1565751303769"></p>
+</li>
+<li><p>重新开启<code>win 10</code>的<code>IPSEC服务</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751347220.png" alt="1565751347220"></p>
+</li>
+<li><p>使用<code>win 10</code>重新<code>ping</code> <code>win xp</code>，发现成功<code>ping</code>通</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751382839.png" alt="1565751382839"></p>
+</li>
+<li><p>对通信过程进行抓包，由于此时<code>win xp</code>和<code>win10</code>都采用的是默认的<code>esp加密</code>，所以抓包显示的是<code>esp包</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751410628.png" alt="1565751410628"></p>
+</li>
+<li><p><code>Win 10</code>和<code>win xp</code>都设置仅<code>AH通信</code>，不经过<code>ESP加密</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751464369.png" alt="1565751464369"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751469876.png" alt="1565751469876"></p>
+</li>
+<li><p>继续使用<code>win 10</code> <code>ping </code> <code>win xp</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751524436.png" alt="1565751524436"></p>
+</li>
+<li><p>对通信过程进行抓包，发现没有<code>ESP加密</code>后数据包格式为<code>ICMP</code>，数据为<code>abcdef</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751552052.png" alt="1565751552052"></p>
+</li>
+<li><p><code>Win 10</code>和<code>win xp</code>都设置仅<code>esp认证</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751600836.png" alt="1565751600836"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751605269.png" alt="1565751605269"></p>
+</li>
+<li><p>继续使用<code>win 10</code> <code>ping</code> <code>win xp</code>，并对通信过程进行抓包，数据没有通过<code>esp加密</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751650128.png" alt="1565751650128"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751654675.png" alt="1565751654675"></p>
+</li>
+<li><p>分析<code>IKE SA</code>和<code>IPSEC SA</code>建立过程</p>
+<p>要建立<code>IPSec连接</code>，首先要协商一个<code>IKE SA</code>，然后在<code>IKE SA</code>的基础上协商<code>IPSec SA</code></p>
+<ol>
+<li><p>IKE SA建立分为三个阶段</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751806471.png" alt="1565751806471"></p>
+<ol>
+<li><p><code>SA交换</code>，协商确认有关安全策略。该过程进行安全协商</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751818033.png" alt="1565751818033"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751825295.png" alt="1565751825295"></p>
+</li>
+<li><p>密钥交换阶段，主要交换密钥<code>Diffie-Hellman公共值</code>。数据包中的<code>Key Exchange</code>用于交换各自加密生成的<code>主密钥</code>；<code>Nonce</code>使用了随机数，防止重放攻击；加密所用的密钥为<code>ipsec</code>中设定的<code>预共享密钥</code>； <code>NAT-D</code>为双方的ip+端口的Hash值。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751889825.png" alt="1565751889825"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751893903.png" alt="1565751893903"></p>
+</li>
+<li><p>ID信息和认证数据交换，进行身份认证，对第一阶段交换内容的认证。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751913263.png" alt="1565751913263"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565751919016.png" alt="1565751919016"></p>
+</li>
+</ol>
+</li>
+<li><p><code>IPSec SA</code>建立分为两个阶段，都是加密数据，无法查看。用到了<code>Quick-Mode</code>，目的是在两个对等体间协商一组一致的参数来创建<code>IPSec SA</code>，用于真实数据的加解密，并且在此进行<code>PFS</code>，<code>PFS</code>及在<code>Quick-Mode</code>重新做<code>DH</code>的交换，产生新的密钥用于<code>IPSec</code>数据的加密。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752070936.png" alt="1565752070936"></p>
+</li>
+</ol>
+</li>
+</ol>
+<h1 id="思考"><a href="#思考" class="headerlink" title="思考"></a>思考</h1><p>Q：IKE密钥协商过程是否存在安全威胁？</p>
+<p>A：<code>IPSec密钥交换过程</code>分为两个独立阶段。第一阶段通信双方彼此建立一个通过身份认证和安全保护的隧道，称为<code>ISAKMP SA</code>。只要<code>ISAKMP SA</code>建立起来，所有发起方和应答方之间的<code>IKE</code>通信信息都通过加密、完整性检查和认证的方法受到保护。第二阶段的建立是为特定的<code>Internet</code>安全协议(如<code>IPSec</code>等)创建安全关联(<code>IPSec SA</code>)。IKE第一阶段的目的是建立一个<code>安全隧道</code>，使得第二阶段的协商可以秘密地进行。两台主机之间可以同时建立多个<code>ISAKMP SA</code>，一个<code>ISAKMP SA</code>也可以创建多个<code>IPSec SA</code>，<code>ISAKMP SA</code>的结束不会影响它创建的<code>IPSec SA</code>发生作用。这种密钥协商过程是存在着漏洞的，可以通过中间人攻击和拒绝服务攻击实现漏洞利用。</p>
+<h1 id="PacketTracer-VPN配置"><a href="#PacketTracer-VPN配置" class="headerlink" title="PacketTracer VPN配置"></a>PacketTracer VPN配置</h1><h2 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h2><ul>
+<li>系统：<code>Windows xp</code></li>
+<li>软件工具：思科官方模拟器<code>Packet Tracer 5.3</code></li>
+<li>模拟实体：2台<code>cisco2800</code>系列路由器、2台24端口以太网交换机和若干PC电脑</li>
+</ul>
+<h2 id="安装Packet-Tracer-5-3"><a href="#安装Packet-Tracer-5-3" class="headerlink" title="安装Packet Tracer 5.3"></a>安装<code>Packet Tracer 5.3</code></h2><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752499838.png" alt="1565752499838"></p>
+<h2 id="配置安全策略"><a href="#配置安全策略" class="headerlink" title="配置安全策略"></a>配置安全策略</h2><p>​        新建一条安全策略<code>PacketTracer</code>，添加IP安全规则，隧道方式为<code>不指定隧道</code>，网络类型选择<code>所有网络连接</code>，身份验证方法选择<code>用字符串保护密钥交换</code>，输入：<code>123</code>；进入IP筛选器列表的配置项，设置一个新的IP筛选器列表，新建一个IP筛选器，将<code>我的IP地址</code>作为源地址，将<code>任何IP地址</code>作为目标地址，在<code>选择协议类型</code>中选中<code>任意</code>，新建一个筛选操作，设置为<code>协商安全</code>，选中<code>不和不支持IPSec的计算机通讯</code>，以要求必须在<code>IPSec</code>基础上进行连接，<code>IP通讯安全设施</code>中选择选择<code>自定义</code>，然后点击<code>设置</code>选择如下图，选择默认直至配置完成</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752762492.png" alt="1565752762492"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752769614.png" alt="1565752769614"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752775749.png" alt="1565752775749"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752781587.png" alt="1565752781587"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752791438.png" alt="1565752791438"></p>
+<h2 id="初始化配置路由器"><a href="#初始化配置路由器" class="headerlink" title="初始化配置路由器"></a>初始化配置路由器</h2><ol>
+<li><p>打开<code>cisco模拟器</code>，在模拟器窗口工具栏下选择<code>file--new</code>。在左下角设备栏选取路由器图标<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752837430.png" alt="1565752837430">将<code>cisco2811路由器</code><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752870121.png" alt="1565752870121">拖到工作区域，单击工作区域的路由器图标，选择<code>CLI项</code>，弹出如图所示界面</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752887288.png" alt="1565752887288"></p>
+<p>输入no,回车两次</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565752901653.png" alt="1565752901653"></p>
+</li>
+<li><p>进入路由器特权模式配置路由器网卡IP，输入命令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Router&gt;enable	//进入特权模式，只有在特权模式下才可以对路由器进行配置</span><br><span class="line">Router#configure terminal		//进入配置状态，通过端口进行配置</span><br><span class="line">Router(config)# interface fastEthernet 0/0	//进入端口f0/0 </span><br><span class="line">Router(config-if)#ip address 10.0.0.1 255.255.255.0	#配置网卡f0/0的ip地址和子网掩码</span><br><span class="line">Router(config-if)#no shutdown		//开启端口f0/0</span><br><span class="line">Router(config-if)#end		//返回特权模式</span><br><span class="line">Router#configure terminal		//进入配置状态，通过端口进行配置</span><br><span class="line">Router(config)# interface fastEthernet 0/1  //进入端口f0/1</span><br><span class="line">Router(config-if)#ip address 192.168.1.1 255.255.255.0  //配置网卡f0/1的ip地址和子网掩码 </span><br><span class="line">Router(config-if)#no shutdown		//开启端口f0/1</span><br><span class="line">Router(config-if)#end		//返回特权模式</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753153340.png" alt="1565753153340"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753169156.png" alt="1565753169156"></p>
+</li>
+<li><p>初始配置<code>router 0</code>完成，根据<code>router 0</code>的配置过程完成<code>router 1</code>的配置，其中<code>router 1</code>的<code>f0/0</code>端口IP为<code>10.0.0.2/24</code>, <code>router 1</code>的<code> f0/1</code>端口的IP地址为<code>192.168.2.1/24</code></p>
+</li>
+<li><p>配置完成后，点击<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753230234.png" alt="1565753230234">选择<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753259250.png" alt="1565753259250">将<code>router 0</code>和<code>router 1</code>的<code>f0/0</code>端口连接</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753295977.png" alt="1565753295977"></p>
+</li>
+</ol>
+<h2 id="搭建网络环境"><a href="#搭建网络环境" class="headerlink" title="搭建网络环境"></a>搭建网络环境</h2><ol>
+<li><p>在模拟器左下角选择<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753335417.png" alt="1565753335417">选取<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753354773.png" alt="1565753354773">拖到绘图工作区，双击<code>PC图标</code>，选择<code>Desktop</code>，如图所示</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753392229.png" alt="1565753392229"></p>
+</li>
+<li><p>选择<code>IP Configuration</code>，配置PC的IP地址和子网掩码，如图所示</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753511671.png" alt="1565753511671"></p>
+</li>
+<li><p>重复上述操作，配置六台PC，它们的IP地址分别为</p>
+<ul>
+<li><code>192.168.1.10</code></li>
+<li><code>192.168.1.20</code></li>
+<li><code>192.168.1.30</code></li>
+<li><code>192.168.2.10</code></li>
+<li><code>192.168.2.20</code></li>
+<li><code>192.168.2.30</code></li>
+</ul>
+<p>子网掩码全为<code>255.255.255.0</code>，前三台网关为<code>192.168.1.1</code>，后三台网关为<code>192.168.2.1</code></p>
+</li>
+<li><p>选取交换机<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753557584.png" alt="1565753557584">拖至工作区，在<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753568432.png" alt="1565753568432">中选取<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753573910.png" alt="1565753573910">将路由器于交换机相连，将交换机于PC相连；最终完成如图所示的网络图</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753598090.png" alt="1565753598090"></p>
+</li>
+</ol>
+<h2 id="配置路由"><a href="#配置路由" class="headerlink" title="配置路由"></a>配置路由</h2><p>在路由器中配置路由，使路由器两端的网络互通</p>
+<ol>
+<li><p>配置<code>router 0</code>，双击<code>router 0</code>图标，选择<code>CLI项</code>，进入路由器配置窗口，输入命令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Router&gt;en</span><br><span class="line">Router#configure  terminal</span><br><span class="line">Router(config)# ip route 0.0.0.0  0.0.0.0 fastEthernet 0/0  //配置内网访问外部网络的出口路由</span><br><span class="line">Router(config)#ip route 192.168.1.0  255.255.255.0  fastEthernet  0/1  //配置外部访问内部网络入口路由</span><br><span class="line">Router(config)#end</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753735869.png" alt="1565753735869"></p>
+</li>
+<li><p>配置<code>router 1</code>，双击<code>router 1</code>图标，选择<code>CLI项</code>，进入路由器配置窗口，输入命令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Router&gt;en</span><br><span class="line">Router#configure  terminal</span><br><span class="line">Router(config)# ip route 0.0.0.0  0.0.0.0 fastEthernet 0/0  //配置内网访问外部网络的出口路由</span><br><span class="line">Router(config)#ip route 192.168.2.0  255.255.255.0  fastEthernet  0/1  //配置外部访问内部网络入口路由</span><br><span class="line">Router(config)#end</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753789862.png" alt="1565753789862"></p>
+</li>
+</ol>
+<h2 id="测试网络的互通性"><a href="#测试网络的互通性" class="headerlink" title="测试网络的互通性"></a>测试网络的互通性</h2><ol>
+<li><p>双击<code>PC0图标</code>，在弹出的对话框中，选择<code>Desktop</code>，选择<code>Command Prompt</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753835594.png" alt="1565753835594"></p>
+</li>
+<li><p>使用<code>ping</code>命令，<code>ping</code> <code>192.168.1.1</code>、<code>10.0.0.1</code>、<code>192.168.2.10</code>、<code>10.0.0.2</code>、<code>192.168.3.10</code>结果除了最后一个地址(该地址不存在)其它全能<code>ping</code>通，表明搭建的网络满足实验环境</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753900939.png" alt="1565753900939"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753905408.png" alt="1565753905408"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753915519.png" alt="1565753915519"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753921041.png" alt="1565753921041"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565753925827.png" alt="1565753925827"></p>
+</li>
+</ol>
+<h2 id="配置IPSec-VPN"><a href="#配置IPSec-VPN" class="headerlink" title="配置IPSec VPN"></a>配置IPSec VPN</h2><ol>
+<li><p>配置<code>router 0</code>，双击<code>router 0</code>图标，选择<code>CLI项</code>，进入路由器配置窗口</p>
+<ol>
+<li><p>定义<code>IKE</code>的策略(<code>router 0</code>和<code>router1</code>之间的密钥交换策略)，<code>IKE</code>只是密钥的交换策略,在使用加密对称和非对称加密算法的时候,需要密钥来对数据加密,下面的IKE策略只是建立一条管理连接，负责加密生成的各种密钥，输入命令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Router#configure terminal		//进入配置状态，通过端口进行配置</span><br><span class="line">Router (config)#crypto isakmp policy 10		//一个IKE的策略，号码是10，数字越低，策略优先级越高</span><br><span class="line">Router (config-isakmp)# authentication pre-share	//使用预定义共享密钥进行设备认证</span><br><span class="line">Router (config-isakmp)#hash md5	   //认证方式使用MD5进行认证</span><br><span class="line">Router (config-isakmp)#encryption des		//加密方式使用DES，可选AES/DES</span><br><span class="line">Router (config-isakmp)#group 2		//指定DH组</span><br><span class="line">Router (config-isakmp)# lifetime 86400		//对生成新SA的周期进行调整，两端的路由器都要设置相同的SA周期</span><br><span class="line">Router (config-isakmp)# exit</span><br><span class="line">Router (config)#crypto isakmp key leeyuxun address 10.0.0.2   //定义一个密码,密码是leeyuxun，和地址为10.0.0.2的设备去交换密钥</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754108455.png" alt="1565754108455"></p>
+</li>
+<li><p>定义数据的<code>加密方式</code>和<code>认证方式</code>，配置<code>IPSec</code>，输入命令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Router (config)#access-list 110 permit ip 192.168.1.0 0.0.0.255 192.168.2.0  0.0.0.255	//定义访问控制列表,这里的访问控制列表不是对数据进行过滤，是定义那些数据应该被加密，也可以理解哪些数据触发IPSec 流</span><br><span class="line">Router (config)#crypto ipsec transform-set mine esp-des esp-md5-hmac	//设置数据的加密方式，策略名字为mine，使用ESP-DES对数据加密，ESP-MD5-HMAC对数据认证</span><br><span class="line">Router(config)# crypto map mymap 101 ipsec-isakmp  //定义一个map,调用刚才做的策略</span><br><span class="line">Router(config-crypto-map)# match address 110		//匹配出访问控制列表110的数据</span><br><span class="line">Router(config-crypto-map)# set peer 10.0.0.2      //标识对端路由器的合法IP地址</span><br><span class="line">Router(config-crypto-map)# set pfs group2</span><br><span class="line">Router(config-crypto-map)# set transform-set mine  //使用刚才定义好的策略对数据加密</span><br><span class="line">Router(config-crypto-map)# set security-association lifetime seconds 86400	//指定IPSec SA的存活期</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754214633.png" alt="1565754214633"></p>
+</li>
+<li><p>将<code>map</code>映射到<code>公网端口</code>，一个端口只能映射一个<code>map</code>，输入命令如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Router（config）interface fastEthernet 0/0</span><br><span class="line">Router(config-if)#crypto map mymap</span><br><span class="line">*Jan  3 07:16:26.785: %CRYPTO-6-ISAKMP_ON_OFF: ISAKMP is ON</span><br><span class="line">Router（config-if）end</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754280097.png" alt="1565754280097"></p>
+</li>
+<li><p>查看策略</p>
+<ol>
+<li><p>查看<code>IKE策略</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Router# show crypto ipsec transform-set</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754404902.png" alt="1565754404902"></p>
+</li>
+<li><p>查看<code>IPSec变换集</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Router# show crypto ipsec transform-set</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754395872.png" alt="1565754395872"></p>
+</li>
+<li><p>查看 <code>crypto maps</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Router# show crypto map</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754412022.png" alt="1565754412022"></p>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>配置<code>router 1</code>，双击<code>router 1</code>图标，选择<code>CLI项</code>，进入路由器配置窗口</p>
+<ol>
+<li><p>定义<code>IKE</code>的策略，与配置<code>route 0</code>相同</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754476249.png" alt="1565754476249"></p>
+</li>
+<li><p>定义数据的加密方式和认证方式，配置<code>IPSec</code>，与配置<code>route 0</code>相同</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754507611.png" alt="1565754507611"></p>
+</li>
+<li><p>将<code>map</code>映射到<code>公网端口</code>，与配置<code>route 0</code>相同</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754534083.png" alt="1565754534083"></p>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="测试IPSec-VPN"><a href="#测试IPSec-VPN" class="headerlink" title="测试IPSec VPN"></a>测试IPSec VPN</h2><ol>
+<li><p>测试<code>VPN连通性</code></p>
+<p>双击<code>PC0</code>图标，在弹出的对话框中，选择<code>Desktop</code>，选择<code>Command Prompt</code>，<code>ping 192.168.2.10</code>，如下图所示</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754619936.png" alt="1565754619936"></p>
+</li>
+<li><p>验证数据经过<code>IPSec VPN</code> <code>加密传输</code>，点击进入<code>simulation mode</code>，弹出如图所示对话框</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754651966.png" alt="1565754651966"></p>
+</li>
+<li><p>重复上一步操作，<code>simulation Panel</code>中选取<code>Auto Capture</code>，观察工作区动画，展示了数据包在网络中的传送过程</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754673001.png" alt="1565754673001"></p>
+</li>
+<li><p>双击路由器<code>router 0</code>处数据包，弹出如图所示弹框，可以分析出数据包的信息</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754694830.png" alt="1565754694830"></p>
+<ul>
+<li>进入路由器的数据包（左侧）的信息源IP是<code>192.168.1.10</code>，目的IP是<code>192.168.2.10</code></li>
+<li>路由器出去的数据包(右侧)的源IP改变为<code>10.0.0.1</code>，目的IP变为<code>10.0.0.2</code></li>
+<li>从上图的第六条信息中发现<code>ESP encrypts the received packet</code>的信息</li>
+<li>综上，从<code>PC0</code>（<code>192.168.1.10</code>）发往对端<code>PC3</code>（<code>192.168.2.10</code>）的数据经过了路由器的<code>IPSec VPN</code>模块加密处理，隐藏了内网的IP地址信息，从而保护了内网的数据</li>
+</ul>
+</li>
+<li><p>断开<code>VPN</code></p>
+<ol>
+<li><p>断开<code>router 0</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Router（config）#interface fastEthernet 0/0</span><br><span class="line">Router(config-if)#no crypto map mymap</span><br><span class="line">Router（config-if）end</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754841629.png" alt="1565754841629"></p>
+</li>
+<li><p>双击<code>PC0</code>图标，在弹出的对话框中，选择<code>Desktop</code>，选择<code>Command Prompt</code>，<code>ping 192.168.2.10</code>，<code>ping</code>不通，表明只断开一端路由器的端口<code>map映射</code>，两边无法连通</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754877800.png" alt="1565754877800"></p>
+</li>
+<li><p>以同样的方式断开route 1</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Router（config）#interface fastEthernet 0/0</span><br><span class="line">Router(config-if)#no crypto map mymap</span><br><span class="line">Router（config-if）end</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754906347.png" alt="1565754906347"></p>
+</li>
+<li><p>双击<code>PC0</code>图标，在弹出的对话框中，选择<code>Desktop</code>，选择<code>Command Prompt</code>，<code>ping 192.168.2.10</code>，<code>ping</code>成功，表明两端都断开后，两边网络可以再次保持连接</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565754947901.png" alt="1565754947901"></p>
+</li>
+<li><p>抓取经过<code>route 0</code>的数据包，发现数据不再加密传输。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565761734124.png" alt="1565761734124"></p>
+</li>
+</ol>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/VPN%E9%85%8D%E7%BD%AE%E5%AE%9E%E9%AA%8C.html" title="VPN配置实验">https://leeyuxun.github.io/VPN配置实验.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/VPN%E9%85%8D%E7%BD%AE/" rel="tag"><i class="fa fa-tag"></i> VPN配置</a>
+              <a href="/tags/IPSec/" rel="tag"><i class="fa fa-tag"></i> IPSec</a>
+              <a href="/tags/PacketTracer/" rel="tag"><i class="fa fa-tag"></i> PacketTracer</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E7%BD%91%E7%BB%9C%E6%89%AB%E6%8F%8F%E5%AE%9E%E9%AA%8C.html" rel="prev" title="网络扫描实验">
+      <i class="fa fa-chevron-left"></i> 网络扫描实验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E8%9C%9C%E7%BD%90%E6%94%BB%E5%87%BB%E6%A3%80%E6%B5%8B%E5%AE%9E%E9%AA%8C.html" rel="next" title="蜜罐攻击检测实验">
+      蜜罐攻击检测实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%86%85%E5%AE%B9"><span class="nav-number">1.</span> <span class="nav-text">实验内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Windows-IPSEC%E9%85%8D%E7%BD%AE"><span class="nav-number">2.</span> <span class="nav-text">Windows IPSEC配置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B%E9%80%9A%E4%BF%A1"><span class="nav-number">3.</span> <span class="nav-text">开始通信</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%9D%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">思考</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#PacketTracer-VPN%E9%85%8D%E7%BD%AE"><span class="nav-number">5.</span> <span class="nav-text">PacketTracer VPN配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">5.1.</span> <span class="nav-text">实验环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Packet-Tracer-5-3"><span class="nav-number">5.2.</span> <span class="nav-text">安装Packet Tracer 5.3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%AE%89%E5%85%A8%E7%AD%96%E7%95%A5"><span class="nav-number">5.3.</span> <span class="nav-text">配置安全策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E9%85%8D%E7%BD%AE%E8%B7%AF%E7%94%B1%E5%99%A8"><span class="nav-number">5.4.</span> <span class="nav-text">初始化配置路由器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E7%BD%91%E7%BB%9C%E7%8E%AF%E5%A2%83"><span class="nav-number">5.5.</span> <span class="nav-text">搭建网络环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E8%B7%AF%E7%94%B1"><span class="nav-number">5.6.</span> <span class="nav-text">配置路由</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%BD%91%E7%BB%9C%E7%9A%84%E4%BA%92%E9%80%9A%E6%80%A7"><span class="nav-number">5.7.</span> <span class="nav-text">测试网络的互通性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEIPSec-VPN"><span class="nav-number">5.8.</span> <span class="nav-text">配置IPSec VPN</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95IPSec-VPN"><span class="nav-number">5.9.</span> <span class="nav-text">测试IPSec VPN</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

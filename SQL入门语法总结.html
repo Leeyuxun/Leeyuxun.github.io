@@ -1,0 +1,2287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="SQL介绍   结构化查询语言。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SQL入门语法总结">
+<meta property="og:url" content="https://leeyuxun.github.io/SQL%E5%85%A5%E9%97%A8%E8%AF%AD%E6%B3%95%E6%80%BB%E7%BB%93.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="SQL介绍   结构化查询语言。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200929225450.png">
+<meta property="article:published_time" content="2020-11-02T10:14:29.000Z">
+<meta property="article:modified_time" content="2020-11-02T10:20:39.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="SQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200929225450.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/SQL%E5%85%A5%E9%97%A8%E8%AF%AD%E6%B3%95%E6%80%BB%E7%BB%93.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>SQL入门语法总结 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/SQL%E5%85%A5%E9%97%A8%E8%AF%AD%E6%B3%95%E6%80%BB%E7%BB%93.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          SQL入门语法总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-11-02 18:14:29 / 修改时间：18:20:39" itemprop="dateCreated datePublished" datetime="2020-11-02T18:14:29+08:00">2020-11-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AF%AD%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">语法</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="SQL介绍"><a href="#SQL介绍" class="headerlink" title="SQL介绍"></a>SQL介绍</h1><ul>
+<li>  结构化查询语言。<span id="more"></span></li>
+<li>  RDBMS 指关系型数据库管理系统，全称 Relational Database Management System。</li>
+<li>  RDBMS 是 SQL 的基础，同样也是所有现代数据库系统的基础，比如 MS SQL Server、IBM DB2、Oracle、MySQL 以及 Microsoft Access。</li>
+<li>  RDBMS 中的数据存储在被称为表的数据库对象中。</li>
+<li>  表是相关的数据项的集合，它由列和行组成。</li>
+</ul>
+<h2 id="基础语法"><a href="#基础语法" class="headerlink" title="基础语法"></a>基础语法</h2><h3 id="展示、创建、使用数据库"><a href="#展示、创建、使用数据库" class="headerlink" title="展示、创建、使用数据库"></a>展示、创建、使用数据库</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">show databases;	#展示数据库</span><br><span class="line">create DATABASE dbname;	#创建数据库dbname</span><br><span class="line">use dbname;	#使用数据库dbname</span><br></pre></td></tr></table></figure>
+
+<h3 id="展示、创建数据表"><a href="#展示、创建数据表" class="headerlink" title="展示、创建数据表"></a>展示、创建数据表</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">show tables;	#展示数据库中的所有数据表</span><br><span class="line">#创建数据表table_name</span><br><span class="line">CREATE TABLE table_name</span><br><span class="line">(</span><br><span class="line">column_name1 data_type(size),</span><br><span class="line">column_name2 data_type(size),</span><br><span class="line">column_name3 data_type(size),</span><br><span class="line">....</span><br><span class="line">);</span><br><span class="line"># column_name 参数规定表中列的名称</span><br><span class="line"># data_type 参数规定列的数据类型（例如 varchar、integer、decimal、date 等等）</span><br><span class="line"># size 参数规定表中列的最大长度</span><br></pre></td></tr></table></figure>
+
+<h3 id="重要的SQL命令"><a href="#重要的SQL命令" class="headerlink" title="重要的SQL命令"></a>重要的SQL命令</h3><ul>
+<li>  <strong>SELECT</strong> - 从数据库中提取数据</li>
+<li>  <strong>UPDATE</strong> - 更新数据库中的数据</li>
+<li>  <strong>DELETE</strong> - 从数据库中删除数据</li>
+<li>  <strong>INSERT INTO</strong> - 向数据库中插入新数据</li>
+<li>  <strong>CREATE DATABASE</strong> - 创建新数据库</li>
+<li>  <strong>ALTER DATABASE</strong> - 修改数据库</li>
+<li>  <strong>CREATE TABLE</strong> - 创建新表</li>
+<li>  <strong>ALTER TABLE</strong> - 变更（改变）数据库表</li>
+<li>  <strong>DROP TABLE</strong> - 删除表</li>
+<li>  <strong>CREATE INDEX</strong> - 创建索引（搜索键）</li>
+<li>  <strong>DROP INDEX</strong> - 删除索引</li>
+</ul>
+<h3 id="SELECT语句"><a href="#SELECT语句" class="headerlink" title="SELECT语句"></a><strong>SELECT语句</strong></h3><p>——用于从数据库中选取数据。</p>
+<p>结果被存储在一个结果表中，称为结果集。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name,column_name </span><br><span class="line">	FROM table_name;</span><br><span class="line">#or</span><br><span class="line">SELECT * FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="SELECT-DISTINCT-语句"><a href="#SELECT-DISTINCT-语句" class="headerlink" title="SELECT DISTINCT 语句"></a><strong>SELECT DISTINCT 语句</strong></h3><p>——用于返回唯一不同的值。</p>
+<p>将重复的列变为一列</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT DISTINCT column_name,column_name</span><br><span class="line">	FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="WHERE子句"><a href="#WHERE子句" class="headerlink" title="WHERE子句"></a><strong>WHERE子句</strong></h3><p>——用于过滤记录</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name,column_name</span><br><span class="line">	FROM table_name</span><br><span class="line">	WHERE column_name operator value;</span><br><span class="line"># example</span><br><span class="line">SELECT * FROM Websites WHERE country='CN';</span><br><span class="line">SELECT * FROM Websites WHERE id=1;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>WHERE子句中的运算符</p>
+<table>
+<thead>
+<tr>
+<th align="left">运算符</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">=</td>
+<td align="left">等于</td>
+</tr>
+<tr>
+<td align="left">&lt;&gt;</td>
+<td align="left">不等于，在 SQL 的一些版本中，该操作符可被写成 !=</td>
+</tr>
+<tr>
+<td align="left">&gt;</td>
+<td align="left">大于</td>
+</tr>
+<tr>
+<td align="left">&lt;</td>
+<td align="left">小于</td>
+</tr>
+<tr>
+<td align="left">&gt;=</td>
+<td align="left">大于等于</td>
+</tr>
+<tr>
+<td align="left">&lt;=</td>
+<td align="left">小于等于</td>
+</tr>
+<tr>
+<td align="left">BETWEEN</td>
+<td align="left">在某个范围内</td>
+</tr>
+<tr>
+<td align="left">LIKE</td>
+<td align="left">搜索某种模式</td>
+</tr>
+<tr>
+<td align="left">IN</td>
+<td align="left">指定针对某个列的多个可能值</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>WHERE子句也可以用AND OR NOT逻辑</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 优先级 ()&gt;not&gt;and&gt;or</span><br><span class="line">Select * from emp where sal &gt; 2000 and sal &lt; 3000;</span><br><span class="line">Select * from emp where sal &gt; 2000 or comm &gt; 500;</span><br><span class="line">select * from emp where not sal &gt; 1500;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="AND-amp-OR-运算符"><a href="#AND-amp-OR-运算符" class="headerlink" title="AND & OR 运算符"></a><strong>AND &amp; OR 运算符</strong></h3><p>——用于基于一个以上的条件对记录进行过滤</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM Websites</span><br><span class="line">	WHERE country='CN'</span><br><span class="line">	AND alexa &gt; 50;</span><br><span class="line">	</span><br><span class="line">SELECT * FROM Websites</span><br><span class="line">	WHERE country='USA'</span><br><span class="line">	OR country='CN';</span><br><span class="line"></span><br><span class="line">SELECT * FROM Websites</span><br><span class="line">	WHERE alexa &gt; 15</span><br><span class="line">	AND (country='CN' OR country='USA');</span><br></pre></td></tr></table></figure>
+
+<h3 id="ORDER-BY-关键字"><a href="#ORDER-BY-关键字" class="headerlink" title="ORDER BY 关键字"></a><strong>ORDER BY 关键字</strong></h3><p>——用于对结果集进行排序</p>
+<p>ORDER BY 关键字默认按照<strong>升序</strong>对记录进行排序。如果需要按照<strong>降序</strong>对记录进行排序，可以使用 DESC 关键字；</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name,column_name</span><br><span class="line">	FROM table_name</span><br><span class="line">	ORDER BY column_name,column_name ASC|DESC;</span><br><span class="line"># ORDER BY 多列的时候，先按照第一个column name排序，再按照第二个column name排序</span><br></pre></td></tr></table></figure>
+
+<h3 id="INSERT-INTO-语句"><a href="#INSERT-INTO-语句" class="headerlink" title="INSERT INTO 语句"></a><strong>INSERT INTO 语句</strong></h3><p>——用于向表中插入新记录。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">#1 无需指定要插入数据的列名，只需提供被插入的值即可,但是需要列出插入行的每一列数据</span><br><span class="line">INSERT INTO table_name</span><br><span class="line">	VALUES (value1,value2,value3,...);</span><br><span class="line">#2 需要指定列名及被插入的值</span><br><span class="line">INSERT INTO table_name (column1,column2,column3,...)</span><br><span class="line">	VALUES (value1,value2,value3,...);</span><br></pre></td></tr></table></figure>
+
+<p>insert into select 和select into from 的区别</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">insert into scorebak select * from socre where neza='neza'   #插入一行,要求表scorebak 必须存在</span><br><span class="line">select *  into scorebak from score  where neza='neza'  #也是插入一行,要求表scorebak 不存在</span><br></pre></td></tr></table></figure>
+
+<h3 id="UPDATE-语句"><a href="#UPDATE-语句" class="headerlink" title="UPDATE 语句"></a><strong>UPDATE 语句</strong></h3><p>——用于更新表中的记录</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">UPDATE table_name</span><br><span class="line">	SET column1=value1,column2=value2,...</span><br><span class="line">	WHERE some_column=some_value;	#WHERE 子句规定哪条记录or者哪些记录需要更新。如果省略了WHERE子句，所有的记录都将被更新！</span><br></pre></td></tr></table></figure>
+
+<h3 id="DELETE-语句"><a href="#DELETE-语句" class="headerlink" title="DELETE 语句"></a><strong>DELETE 语句</strong></h3><p>——用于删除表中的记录</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">DELETE FROM table_name</span><br><span class="line">	WHERE some_column=some_value;</span><br><span class="line"># 在不删除表的情况下，删除表中所有的行，即表结构、属性、索引将保持不变</span><br><span class="line">DELETE FROM table_name;</span><br><span class="line">	# or</span><br><span class="line">DELETE * FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h2 id="高级语法"><a href="#高级语法" class="headerlink" title="高级语法"></a>高级语法</h2><h3 id="SELECT-TOP-LIMIT-ROWNUM-子句"><a href="#SELECT-TOP-LIMIT-ROWNUM-子句" class="headerlink" title="SELECT TOP, LIMIT, ROWNUM 子句"></a><strong>SELECT TOP, LIMIT, ROWNUM 子句</strong></h3><p>SELECT TOP 子句用于规定要返回的记录的数目，对于拥有数千条记录的大型表来说，是非常有用的。</p>
+<p>**注意:**并非所有的数据库系统都支持 SELECT TOP 语句。 MySQL 支持 LIMIT 语句来选取指定的条数数据， Oracle 可以使用 ROWNUM 来选取。</p>
+<ul>
+<li><p>SQL Server / MS Access 语法</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">SELECT TOP number|percent column_name(s)</span><br><span class="line">	FROM table_name;</span><br><span class="line"># example</span><br><span class="line"># 前5行数据</span><br><span class="line">select top 5 * from table</span><br><span class="line"># 后5行数据</span><br><span class="line">select top 5 * from table order by id desc  # --desc 表示降序排列 asc 表示升序</span><br></pre></td></tr></table></figure></li>
+<li><p>Myslq 语法</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">	FROM table_name</span><br><span class="line">	LIMIT number;</span><br><span class="line"># example</span><br><span class="line">SELECT * FROM Websites LIMIT 2;	# 从 "Websites" 表中选取头两条记录</span><br></pre></td></tr></table></figure></li>
+<li><p>Oracle 语法</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">	FROM table_name</span><br><span class="line">	WHERE ROWNUM &lt;= number;</span><br></pre></td></tr></table></figure></li>
+<li><p>SQL SELECT TOP PERCENT 实例</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># Microsoft SQL Server 数据库中，从 websites 表中选取前面百分之 50 的记录</span><br><span class="line">SELECT TOP 50 PERCENT * FROM Websites;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="LIKE-操作符——用于在-WHERE-子句中搜索列中的指定模式"><a href="#LIKE-操作符——用于在-WHERE-子句中搜索列中的指定模式" class="headerlink" title="LIKE 操作符——用于在 WHERE 子句中搜索列中的指定模式"></a><strong>LIKE 操作符</strong>——用于在 WHERE 子句中搜索列中的指定模式</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">	FROM table_name</span><br><span class="line">	WHERE column_name LIKE pattern;</span><br></pre></td></tr></table></figure>
+
+<h3 id="SQL-通配符——用于替代字符串中的任何其他字符"><a href="#SQL-通配符——用于替代字符串中的任何其他字符" class="headerlink" title="SQL 通配符——用于替代字符串中的任何其他字符"></a><strong>SQL 通配符</strong>——用于替代字符串中的任何其他字符</h3><p>在 SQL 中，通配符与 SQL LIKE 操作符一起使用，用于搜索表中的数据。</p>
+<table>
+<thead>
+<tr>
+<th align="left">通配符</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">%</td>
+<td align="left">替代 0 个or多个字符</td>
+</tr>
+<tr>
+<td align="left">_</td>
+<td align="left">替代一个字符</td>
+</tr>
+<tr>
+<td align="left">[charlist]</td>
+<td align="left">字符列中的任何单一字符</td>
+</tr>
+<tr>
+<td align="left">[^charlist] or [!charlist]</td>
+<td align="left">不在字符列中的任何单一字符</td>
+</tr>
+</tbody></table>
+<ul>
+<li><p>使用 SQL [charlist] 通配符</p>
+<p>  MySQL 中使用 <strong>REGEXP</strong> or <strong>NOT REGEXP</strong> 运算符 (or RLIKE 和 NOT RLIKE) 来操作正则表达式。</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># 选取 name 以 "G"、"F" or "s" 开始的所有网站</span><br><span class="line">SELECT * FROM Websites</span><br><span class="line">	WHERE name REGEXP '^[GFs]';</span><br><span class="line"># 选取 name 以 A 到 H 字母开头的网站</span><br><span class="line">SELECT * FROM Websites</span><br><span class="line">	WHERE name REGEXP '^[A-H]';</span><br><span class="line"># 选取 name 不以 A 到 H 字母开头的网站</span><br><span class="line">SELECT * FROM Websites</span><br><span class="line">	WHERE name REGEXP '^[^A-H]';</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="IN-操作符"><a href="#IN-操作符" class="headerlink" title="IN 操作符"></a><strong>IN 操作符</strong></h3><p>——允许在 WHERE 子句中规定多个值</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">	FROM table_name</span><br><span class="line">	WHERE column_name IN (value1,value2,...);</span><br></pre></td></tr></table></figure>
+
+<h3 id="BETWEEN-操作符"><a href="#BETWEEN-操作符" class="headerlink" title="BETWEEN 操作符"></a><strong>BETWEEN 操作符</strong></h3><p>——用于选取介于两个值之间的数据范围内的值，可以是数值、文本、日期等</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">	FROM table_name</span><br><span class="line">	WHERE column_name BETWEEN value1 AND value2;	#	如果是字符串or者日期，需要用单引号括起来</span><br></pre></td></tr></table></figure>
+
+<h3 id="别名"><a href="#别名" class="headerlink" title="别名"></a><strong>别名</strong></h3><p>——为表名称or列名称指定别名。</p>
+<p>基本上，创建别名是为了让列名称的可读性更强。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># 列的SQL别名语法</span><br><span class="line">SELECT column_name AS alias_name	#如果列名称包含空格，要求使用双引号or方括号</span><br><span class="line">	FROM table_name;</span><br><span class="line"># 表的SQL别名语法</span><br><span class="line">SELECT column_name(s)</span><br><span class="line">	FROM table_name AS alias_name;</span><br><span class="line"># 把三个列合并成一个新列</span><br><span class="line">SELECT name, CONCAT(column1, ', ', column2, ', ', column3) AS new_cloumn</span><br><span class="line">	FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<p>在下面的情况下，使用别名很有用：</p>
+<ul>
+<li>  在查询中涉及超过一个表</li>
+<li>  在查询中使用了函数</li>
+<li>  列名称很长or者可读性差</li>
+<li>  需要把两个列or者多个列结合在一起</li>
+</ul>
+<h3 id="连接-JOIN"><a href="#连接-JOIN" class="headerlink" title="连接(JOIN)"></a><strong>连接(JOIN)</strong></h3><p>——用于把来自两个or多个表的行结合起来</p>
+<p>JOIN相关的七种用法</p>
+<ul>
+<li>  INNER JOIN（内连接）</li>
+<li>  LEFT JOIN（左连接）</li>
+<li>  RIGHT JOIN（右连接）</li>
+<li>  OUTER JOIN（外连接）（mysql数据库不支持）</li>
+<li>  LEFT JOIN EXCLUDING INNER JOIN（左连接-内连接）</li>
+<li>  RIGHT JOIN EXCLUDING INNER JOIN（右连接-内连接）</li>
+<li>  OUTER JOIN EXCLUDING INNER JOIN（外连接-内连接）</li>
+</ul>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200929225450.png"></p>
+<ol>
+<li><p><strong>INNER JOIN 关键字</strong></p>
+<p> ——关键字在表中存在至少一个匹配时返回行</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">  FROM table1</span><br><span class="line">  INNER JOIN table2</span><br><span class="line">  ON table1.column_name=table2.column_name;</span><br><span class="line"># or</span><br><span class="line">SELECT column_name(s)</span><br><span class="line">  FROM table1</span><br><span class="line">  JOIN table2</span><br><span class="line">  ON table1.column_name=table2.column_name;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>LEFT JOIN 关键字</strong></p>
+<p> ——从左表（table1）返回所有的行，如果右表（table2）中没有匹配，则结果为 NULL。</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">  FROM table1</span><br><span class="line">  LEFT JOIN table2</span><br><span class="line">  ON table1.column_name=table2.column_name;</span><br><span class="line">#or </span><br><span class="line">SELECT column_name(s)</span><br><span class="line">  FROM table1</span><br><span class="line">  LEFT OUTER JOIN table2</span><br><span class="line">  ON table1.column_name=table2.column_name;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>RIGHT JOIN 关键字</strong></p>
+<p> ——从右表（table2）返回所有的行，如果左表（table1）中没有匹配，则结果为 NULL。</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">  FROM table1</span><br><span class="line">  RIGHT JOIN table2</span><br><span class="line">  ON table1.column_name=table2.column_name;</span><br><span class="line">#or </span><br><span class="line">SELECT column_name(s)</span><br><span class="line">  FROM table1</span><br><span class="line">  RIGHT OUTER JOIN table2</span><br><span class="line">  ON table1.column_name=table2.column_name;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>FULL OUTER JOIN 关键字</strong></p>
+<p> ——只要左表（table1）和右表（table2）其中一个表中存在匹配，则返回行。</p>
+<p> MySQL中不支持 FULL OUTER JOIN</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">  FROM table1</span><br><span class="line">  FULL OUTER JOIN table2</span><br><span class="line">  ON table1.column_name=table2.column_name;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="UNION-操作符"><a href="#UNION-操作符" class="headerlink" title="UNION 操作符"></a><strong>UNION 操作符</strong></h3><p>——合并两个or多个 SELECT 语句的结果</p>
+<p>注意，</p>
+<ul>
+<li>  UNION 内部的每个 SELECT 语句必须拥有相同数量的列；</li>
+<li>  列也必须拥有相似的数据类型；</li>
+<li>  每个 SELECT 语句中的列的顺序必须相同；</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s) FROM table1</span><br><span class="line">UNION</span><br><span class="line">SELECT column_name(s) FROM table2;</span><br><span class="line"># 默认地，UNION 操作符选取不同的值。如果允许重复的值，请使用 UNION ALL。</span><br><span class="line">SELECT column_name(s) FROM table1</span><br><span class="line">UNION ALL</span><br><span class="line">SELECT column_name(s) FROM table2;</span><br></pre></td></tr></table></figure>
+
+<h3 id="SELECT-INTO-语句"><a href="#SELECT-INTO-语句" class="headerlink" title="SELECT INTO 语句"></a><strong>SELECT INTO 语句</strong></h3><p>——从一个表复制数据，然后把数据插入到另一个新表中</p>
+<p>MySQL 数据库不支持 <code>SELECT ... INTO</code> 语句，但支持 <code>INSERT INTO ... SELECT</code> </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 复制所有的列插入到新表中</span><br><span class="line">SELECT *</span><br><span class="line">INTO newtable [IN externaldb]</span><br><span class="line">FROM table1;</span><br><span class="line"># 只复制希望的列插入到新表中</span><br><span class="line">SELECT column_name(s)</span><br><span class="line">INTO newtable [IN externaldb]</span><br><span class="line">FROM table1;</span><br><span class="line"># 创建一个新的空表</span><br><span class="line">SELECT *</span><br><span class="line">INTO newtable</span><br><span class="line">FROM table1</span><br><span class="line">WHERE 1=0;</span><br></pre></td></tr></table></figure>
+
+<h3 id="INSERT-INTO-SELECT-语句"><a href="#INSERT-INTO-SELECT-语句" class="headerlink" title="INSERT INTO SELECT 语句"></a><strong>INSERT INTO SELECT 语句</strong></h3><p>——从一个表复制数据，插入到一个已存在的表中。目标表中任何已存在的行都不会受影响。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 从一个表中复制所有的列插入到另一个已存在的表中</span><br><span class="line">INSERT INTO table2</span><br><span class="line">SELECT * FROM table1;</span><br><span class="line"># 只复制希望的列插入到另一个已存在的表中</span><br><span class="line">INSERT INTO table2</span><br><span class="line">(column_name(s))</span><br><span class="line">SELECT column_name(s)</span><br><span class="line">FROM table1;</span><br></pre></td></tr></table></figure>
+
+<h3 id="约束（Constraints）"><a href="#约束（Constraints）" class="headerlink" title="约束（Constraints）"></a><strong>约束（Constraints）</strong></h3><p>——用于规定表中的数据规则。</p>
+<p>如果存在违反约束的数据行为，行为会被约束终止。</p>
+<p>约束可以在创建表时规定（通过 CREATE TABLE 语句），或者在表创建之后规定（通过 ALTER TABLE 语句）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE table_name</span><br><span class="line">(</span><br><span class="line">column_name1 data_type(size) constraint_name,</span><br><span class="line">column_name2 data_type(size) constraint_name,</span><br><span class="line">column_name3 data_type(size) constraint_name,</span><br><span class="line">....</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p>在 SQL 中，有如下约束：</p>
+<ol>
+<li><p><strong>NOT NULL</strong> - 指示某列不能存储 NULL 值。</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 创建表时约束</span><br><span class="line">CREATE TABLE Persons (</span><br><span class="line">    ID int NOT NULL,</span><br><span class="line">    LastName varchar(255) NOT NULL,</span><br><span class="line">    FirstName varchar(255) NOT NULL,</span><br><span class="line">    Age int</span><br><span class="line">);</span><br><span class="line"># 对存在的表添加约束</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">MODIFY Age int NOT NULL;</span><br><span class="line"># 删除表中的约束</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">MODIFY Age int NULL;</span><br></pre></td></tr></table></figure>
+
+</li>
+<li><p><strong>UNIQUE</strong> - 保证某列的每行必须有唯一的值。</p>
+<p> UNIQUE 和 PRIMARY KEY 约束均为列或列集合提供了唯一性的保证。</p>
+<p> PRIMARY KEY 约束拥有自动定义的 UNIQUE 约束。</p>
+<p> 每个表可以有多个 UNIQUE 约束，但是每个表只能有一个 PRIMARY KEY 约束。</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"># mysql</span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">P_Id int NOT NULL,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255),</span><br><span class="line">UNIQUE (P_Id)</span><br><span class="line">)</span><br><span class="line"># SQL Server / Oracle / MS Access</span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">P_Id int NOT NULL UNIQUE,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255)</span><br><span class="line">)</span><br><span class="line"># MySQL / SQL Server / Oracle / MS Access定义多列约束</span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">P_Id int NOT NULL,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255),</span><br><span class="line">CONSTRAINT uc_PersonID UNIQUE (P_Id,LastName)</span><br><span class="line">)</span><br><span class="line"># ALTER TABLE 时的 SQL UNIQUE 约束</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ADD UNIQUE (P_Id);</span><br><span class="line"># 定义多列约束</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ADD CONSTRAINT uc_PersonID UNIQUE (P_Id,LastName);</span><br><span class="line"># 撤销 UNIQUE 约束</span><br><span class="line"> # mysql</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">DROP INDEX uc_PersonID</span><br><span class="line"> # SQL Server / Oracle / MS Access</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">DROP CONSTRAINT uc_PersonID</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>PRIMARY KEY</strong> - NOT NULL 和 UNIQUE 的结合。确保某列（或两个列多个列的结合）有唯一标识，有助于更容易更快速地找到表中的一个特定的记录。</p>
+<p> 主键必须包含唯一的值。</p>
+<p> 主键列不能包含 NULL 值。</p>
+<p> 每个表都应该有一个主键，并且每个表只能有一个主键。</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"># CREATE TABLE 时的 SQL PRIMARY KEY 约束</span><br><span class="line"># mysql </span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">P_Id int NOT NULL,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255),</span><br><span class="line">PRIMARY KEY (P_Id)</span><br><span class="line">)</span><br><span class="line"># SQL Server / Oracle / MS Access</span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">P_Id int NOT NULL PRIMARY KEY,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255)</span><br><span class="line">)</span><br><span class="line"># 定义多个列的 PRIMARY KEY 约束</span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">P_Id int NOT NULL,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255),</span><br><span class="line">CONSTRAINT pk_PersonID PRIMARY KEY (P_Id,LastName)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># ALTER TABLE 时的 SQL PRIMARY KEY 约束</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ADD PRIMARY KEY (P_Id)</span><br><span class="line"># 定义多列</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ADD CONSTRAINT pk_PersonID PRIMARY KEY (P_Id,LastName)</span><br><span class="line"></span><br><span class="line"># 撤销 PRIMARY KEY 约束</span><br><span class="line"> # mysql</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">DROP PRIMARY KEY</span><br><span class="line"> # SQL Server / Oracle / MS Access</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">DROP CONSTRAINT pk_PersonID</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>FOREIGN KEY</strong> - 保证一个表中的数据匹配另一个表中的值的参照完整性。</p>
+<p> 一个表中的 FOREIGN KEY 指向另一个表中的 UNIQUE KEY(唯一约束的键)。</p>
+<p> FOREIGN KEY 约束用于预防破坏表之间连接的行为。</p>
+<p> FOREIGN KEY 约束也能防止非法数据插入外键列，因为它必须是它指向的那个表中的值之一。</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"># CREATE TABLE 时的 SQL FOREIGN KEY 约束</span><br><span class="line">#mysql</span><br><span class="line">CREATE TABLE Orders</span><br><span class="line">(</span><br><span class="line">O_Id int NOT NULL,</span><br><span class="line">OrderNo int NOT NULL,</span><br><span class="line">P_Id int,</span><br><span class="line">PRIMARY KEY (O_Id),</span><br><span class="line">FOREIGN KEY (P_Id) REFERENCES Persons(P_Id)</span><br><span class="line">)</span><br><span class="line"># SQL Server / Oracle / MS Access</span><br><span class="line">CREATE TABLE Orders</span><br><span class="line">(</span><br><span class="line">O_Id int NOT NULL PRIMARY KEY,</span><br><span class="line">OrderNo int NOT NULL,</span><br><span class="line">P_Id int FOREIGN KEY REFERENCES Persons(P_Id)</span><br><span class="line">)</span><br><span class="line"># 定义多个列的 FOREIGN KEY 约束</span><br><span class="line">CREATE TABLE Orders</span><br><span class="line">(</span><br><span class="line">O_Id int NOT NULL,</span><br><span class="line">OrderNo int NOT NULL,</span><br><span class="line">P_Id int,</span><br><span class="line">PRIMARY KEY (O_Id),</span><br><span class="line">CONSTRAINT fk_PerOrders FOREIGN KEY (P_Id)</span><br><span class="line">REFERENCES Persons(P_Id)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># ALTER TABLE 时的 SQL FOREIGN KEY 约束</span><br><span class="line">ALTER TABLE Orders</span><br><span class="line">ADD FOREIGN KEY (P_Id)</span><br><span class="line">REFERENCES Persons(P_Id)</span><br><span class="line"># 定义多个列的 FOREIGN KEY 约束</span><br><span class="line">ALTER TABLE Orders</span><br><span class="line">ADD CONSTRAINT fk_PerOrders</span><br><span class="line">FOREIGN KEY (P_Id)</span><br><span class="line">REFERENCES Persons(P_Id)</span><br><span class="line"># 撤销 FOREIGN KEY 约束</span><br><span class="line"> # mysql</span><br><span class="line">ALTER TABLE Orders</span><br><span class="line">DROP FOREIGN KEY fk_PerOrders</span><br><span class="line"> # SQL Server / Oracle / MS Access</span><br><span class="line">ALTER TABLE Orders</span><br><span class="line">DROP CONSTRAINT fk_PerOrders</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>CHECK</strong> - 保证列中的值符合指定的条件。</p>
+<p> CHECK 约束用于限制列中的值的范围。</p>
+<p> 如果对单个列定义 CHECK 约束，那么该列只允许特定的值。</p>
+<p> 如果对一个表定义 CHECK 约束，那么此约束会基于行中其他列的值在特定的列中对值进行限制。</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"># CREATE TABLE 时的 SQL CHECK 约束</span><br><span class="line"># mysql</span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">P_Id int NOT NULL,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255),</span><br><span class="line">CHECK (P_Id&gt;0)</span><br><span class="line">)</span><br><span class="line"># SQL Server / Oracle / MS Access</span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">P_Id int NOT NULL CHECK (P_Id&gt;0),</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255)</span><br><span class="line">)</span><br><span class="line"># 定义多个列的 CHECK 约束</span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">P_Id int NOT NULL,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255),</span><br><span class="line">CONSTRAINT chk_Person CHECK (P_Id&gt;0 AND City='Sandnes')</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># ALTER TABLE 时的 SQL CHECK 约束</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ADD CHECK (P_Id&gt;0)</span><br><span class="line"> # 定义多个列的 CHECK 约束</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ADD CONSTRAINT chk_Person CHECK (P_Id&gt;0 AND City='Sandnes')</span><br><span class="line"></span><br><span class="line"># 撤销 CHECK 约束</span><br><span class="line"> # SQL Server / Oracle / MS Access</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">DROP CONSTRAINT chk_Person</span><br><span class="line"> # mysql</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">DROP CHECK chk_Person</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>DEFAULT</strong> - 规定没有给列赋值时的默认值。</p>
+ <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"># CREATE TABLE 时的 SQL DEFAULT 约束</span><br><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">    P_Id int NOT NULL,</span><br><span class="line">    LastName varchar(255) NOT NULL,</span><br><span class="line">    FirstName varchar(255),</span><br><span class="line">    Address varchar(255),</span><br><span class="line">    City varchar(255) DEFAULT 'Sandnes'</span><br><span class="line">)</span><br><span class="line"># 通过使用类似 GETDATE() 这样的函数，DEFAULT 约束也可以用于插入系统值</span><br><span class="line">CREATE TABLE Orders</span><br><span class="line">(</span><br><span class="line">    O_Id int NOT NULL,</span><br><span class="line">    OrderNo int NOT NULL,</span><br><span class="line">    P_Id int,</span><br><span class="line">    OrderDate date DEFAULT GETDATE()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"># ALTER TABLE 时的 SQL DEFAULT 约束</span><br><span class="line"> # mysql</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ALTER City SET DEFAULT 'SANDNES'</span><br><span class="line"> # SQL Server / MS Access</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ADD CONSTRAINT ab_c DEFAULT 'SANDNES' for City</span><br><span class="line"> # Oracle</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">MODIFY City DEFAULT 'SANDNES'</span><br><span class="line"></span><br><span class="line"># 撤销 DEFAULT 约束</span><br><span class="line"> # mysql</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ALTER City DROP DEFAULT</span><br><span class="line"> # SQL Server / Oracle / MS Access</span><br><span class="line">ALTER TABLE Persons</span><br><span class="line">ALTER COLUMN City DROP DEFAULT</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="CREATE-INDEX-语句"><a href="#CREATE-INDEX-语句" class="headerlink" title="CREATE INDEX 语句"></a><strong>CREATE INDEX 语句</strong></h3><p>——用于在表中创建索引</p>
+<p>用户无法看到索引，它们只能被用来加速搜索/查询。</p>
+<p><strong>注释：</strong>更新一个包含索引的表需要比更新一个没有索引的表花费更多的时间，这是由于索引本身也需要更新。因此，理想的做法是仅仅在常常被搜索的列（以及表）上面创建索引。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># 在表上创建一个简单的索引</span><br><span class="line">CREATE INDEX index_name</span><br><span class="line">ON table_name (column_name)</span><br><span class="line"># 在表上创建一个唯一的索引</span><br><span class="line">CREATE UNIQUE INDEX index_name</span><br><span class="line">ON table_name (column_name)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Drop-子句"><a href="#Drop-子句" class="headerlink" title="Drop 子句"></a><strong>Drop 子句</strong></h3><p>——用于删除索引、表和数据库</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"># DROP INDEX 删除表中的索引</span><br><span class="line"> # MS Access</span><br><span class="line"> DROP INDEX index_name ON table_name</span><br><span class="line"> # MS SQL Server</span><br><span class="line"> DROP INDEX table_name.index_name</span><br><span class="line"> # DB2/Oracle</span><br><span class="line"> DROP INDEX index_name</span><br><span class="line"> # MySQL</span><br><span class="line"> ALTER TABLE table_name DROP INDEX index_name</span><br><span class="line"> </span><br><span class="line"># DROP TABLE 用于删除表</span><br><span class="line">DROP TABLE table_name</span><br><span class="line"># DROP DATABASE 删除数据库</span><br><span class="line">DROP DATABASE database_name</span><br><span class="line"># TRUNCATE TABLE 删除表内的数据</span><br><span class="line">TRUNCATE TABLE table_name</span><br></pre></td></tr></table></figure>
+
+<h3 id="ALTER-TABLE-语句"><a href="#ALTER-TABLE-语句" class="headerlink" title="ALTER TABLE 语句"></a><strong>ALTER TABLE 语句</strong></h3><p>——用于在已有的表中添加、删除或修改列</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># 在表中添加列</span><br><span class="line">ALTER TABLE table_name</span><br><span class="line">ADD column_name datatype</span><br><span class="line"># 删除表中的列</span><br><span class="line">ALTER TABLE table_name</span><br><span class="line">DROP COLUMN column_name</span><br><span class="line"></span><br><span class="line"># 改变表中列的数据类型</span><br><span class="line"> # SQL Server / MS Access</span><br><span class="line">ALTER TABLE table_name</span><br><span class="line">ALTER COLUMN column_name datatype</span><br><span class="line"> # My SQL / Oracle</span><br><span class="line">ALTER TABLE table_name</span><br><span class="line">MODIFY COLUMN column_name datatype</span><br></pre></td></tr></table></figure>
+
+<h3 id="AUTO-INCREMENT-字段"><a href="#AUTO-INCREMENT-字段" class="headerlink" title="AUTO INCREMENT 字段"></a><strong>AUTO INCREMENT 字段</strong></h3><p>——在新记录插入表中时生成一个唯一的数字</p>
+<p>在每次插入新记录时，通常希望自动地创建主键字段的值。可以在表中创建一个 auto-increment 字段。</p>
+<ol>
+<li><p>mysql</p>
+<p>下面的 SQL 语句把 “Persons” 表中的 “ID” 列定义为 auto-increment 主键字段：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">ID int NOT NULL AUTO_INCREMENT,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255),</span><br><span class="line">PRIMARY KEY (ID)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>MySQL 使用 AUTO_INCREMENT 关键字来执行 auto-increment 任务。</p>
+<p>默认地，AUTO_INCREMENT 的开始值是 1，每条新记录递增 1。</p>
+<p>要让 AUTO_INCREMENT 序列以其他的值起始，请使用下面的 SQL 语法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE Persons AUTO_INCREMENT=100</span><br></pre></td></tr></table></figure>
+
+<p>要在 “Persons” 表中插入新记录，不必为 “ID” 列规定值（会自动添加一个唯一的值）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO Persons (FirstName,LastName)</span><br><span class="line">VALUES ('Lars','Monsen')</span><br></pre></td></tr></table></figure>
+
+<p>上面的 SQL 语句会在 “Persons” 表中插入一条新记录。”ID” 列会被赋予一个唯一的值。”FirstName” 列会被设置为 “Lars”，”LastName” 列会被设置为 “Monsen”。</p>
+</li>
+<li><p>SQL Server</p>
+<p>下面的 SQL 语句把 “Persons” 表中的 “ID” 列定义为 auto-increment 主键字段：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">ID int IDENTITY(1,1) PRIMARY KEY,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>MS SQL Server 使用 IDENTITY 关键字来执行 auto-increment 任务。</p>
+<p>在上面的实例中，IDENTITY 的开始值是 1，每条新记录递增 1。</p>
+<p><strong>提示：</strong>要规定 “ID” 列以 10 起始且递增 5，请把 identity 改为 IDENTITY(10,5)。</p>
+<p>要在 “Persons” 表中插入新记录，不必为 “ID” 列规定值（会自动添加一个唯一的值）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO Persons (FirstName,LastName)</span><br><span class="line">VALUES ('Lars','Monsen')</span><br></pre></td></tr></table></figure>
+
+<p>上面的 SQL 语句会在 “Persons” 表中插入一条新记录。”ID” 列会被赋予一个唯一的值。”FirstName” 列会被设置为 “Lars”，”LastName” 列会被设置为 “Monsen”。</p>
+</li>
+<li><p>Access</p>
+<p>下面的 SQL 语句把 “Persons” 表中的 “ID” 列定义为 auto-increment 主键字段：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE Persons</span><br><span class="line">(</span><br><span class="line">ID Integer PRIMARY KEY AUTOINCREMENT,</span><br><span class="line">LastName varchar(255) NOT NULL,</span><br><span class="line">FirstName varchar(255),</span><br><span class="line">Address varchar(255),</span><br><span class="line">City varchar(255)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>MS Access 使用 AUTOINCREMENT 关键字来执行 auto-increment 任务。</p>
+<p>默认地，AUTOINCREMENT 的开始值是 1，每条新记录递增 1。</p>
+<p><strong>提示：</strong>要规定 “ID” 列以 10 起始且递增 5，请把 autoincrement 改为 AUTOINCREMENT(10,5)。</p>
+<p>要在 “Persons” 表中插入新记录，不必为 “ID” 列规定值（会自动添加一个唯一的值）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO Persons (FirstName,LastName)</span><br><span class="line">VALUES ('Lars','Monsen')</span><br></pre></td></tr></table></figure>
+
+<p>上面的 SQL 语句会在 “Persons” 表中插入一条新记录。”ID” 列会被赋予一个唯一的值。”FirstName” 列会被设置为 “Lars”，”LastName” 列会被设置为 “Monsen”。</p>
+</li>
+<li><p>Oracle</p>
+<p>在 Oracle 中，代码稍微复杂一点。</p>
+<p>必须通过 sequence 对象（该对象生成数字序列）创建 auto-increment 字段。</p>
+<p>请使用下面的 CREATE SEQUENCE 语法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">CREATE SEQUENCE seq_person</span><br><span class="line">MINVALUE 1</span><br><span class="line">START WITH 1</span><br><span class="line">INCREMENT BY 1</span><br><span class="line">CACHE 10</span><br></pre></td></tr></table></figure>
+
+<p>上面的代码创建一个名为 seq_person 的 sequence 对象，它以 1 起始且以 1 递增。该对象缓存 10 个值以提高性能。cache 选项规定了为了提高访问速度要存储多少个序列值。</p>
+<p>要在 “Persons” 表中插入新记录，必须使用 nextval 函数（该函数从 seq_person 序列中取回下一个值）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO Persons (ID,FirstName,LastName)</span><br><span class="line">VALUES (seq_person.nextval,'Lars','Monsen')</span><br></pre></td></tr></table></figure>
+
+<p>上面的 SQL 语句会在 “Persons” 表中插入一条新记录。”ID” 列会被赋值为来自 seq_person 序列的下一个数字。”FirstName”列 会被设置为 “Lars”，”LastName” 列会被设置为 “Monsen”。</p>
+</li>
+</ol>
+<h3 id="SQL视图"><a href="#SQL视图" class="headerlink" title="SQL视图"></a>SQL视图</h3><ol>
+<li><p>SQL CREATE VIEW 语句</p>
+<p> 在 SQL 中，视图是基于 SQL 语句的结果集的可视化的表。</p>
+<p> 视图包含行和列，就像一个真实的表。视图中的字段就是来自一个或多个数据库中的真实的表中的字段。</p>
+<p> 可以向视图添加 SQL 函数、WHERE 以及 JOIN 语句，也可以呈现数据，就像这些数据来自于某个单一的表一样。</p>
+</li>
+<li><p>SQL CREATE VIEW 语法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE VIEW view_name AS</span><br><span class="line">SELECT column_name(s)</span><br><span class="line">FROM table_name</span><br><span class="line">WHERE condition</span><br></pre></td></tr></table></figure>
+
+<p><strong>注释：</strong>视图总是显示最新的数据！每当用户查询视图时，数据库引擎通过使用视图的 SQL 语句重建数据。</p>
+</li>
+<li><p>SQL CREATE VIEW 实例</p>
+<p>样本数据库 Northwind 拥有一些被默认安装的视图。</p>
+<p>视图 “Current Product List” 会从 “Products” 表列出所有正在使用的产品（未停产的产品）。这个视图使用下面的 SQL 创建：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE VIEW [Current Product List] AS</span><br><span class="line">SELECT ProductID,ProductName</span><br><span class="line">FROM Products</span><br><span class="line">WHERE Discontinued=No</span><br></pre></td></tr></table></figure>
+
+<p>可以像这样查询上面这个视图：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM [Current Product List]</span><br></pre></td></tr></table></figure>
+
+<p>Northwind 样本数据库的另一个视图会选取 “Products” 表中所有单位价格高于平均单位价格的产品：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE VIEW [Products Above Average Price] AS</span><br><span class="line">SELECT ProductName,UnitPrice</span><br><span class="line">FROM Products</span><br><span class="line">WHERE UnitPrice&gt;(SELECT AVG(UnitPrice) FROM Products)</span><br></pre></td></tr></table></figure>
+
+<p>可以像这样查询上面这个视图：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM [Products Above Average Price]</span><br></pre></td></tr></table></figure>
+
+<p>Northwind 样本数据库的另一个视图会计算在 1997 年每个种类的销售总数。请注意，这个视图会从另一个名为 “Product Sales for 1997” 的视图那里选取数据：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE VIEW [Category Sales For 1997] AS</span><br><span class="line">SELECT DISTINCT CategoryName,Sum(ProductSales) AS CategorySales</span><br><span class="line">FROM [Product Sales for 1997]</span><br><span class="line">GROUP BY CategoryName</span><br></pre></td></tr></table></figure>
+
+<p>可以像这样查询上面这个视图：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM [Category Sales For 1997]</span><br></pre></td></tr></table></figure>
+
+<p>也可以向查询添加条件。现在，仅仅需要查看 “Beverages” 类的销售总数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM [Category Sales For 1997]</span><br><span class="line">WHERE CategoryName='Beverages'</span><br></pre></td></tr></table></figure></li>
+<li><p>SQL 更新视图</p>
+<p>可以使用下面的语法来更新视图：</p>
+<ol>
+<li><p>SQL CREATE OR REPLACE VIEW 语法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE OR REPLACE VIEW view_name AS</span><br><span class="line">SELECT column_name(s)</span><br><span class="line">FROM table_name</span><br><span class="line">WHERE condition</span><br></pre></td></tr></table></figure>
+
+<p>现在，希望向 “Current Product List” 视图添加 “Category” 列将通过下列 SQL 更新视图：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CREATE VIEW [Current Product List] AS</span><br><span class="line">SELECT ProductID,ProductName,Category</span><br><span class="line">FROM Products</span><br><span class="line">WHERE Discontinued=No</span><br></pre></td></tr></table></figure></li>
+<li><p>SQL Server</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">ALTER VIEW [ schema_name . ] view_name [ ( column [ ,...n ] ) ] </span><br><span class="line">[ WITH &lt;view_attribute&gt; [ ,...n ] ] </span><br><span class="line">AS select_statement </span><br><span class="line">[ WITH CHECK OPTION ] [ ; ]</span><br><span class="line"></span><br><span class="line">&lt;view_attribute&gt; ::= </span><br><span class="line">{ </span><br><span class="line">    [ ENCRYPTION ]</span><br><span class="line">    [ SCHEMABINDING ]</span><br><span class="line">    [ VIEW_METADATA ]     </span><br><span class="line">} </span><br></pre></td></tr></table></figure>
+
+<p><strong>schema_name:</strong> 视图所属架构的名称。</p>
+<p><strong>view_name:</strong> 要更改的视图。</p>
+<p><strong>column:</strong> 将成为指定视图的一部分的一个或多个列的名称（以逗号分隔）。</p>
+</li>
+</ol>
+</li>
+<li><p>SQL 撤销视图</p>
+<p>可以通过 DROP VIEW 命令来删除视图。</p>
+<p>SQL DROP VIEW 语法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DROP VIEW view_name</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="SQL-Date-函数"><a href="#SQL-Date-函数" class="headerlink" title="SQL Date 函数"></a>SQL Date 函数</h3><ol>
+<li><p><strong>MySQL Date 函数</strong></p>
+<p>下面的表格列出了 MySQL 中最重要的内建日期函数：</p>
+<table>
+<thead>
+<tr>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-now.html">NOW()</a></td>
+<td align="left">返回当前的日期和时间</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-curdate.html">CURDATE()</a></td>
+<td align="left">返回当前的日期</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-curtime.html">CURTIME()</a></td>
+<td align="left">返回当前的时间</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-date.html">DATE()</a></td>
+<td align="left">提取日期或日期/时间表达式的日期部分</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-extract.html">EXTRACT()</a></td>
+<td align="left">返回日期/时间的单独部分</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-date-add.html">DATE_ADD()</a></td>
+<td align="left">向日期添加指定的时间间隔</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-date-sub.html">DATE_SUB()</a></td>
+<td align="left">从日期减去指定的时间间隔</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-datediff-mysql.html">DATEDIFF()</a></td>
+<td align="left">返回两个日期之间的天数</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-date-format.html">DATE_FORMAT()</a></td>
+<td align="left">用不同的格式显示日期/时间</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>SQL Server Date 函数</strong></p>
+<p>下面的表格列出了 SQL Server 中最重要的内建日期函数：</p>
+<table>
+<thead>
+<tr>
+<th align="left">函数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-getdate.html">GETDATE()</a></td>
+<td align="left">返回当前的日期和时间</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-datepart.html">DATEPART()</a></td>
+<td align="left">返回日期/时间的单独部分</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-dateadd.html">DATEADD()</a></td>
+<td align="left">在日期中添加或减去指定的时间间隔</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-datediff.html">DATEDIFF()</a></td>
+<td align="left">返回两个日期之间的时间</td>
+</tr>
+<tr>
+<td align="left"><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/func-convert.html">CONVERT()</a></td>
+<td align="left">用不同的格式显示日期/时间</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>SQL Date 数据类型</strong></p>
+<ul>
+<li><p><strong>MySQL</strong> 使用下列数据类型在数据库中存储日期或日期/时间值：</p>
+<ul>
+<li>DATE - 格式：YYYY-MM-DD</li>
+<li>DATETIME - 格式：YYYY-MM-DD HH:MM:SS</li>
+<li>TIMESTAMP - 格式：YYYY-MM-DD HH:MM:SS</li>
+<li>YEAR - 格式：YYYY 或 YY</li>
+</ul>
+</li>
+<li><p><strong>SQL Server</strong> 使用下列数据类型在数据库中存储日期或日期/时间值：</p>
+<ul>
+<li>DATE - 格式：YYYY-MM-DD</li>
+<li>DATETIME - 格式：YYYY-MM-DD HH:MM:SS</li>
+<li>SMALLDATETIME - 格式：YYYY-MM-DD HH:MM:SS</li>
+<li>TIMESTAMP - 格式：唯一的数字</li>
+</ul>
+<p><strong>注释：</strong>在数据库中创建一个新表时，需要为列选择数据类型！</p>
+</li>
+</ul>
+</li>
+<li><p><strong>SQL 日期处理</strong></p>
+<p>如果不涉及时间部分，那么可以轻松地比较两个日期！</p>
+<p>假设有如下的 “Orders” 表：</p>
+<table>
+<thead>
+<tr>
+<th align="left">OrderId</th>
+<th align="left">ProductName</th>
+<th align="left">OrderDate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Geitost</td>
+<td align="left">2008-11-11</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Camembert Pierrot</td>
+<td align="left">2008-11-09</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">Mozzarella di Giovanni</td>
+<td align="left">2008-11-11</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">Mascarpone Fabioli</td>
+<td align="left">2008-10-29</td>
+</tr>
+</tbody></table>
+<p>现在，希望从上表中选取 OrderDate 为 “2008-11-11” 的记录。</p>
+<p>使用下面的 SELECT 语句：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM Orders WHERE OrderDate='2008-11-11'</span><br></pre></td></tr></table></figure>
+
+<p>结果集如下所示：</p>
+<table>
+<thead>
+<tr>
+<th align="left">OrderId</th>
+<th align="left">ProductName</th>
+<th align="left">OrderDate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Geitost</td>
+<td align="left">2008-11-11</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">Mozzarella di Giovanni</td>
+<td align="left">2008-11-11</td>
+</tr>
+</tbody></table>
+<p>现在，假设 “Orders” 表如下所示（请注意 “OrderDate” 列中的时间部分）：</p>
+<table>
+<thead>
+<tr>
+<th align="left">OrderId</th>
+<th align="left">ProductName</th>
+<th align="left">OrderDate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Geitost</td>
+<td align="left">2008-11-11 13:23:44</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Camembert Pierrot</td>
+<td align="left">2008-11-09 15:45:21</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">Mozzarella di Giovanni</td>
+<td align="left">2008-11-11 11:12:01</td>
+</tr>
+<tr>
+<td align="left">4</td>
+<td align="left">Mascarpone Fabioli</td>
+<td align="left">2008-10-29 14:56:59</td>
+</tr>
+</tbody></table>
+<p>如果使用和上面一样的 SELECT 语句：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM Orders WHERE OrderDate='2008-11-11'</span><br><span class="line"># or</span><br><span class="line">SELECT * FROM Orders WHERE OrderDate='2008-11-11 00：00：00'</span><br></pre></td></tr></table></figure>
+
+<p>那么将得不到结果！因为表中没有”2008-11-11 00:00:00”日期。如果没有时间部分，默认时间为 00:00:00。</p>
+<p><strong>提示：</strong>如果希望使查询简单且更易维护，那么请不要在日期中使用时间部分！</p>
+</li>
+</ol>
+<h3 id="SQL-NULL-值"><a href="#SQL-NULL-值" class="headerlink" title="SQL NULL 值"></a>SQL NULL 值</h3><p>NULL 值代表遗漏的未知数据。默认地，表的列可以存放 NULL 值。</p>
+<ol>
+<li><p><strong>SQL 的 NULL 值处理</strong></p>
+<p>请看下面的 “Persons” 表：</p>
+<table>
+<thead>
+<tr>
+<th align="left">P_Id</th>
+<th align="left">LastName</th>
+<th align="left">FirstName</th>
+<th align="left">Address</th>
+<th align="left">City</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Hansen</td>
+<td align="left">Ola</td>
+<td align="left"></td>
+<td align="left">Sandnes</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Svendson</td>
+<td align="left">Tove</td>
+<td align="left">Borgvn 23</td>
+<td align="left">Sandnes</td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">Pettersen</td>
+<td align="left">Kari</td>
+<td align="left"></td>
+<td align="left">Stavanger</td>
+</tr>
+</tbody></table>
+<p>假如 “Persons” 表中的 “Address” 列是可选的。这意味着如果在 “Address” 列插入一条不带值的记录，”Address” 列会使用 NULL 值保存。</p>
+<p>那么如何测试 NULL 值呢？</p>
+<p>无法使用比较运算符来测试 NULL 值，比如 =、&lt; 或 &lt;&gt;。</p>
+<p>必须使用 <strong>IS NULL</strong> 和<strong>IS NOT NULL</strong> 操作符。</p>
+</li>
+<li><p><strong>SQL IS NULL</strong></p>
+<p>如何仅仅选取在 “Address” 列中带有 NULL 值的记录呢？</p>
+<p>必须使用 IS NULL 操作符：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT LastName,FirstName,Address FROM Persons</span><br><span class="line">WHERE Address IS NULL</span><br></pre></td></tr></table></figure>
+
+<p>结果集如下所示：</p>
+<table>
+<thead>
+<tr>
+<th align="left">LastName</th>
+<th align="left">FirstName</th>
+<th align="left">Address</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Hansen</td>
+<td align="left">Ola</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Pettersen</td>
+<td align="left">Kari</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<p><strong>提示：</strong>请始终使用 IS NULL 来查找 NULL 值。</p>
+</li>
+<li><p><strong>SQL IS NOT NULL</strong></p>
+<p>如何仅仅选取在 “Address” 列中不带有 NULL 值的记录呢？</p>
+<p>必须使用 IS NOT NULL 操作符：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT LastName,FirstName,Address FROM Persons</span><br><span class="line">WHERE Address IS NOT NULL</span><br></pre></td></tr></table></figure>
+
+<p>结果集如下所示：</p>
+<table>
+<thead>
+<tr>
+<th align="left">LastName</th>
+<th align="left">FirstName</th>
+<th align="left">Address</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Svendson</td>
+<td align="left">Tove</td>
+<td align="left">Borgvn 23</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+<h3 id="SQL-NULL-函数"><a href="#SQL-NULL-函数" class="headerlink" title="SQL NULL 函数"></a>SQL NULL 函数</h3><ol>
+<li><p><strong>SQL ISNULL()、NVL()、IFNULL() 和 COALESCE() 函数</strong></p>
+<p>请看下面的 “Products” 表：</p>
+<table>
+<thead>
+<tr>
+<th align="left">P_Id</th>
+<th align="left">ProductName</th>
+<th align="left">UnitPrice</th>
+<th align="left">UnitsInStock</th>
+<th align="left">UnitsOnOrder</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">1</td>
+<td align="left">Jarlsberg</td>
+<td align="left">10.45</td>
+<td align="left">16</td>
+<td align="left">15</td>
+</tr>
+<tr>
+<td align="left">2</td>
+<td align="left">Mascarpone</td>
+<td align="left">32.56</td>
+<td align="left">23</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">3</td>
+<td align="left">Gorgonzola</td>
+<td align="left">15.67</td>
+<td align="left">9</td>
+<td align="left">20</td>
+</tr>
+</tbody></table>
+<p>假如 “UnitsOnOrder” 是可选的，而且可以包含 NULL 值。</p>
+<p>使用下面的 SELECT 语句：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT ProductName,UnitPrice*(UnitsInStock+UnitsOnOrder)</span><br><span class="line">FROM Products</span><br></pre></td></tr></table></figure>
+
+<p>在上面的实例中，如果有 “UnitsOnOrder” 值是 NULL，那么结果是 NULL。</p>
+<p>微软的 ISNULL() 函数用于规定如何处理 NULL 值。</p>
+<p>NVL()、IFNULL() 和 COALESCE() 函数也可以达到相同的结果。</p>
+<p>在这里，希望 NULL 值为 0。</p>
+<p>下面，如果 “UnitsOnOrder” 是 NULL，则不会影响计算，因为如果值是 NULL 则 ISNULL() 返回 0：</p>
+<ol>
+<li><p><strong>SQL Server / MS Access</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT ProductName,UnitPrice*(UnitsInStock+ISNULL(UnitsOnOrder,0))</span><br><span class="line">FROM Products</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>Oracle</strong></p>
+<p>Oracle 没有 ISNULL() 函数。不过，可以使用 NVL() 函数达到相同的结果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT ProductName,UnitPrice*(UnitsInStock+NVL(UnitsOnOrder,0))</span><br><span class="line">FROM Products</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>MySQL</strong></p>
+<p>MySQL 也拥有类似 ISNULL() 的函数。不过它的工作方式与微软的 ISNULL() 函数有点不同。</p>
+<p>在 MySQL 中，可以使用 IFNULL() 函数，如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT ProductName,UnitPrice*(UnitsInStock+IFNULL(UnitsOnOrder,0))</span><br><span class="line">FROM Products</span><br></pre></td></tr></table></figure>
+
+<p>或者可以使用 COALESCE() 函数，如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT ProductName,UnitPrice*(UnitsInStock+COALESCE(UnitsOnOrder,0))</span><br><span class="line">FROM Products</span><br></pre></td></tr></table></figure></li>
+</ol>
+</li>
+</ol>
+<h3 id="SQL-通用数据类型"><a href="#SQL-通用数据类型" class="headerlink" title="SQL 通用数据类型"></a>SQL 通用数据类型</h3><p>数据类型定义列中存放的值的种类。</p>
+<ol>
+<li><p><strong>SQL 通用数据类型</strong></p>
+<p>数据库表中的每个列都要求有名称和数据类型。</p>
+<p>SQL 开发人员必须在创建 SQL 表时决定表中的每个列将要存储的数据的类型。数据类型是一个标签，是便于 SQL 了解每个列期望存储什么类型的数据的指南，它也标识了 SQL 如何与存储的数据进行交互。</p>
+<p>下面的表格列出了 SQL 中通用的数据类型：</p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">CHARACTER(n)</td>
+<td align="left">字符/字符串。固定长度 n。</td>
+</tr>
+<tr>
+<td align="left">VARCHAR(n) 或 CHARACTER VARYING(n)</td>
+<td align="left">字符/字符串。可变长度。最大长度 n。</td>
+</tr>
+<tr>
+<td align="left">BINARY(n)</td>
+<td align="left">二进制串。固定长度 n。</td>
+</tr>
+<tr>
+<td align="left">BOOLEAN</td>
+<td align="left">存储 TRUE 或 FALSE 值</td>
+</tr>
+<tr>
+<td align="left">VARBINARY(n) 或 BINARY VARYING(n)</td>
+<td align="left">二进制串。可变长度。最大长度 n。</td>
+</tr>
+<tr>
+<td align="left">INTEGER(p)</td>
+<td align="left">整数值（没有小数点）。精度 p。</td>
+</tr>
+<tr>
+<td align="left">SMALLINT</td>
+<td align="left">整数值（没有小数点）。精度 5。</td>
+</tr>
+<tr>
+<td align="left">INTEGER</td>
+<td align="left">整数值（没有小数点）。精度 10。</td>
+</tr>
+<tr>
+<td align="left">BIGINT</td>
+<td align="left">整数值（没有小数点）。精度 19。</td>
+</tr>
+<tr>
+<td align="left">DECIMAL(p,s)</td>
+<td align="left">精确数值，精度 p，小数点后位数 s。例如：decimal(5,2) 是一个小数点前有 3 位数，小数点后有 2 位数的数字。</td>
+</tr>
+<tr>
+<td align="left">NUMERIC(p,s)</td>
+<td align="left">精确数值，精度 p，小数点后位数 s。（与 DECIMAL 相同）</td>
+</tr>
+<tr>
+<td align="left">FLOAT(p)</td>
+<td align="left">近似数值，尾数精度 p。一个采用以 10 为基数的指数计数法的浮点数。该类型的 size 参数由一个指定最小精度的单一数字组成。</td>
+</tr>
+<tr>
+<td align="left">REAL</td>
+<td align="left">近似数值，尾数精度 7。</td>
+</tr>
+<tr>
+<td align="left">FLOAT</td>
+<td align="left">近似数值，尾数精度 16。</td>
+</tr>
+<tr>
+<td align="left">DOUBLE PRECISION</td>
+<td align="left">近似数值，尾数精度 16。</td>
+</tr>
+<tr>
+<td align="left">DATE</td>
+<td align="left">存储年、月、日的值。</td>
+</tr>
+<tr>
+<td align="left">TIME</td>
+<td align="left">存储小时、分、秒的值。</td>
+</tr>
+<tr>
+<td align="left">TIMESTAMP</td>
+<td align="left">存储年、月、日、小时、分、秒的值。</td>
+</tr>
+<tr>
+<td align="left">INTERVAL</td>
+<td align="left">由一些整数字段组成，代表一段时间，取决于区间的类型。</td>
+</tr>
+<tr>
+<td align="left">ARRAY</td>
+<td align="left">元素的固定长度的有序集合</td>
+</tr>
+<tr>
+<td align="left">MULTISET</td>
+<td align="left">元素的可变长度的无序集合</td>
+</tr>
+<tr>
+<td align="left">XML</td>
+<td align="left">存储 XML 数据</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>SQL 数据类型快速参考手册</strong></p>
+<p>不同的数据库对数据类型定义提供不同的选择。</p>
+<p>下面的表格显示了各种不同的数据库平台上一些数据类型的通用名称：</p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">Access</th>
+<th align="left">SQLServer</th>
+<th align="left">Oracle</th>
+<th align="left">MySQL</th>
+<th align="left">PostgreSQL</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><em>boolean</em></td>
+<td align="left">Yes/No</td>
+<td align="left">Bit</td>
+<td align="left">Byte</td>
+<td align="left">N/A</td>
+<td align="left">Boolean</td>
+</tr>
+<tr>
+<td align="left"><em>integer</em></td>
+<td align="left">Number (integer)</td>
+<td align="left">Int</td>
+<td align="left">Number</td>
+<td align="left">Int Integer</td>
+<td align="left">Int Integer</td>
+</tr>
+<tr>
+<td align="left"><em>float</em></td>
+<td align="left">Number (single)</td>
+<td align="left">Float Real</td>
+<td align="left">Number</td>
+<td align="left">Float</td>
+<td align="left">Numeric</td>
+</tr>
+<tr>
+<td align="left"><em>currency</em></td>
+<td align="left">Currency</td>
+<td align="left">Money</td>
+<td align="left">N/A</td>
+<td align="left">N/A</td>
+<td align="left">Money</td>
+</tr>
+<tr>
+<td align="left"><em>string (fixed)</em></td>
+<td align="left">N/A</td>
+<td align="left">Char</td>
+<td align="left">Char</td>
+<td align="left">Char</td>
+<td align="left">Char</td>
+</tr>
+<tr>
+<td align="left"><em>string (variable)</em></td>
+<td align="left">Text (&lt;256) Memo (65k+)</td>
+<td align="left">Varchar</td>
+<td align="left">Varchar Varchar2</td>
+<td align="left">Varchar</td>
+<td align="left">Varchar</td>
+</tr>
+<tr>
+<td align="left"><em>binary object</em></td>
+<td align="left">OLE Object Memo</td>
+<td align="left">Binary (fixed up to 8K) Varbinary (&lt;8K) Image (&lt;2GB)</td>
+<td align="left">Long Raw</td>
+<td align="left">Blob Text</td>
+<td align="left">Binary Varbinary</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+<h3 id="SQL-DB数据类型"><a href="#SQL-DB数据类型" class="headerlink" title="SQL DB数据类型"></a>SQL DB数据类型</h3><p>Microsoft Access、MySQL 和 SQL Server 所使用的数据类型和范围。</p>
+<ol>
+<li><p><strong>Microsoft Access 数据类型</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+<th align="left">存储</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Text</td>
+<td align="left">用于文本或文本与数字的组合。最多 255 个字符。</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Memo</td>
+<td align="left">Memo 用于更大数量的文本。最多存储 65,536 个字符。<strong>注释：</strong>无法对 memo 字段进行排序。不过它们是可搜索的。</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Byte</td>
+<td align="left">允许 0 到 255 的数字。</td>
+<td align="left">1 字节</td>
+</tr>
+<tr>
+<td align="left">Integer</td>
+<td align="left">允许介于 -32,768 与 32,767 之间的全部数字。</td>
+<td align="left">2 字节</td>
+</tr>
+<tr>
+<td align="left">Long</td>
+<td align="left">允许介于 -2,147,483,648 与 2,147,483,647 之间的全部数字。</td>
+<td align="left">4 字节</td>
+</tr>
+<tr>
+<td align="left">Single</td>
+<td align="left">单精度浮点。处理大多数小数。</td>
+<td align="left">4 字节</td>
+</tr>
+<tr>
+<td align="left">Double</td>
+<td align="left">双精度浮点。处理大多数小数。</td>
+<td align="left">8 字节</td>
+</tr>
+<tr>
+<td align="left">Currency</td>
+<td align="left">用于货币。支持 15 位的元，外加 4 位小数。<strong>提示：</strong>可以选择使用哪个国家的货币。</td>
+<td align="left">8 字节</td>
+</tr>
+<tr>
+<td align="left">AutoNumber</td>
+<td align="left">AutoNumber 字段自动为每条记录分配数字，通常从 1 开始。</td>
+<td align="left">4 字节</td>
+</tr>
+<tr>
+<td align="left">Date/Time</td>
+<td align="left">用于日期和时间</td>
+<td align="left">8 字节</td>
+</tr>
+<tr>
+<td align="left">Yes/No</td>
+<td align="left">逻辑字段，可以显示为 Yes/No、True/False 或 On/Off。在代码中，使用常量 True 和 False （等价于 1 和 0）。<strong>注释：</strong>Yes/No 字段中不允许 Null 值</td>
+<td align="left">1 比特</td>
+</tr>
+<tr>
+<td align="left">Ole Object</td>
+<td align="left">可以存储图片、音频、视频或其他 BLOBs（Binary Large OBjects）。</td>
+<td align="left">最多 1GB</td>
+</tr>
+<tr>
+<td align="left">Hyperlink</td>
+<td align="left">包含指向其他文件的链接，包括网页。</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">Lookup Wizard</td>
+<td align="left">允许创建一个可从下拉列表中进行选择的选项列表。</td>
+<td align="left">4 字节</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>MySQL 数据类型</strong></p>
+<p>在 MySQL 中，有三种主要的类型：Text（文本）、Number（数字）和 Date/Time（日期/时间）类型。</p>
+<ol>
+<li><p><strong>Text 类型：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">CHAR(size)</td>
+<td align="left">保存固定长度的字符串（可包含字母、数字以及特殊字符）。在括号中指定字符串的长度。最多 255 个字符。</td>
+</tr>
+<tr>
+<td align="left">VARCHAR(size)</td>
+<td align="left">保存可变长度的字符串（可包含字母、数字以及特殊字符）。在括号中指定字符串的最大长度。最多 255 个字符。<strong>注释：</strong>如果值的长度大于 255，则被转换为 TEXT 类型。</td>
+</tr>
+<tr>
+<td align="left">TINYTEXT</td>
+<td align="left">存放最大长度为 255 个字符的字符串。</td>
+</tr>
+<tr>
+<td align="left">TEXT</td>
+<td align="left">存放最大长度为 65,535 个字符的字符串。</td>
+</tr>
+<tr>
+<td align="left">BLOB</td>
+<td align="left">用于 BLOBs（Binary Large OBjects）。存放最多 65,535 字节的数据。</td>
+</tr>
+<tr>
+<td align="left">MEDIUMTEXT</td>
+<td align="left">存放最大长度为 16,777,215 个字符的字符串。</td>
+</tr>
+<tr>
+<td align="left">MEDIUMBLOB</td>
+<td align="left">用于 BLOBs（Binary Large OBjects）。存放最多 16,777,215 字节的数据。</td>
+</tr>
+<tr>
+<td align="left">LONGTEXT</td>
+<td align="left">存放最大长度为 4,294,967,295 个字符的字符串。</td>
+</tr>
+<tr>
+<td align="left">LONGBLOB</td>
+<td align="left">用于 BLOBs (Binary Large OBjects)。存放最多 4,294,967,295 字节的数据。</td>
+</tr>
+<tr>
+<td align="left">ENUM(x,y,z,etc.)</td>
+<td align="left">允许输入可能值的列表。可以在 ENUM 列表中列出最大 65535 个值。如果列表中不存在插入的值，则插入空值。<strong>注释：</strong>这些值是按照输入的顺序排序的。可以按照此格式输入可能的值： ENUM(‘X’,’Y’,’Z’)</td>
+</tr>
+<tr>
+<td align="left">SET</td>
+<td align="left">与 ENUM 类似，不同的是，SET 最多只能包含 64 个列表项且 SET 可存储一个以上的选择。</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>Number 类型：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">TINYINT(size)</td>
+<td align="left">带符号-128到127 ，无符号0到255。</td>
+</tr>
+<tr>
+<td align="left">SMALLINT(size)</td>
+<td align="left">带符号范围-32768到32767，无符号0到65535, size 默认为 6。</td>
+</tr>
+<tr>
+<td align="left">MEDIUMINT(size)</td>
+<td align="left">带符号范围-8388608到8388607，无符号的范围是0到16777215。 size 默认为9</td>
+</tr>
+<tr>
+<td align="left">INT(size)</td>
+<td align="left">带符号范围-2147483648到2147483647，无符号的范围是0到4294967295。 size 默认为 11</td>
+</tr>
+<tr>
+<td align="left">BIGINT(size)</td>
+<td align="left">带符号的范围是-9223372036854775808到9223372036854775807，无符号的范围是0到18446744073709551615。size 默认为 20</td>
+</tr>
+<tr>
+<td align="left">FLOAT(size,d)</td>
+<td align="left">带有浮动小数点的小数字。在 size 参数中规定显示最大位数。在 d 参数中规定小数点右侧的最大位数。</td>
+</tr>
+<tr>
+<td align="left">DOUBLE(size,d)</td>
+<td align="left">带有浮动小数点的大数字。在 size 参数中规显示定最大位数。在 d 参数中规定小数点右侧的最大位数。</td>
+</tr>
+<tr>
+<td align="left">DECIMAL(size,d)</td>
+<td align="left">作为字符串存储的 DOUBLE 类型，允许固定的小数点。在 size 参数中规定显示最大位数。在 d 参数中规定小数点右侧的最大位数。</td>
+</tr>
+</tbody></table>
+<p><strong>注意：</strong>以上的 size 代表的并不是存储在数据库中的具体的长度，如 int(4) 并不是只能存储4个长度的数字。</p>
+<p>实际上int(size)所占多少存储空间并无任何关系。int(3)、int(4)、int(8) 在磁盘上都是占用 4 btyes 的存储空间。就是在显示给用户的方式有点不同外，int(M) 跟 int 数据类型是相同的。</p>
+<p>例如：int的值为10 （指定zerofill）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">int（9）显示结果为000000010</span><br><span class="line">int（3）显示结果为010</span><br></pre></td></tr></table></figure>
+
+<p>就是显示的长度不一样而已 都是占用四个字节的空间</p>
+</li>
+<li><p><strong>Date 类型：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">DATE()</td>
+<td align="left">日期。格式：YYYY-MM-DD<strong>注释：</strong>支持的范围是从 ‘1000-01-01’ 到 ‘9999-12-31’</td>
+</tr>
+<tr>
+<td align="left">DATETIME()</td>
+<td align="left">*日期和时间的组合。格式：YYYY-MM-DD HH:MM:SS<strong>注释：</strong>支持的范围是从 ‘1000-01-01 00:00:00’ 到 ‘9999-12-31 23:59:59’</td>
+</tr>
+<tr>
+<td align="left">TIMESTAMP()</td>
+<td align="left">*时间戳。TIMESTAMP 值使用 Unix 纪元(‘1970-01-01 00:00:00’ UTC) 至今的秒数来存储。格式：YYYY-MM-DD HH:MM:SS<strong>注释：</strong>支持的范围是从 ‘1970-01-01 00:00:01’ UTC 到 ‘2038-01-09 03:14:07’ UTC</td>
+</tr>
+<tr>
+<td align="left">TIME()</td>
+<td align="left">时间。格式：HH:MM:SS<strong>注释：</strong>支持的范围是从 ‘-838:59:59’ 到 ‘838:59:59’</td>
+</tr>
+<tr>
+<td align="left">YEAR()</td>
+<td align="left">2 位或 4 位格式的年。<strong>注释：</strong>4 位格式所允许的值：1901 到 2155。2 位格式所允许的值：70 到 69，表示从 1970 到 2069。</td>
+</tr>
+</tbody></table>
+<p>即便 DATETIME 和 TIMESTAMP 返回相同的格式，它们的工作方式很不同。在 INSERT 或 UPDATE 查询中，TIMESTAMP 自动把自身设置为当前的日期和时间。TIMESTAMP 也接受不同的格式，比如 YYYYMMDDHHMMSS、YYMMDDHHMMSS、YYYYMMDD 或 YYMMDD。</p>
+</li>
+</ol>
+</li>
+<li><p><strong>SQL Server 数据类型</strong></p>
+<ol>
+<li><p><strong>String 类型：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left"></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">数据类型</td>
+<td align="left">描述</td>
+<td align="left">存储</td>
+</tr>
+<tr>
+<td align="left">char(n)</td>
+<td align="left">固定长度的字符串。最多 8,000 个字符。</td>
+<td align="left">Defined width</td>
+</tr>
+<tr>
+<td align="left">varchar(n)</td>
+<td align="left">可变长度的字符串。最多 8,000 个字符。</td>
+<td align="left">2 bytes + number of chars</td>
+</tr>
+<tr>
+<td align="left">varchar(max)</td>
+<td align="left">可变长度的字符串。最多 1,073,741,824 个字符。</td>
+<td align="left">2 bytes + number of chars</td>
+</tr>
+<tr>
+<td align="left">text</td>
+<td align="left">可变长度的字符串。最多 2GB 文本数据。</td>
+<td align="left">4 bytes + number of chars</td>
+</tr>
+<tr>
+<td align="left">nchar</td>
+<td align="left">固定长度的 Unicode 字符串。最多 4,000 个字符。</td>
+<td align="left">Defined width x 2</td>
+</tr>
+<tr>
+<td align="left">nvarchar</td>
+<td align="left">可变长度的 Unicode 字符串。最多 4,000 个字符。</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">nvarchar(max)</td>
+<td align="left">可变长度的 Unicode 字符串。最多 536,870,912 个字符。</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">ntext</td>
+<td align="left">可变长度的 Unicode 字符串。最多 2GB 文本数据。</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">bit</td>
+<td align="left">允许 0、1 或 NULL</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">binary(n)</td>
+<td align="left">固定长度的二进制字符串。最多 8,000 字节。</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">varbinary</td>
+<td align="left">可变长度的二进制字符串。最多 8,000 字节。</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">varbinary(max)</td>
+<td align="left">可变长度的二进制字符串。最多 2GB。</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">image</td>
+<td align="left">可变长度的二进制字符串。最多 2GB。</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>Number 类型：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+<th align="left">存储</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">tinyint</td>
+<td align="left">允许从 0 到 255 的所有数字。</td>
+<td align="left">1 字节</td>
+</tr>
+<tr>
+<td align="left">smallint</td>
+<td align="left">允许介于 -32,768 与 32,767 的所有数字。</td>
+<td align="left">2 字节</td>
+</tr>
+<tr>
+<td align="left">int</td>
+<td align="left">允许介于 -2,147,483,648 与 2,147,483,647 的所有数字。</td>
+<td align="left">4 字节</td>
+</tr>
+<tr>
+<td align="left">bigint</td>
+<td align="left">允许介于 -9,223,372,036,854,775,808 与 9,223,372,036,854,775,807 之间的所有数字。</td>
+<td align="left">8 字节</td>
+</tr>
+<tr>
+<td align="left">decimal(p,s)</td>
+<td align="left">固定精度和比例的数字。允许从 -10^38 +1 到 10^38 -1 之间的数字。p 参数指示可以存储的最大位数（小数点左侧和右侧）。p 必须是 1 到 38 之间的值。默认是 18。s 参数指示小数点右侧存储的最大位数。s 必须是 0 到 p 之间的值。默认是 0。</td>
+<td align="left">5-17 字节</td>
+</tr>
+<tr>
+<td align="left">numeric(p,s)</td>
+<td align="left">固定精度和比例的数字。允许从 -10^38 +1 到 10^38 -1 之间的数字。p 参数指示可以存储的最大位数（小数点左侧和右侧）。p 必须是 1 到 38 之间的值。默认是 18。s 参数指示小数点右侧存储的最大位数。s 必须是 0 到 p 之间的值。默认是 0。</td>
+<td align="left">5-17 字节</td>
+</tr>
+<tr>
+<td align="left">smallmoney</td>
+<td align="left">介于 -214,748.3648 与 214,748.3647 之间的货币数据。</td>
+<td align="left">4 字节</td>
+</tr>
+<tr>
+<td align="left">money</td>
+<td align="left">介于 -922,337,203,685,477.5808 与 922,337,203,685,477.5807 之间的货币数据。</td>
+<td align="left">8 字节</td>
+</tr>
+<tr>
+<td align="left">float(n)</td>
+<td align="left">从 -1.79E + 308 到 1.79E + 308 的浮动精度数字数据。n 参数指示该字段保存 4 字节还是 8 字节。float(24) 保存 4 字节，而 float(53) 保存 8 字节。n 的默认值是 53。</td>
+<td align="left">4 或 8 字节</td>
+</tr>
+<tr>
+<td align="left">real</td>
+<td align="left">从 -3.40E + 38 到 3.40E + 38 的浮动精度数字数据。</td>
+<td align="left">4 字节</td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>Date 类型：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+<th align="left">存储</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">datetime</td>
+<td align="left">从 1753 年 1 月 1 日 到 9999 年 12 月 31 日，精度为 3.33 毫秒。</td>
+<td align="left">8 字节</td>
+</tr>
+<tr>
+<td align="left">datetime2</td>
+<td align="left">从 1753 年 1 月 1 日 到 9999 年 12 月 31 日，精度为 100 纳秒。</td>
+<td align="left">6-8 字节</td>
+</tr>
+<tr>
+<td align="left">smalldatetime</td>
+<td align="left">从 1900 年 1 月 1 日 到 2079 年 6 月 6 日，精度为 1 分钟。</td>
+<td align="left">4 字节</td>
+</tr>
+<tr>
+<td align="left">date</td>
+<td align="left">仅存储日期。从 0001 年 1 月 1 日 到 9999 年 12 月 31 日。</td>
+<td align="left">3 bytes</td>
+</tr>
+<tr>
+<td align="left">time</td>
+<td align="left">仅存储时间。精度为 100 纳秒。</td>
+<td align="left">3-5 字节</td>
+</tr>
+<tr>
+<td align="left">datetimeoffset</td>
+<td align="left">与 datetime2 相同，外加时区偏移。</td>
+<td align="left">8-10 字节</td>
+</tr>
+<tr>
+<td align="left">timestamp</td>
+<td align="left">存储唯一的数字，每当创建或修改某行时，该数字会更新。timestamp 值基于内部时钟，不对应真实时间。每个表只能有一个 timestamp 变量。</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+</li>
+<li><p><strong>其他数据类型：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">数据类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">sql_variant</td>
+<td align="left">存储最多 8,000 字节不同数据类型的数据，除了 text、ntext 以及 timestamp。</td>
+</tr>
+<tr>
+<td align="left">uniqueidentifier</td>
+<td align="left">存储全局唯一标识符 (GUID)。</td>
+</tr>
+<tr>
+<td align="left">xml</td>
+<td align="left">存储 XML 格式化数据。最多 2GB。</td>
+</tr>
+<tr>
+<td align="left">cursor</td>
+<td align="left">存储对用于数据库操作的指针的引用。</td>
+</tr>
+<tr>
+<td align="left">table</td>
+<td align="left">存储结果集，供稍后处理。</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="SQL函数"><a href="#SQL函数" class="headerlink" title="SQL函数"></a>SQL函数</h2><p>用于计数和计算</p>
+<h3 id="AVG-函数"><a href="#AVG-函数" class="headerlink" title="AVG() 函数"></a>AVG() 函数</h3><p>返回数值列的平均值。</p>
+<p>SQL AVG() 语法</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT AVG(column_name) FROM table_name</span><br></pre></td></tr></table></figure>
+
+<h3 id="COUNT-函数"><a href="#COUNT-函数" class="headerlink" title="COUNT() 函数"></a>COUNT() 函数</h3><p>返回匹配指定条件的行数。</p>
+<ol>
+<li><p><strong>SQL COUNT(column_name) 语法</strong></p>
+<p>COUNT(column_name) 函数返回指定列的值的数目（NULL 不计入）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT COUNT(column_name) FROM table_name;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>SQL COUNT(*) 语法</strong></p>
+<p>COUNT(*) 函数返回表中的记录数：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT COUNT(*) FROM table_name;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>SQL COUNT(DISTINCT column_name) 语法</strong></p>
+<p>COUNT(DISTINCT column_name) 函数返回指定列的不同值的数目：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT COUNT(DISTINCT column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注释：</strong>COUNT(DISTINCT) 适用于 ORACLE 和 Microsoft SQL Server，但是无法用于 Microsoft Access。</p>
+</li>
+</ol>
+<h3 id="FIRST-函数"><a href="#FIRST-函数" class="headerlink" title="FIRST() 函数"></a>FIRST() 函数</h3><p>返回指定的列中第一个记录的值。</p>
+<p><strong>SQL FIRST() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT FIRST(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注释：</strong>只有 MS Access 支持 FIRST() 函数。</p>
+<ol>
+<li><p><strong>SQL Server 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT TOP 1 *column_name* FROM *table_name</span><br><span class="line">*ORDER BY *column_name* ASC;</span><br><span class="line">SELECT TOP 1 name FROM Websites</span><br><span class="line">ORDER BY id ASC;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>MySQL 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT *column_name* FROM *table_name*</span><br><span class="line">ORDER BY *column_name* ASC</span><br><span class="line">LIMIT 1;</span><br><span class="line">SELECT name FROM Websites</span><br><span class="line">ORDER BY id ASC</span><br><span class="line">LIMIT 1;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>Oracle 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT *column_name* FROM *table_name*</span><br><span class="line">ORDER BY *column_name* ASC</span><br><span class="line">WHERE ROWNUM &lt;=1;</span><br><span class="line">SELECT name FROM Websites</span><br><span class="line">ORDER BY id ASC</span><br><span class="line">WHERE ROWNUM &lt;=1;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="LAST-函数"><a href="#LAST-函数" class="headerlink" title="LAST() 函数"></a>LAST() 函数</h3><p>返回指定的列中最后一个记录的值。</p>
+<p><strong>SQL LAST() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT LAST(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注释：</strong>只有 MS Access 支持 LAST() 函数。</p>
+<ol>
+<li><p><strong>SQL Server 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT TOP 1 column_name FROM table_name</span><br><span class="line">ORDER BY column_name DESC;</span><br><span class="line">SELECT TOP 1 name FROM Websites</span><br><span class="line">ORDER BY id DESC;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>MySQL 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name FROM table_name</span><br><span class="line">ORDER BY column_name DESC</span><br><span class="line">LIMIT 1;</span><br><span class="line">SELECT name FROM Websites</span><br><span class="line">ORDER BY id DESC</span><br><span class="line">LIMIT 1;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>Oracle 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name FROM table_name</span><br><span class="line">ORDER BY column_name DESC</span><br><span class="line">WHERE ROWNUM &lt;=1;</span><br><span class="line">SELECT name FROM Websites</span><br><span class="line">ORDER BY id DESC</span><br><span class="line">WHERE ROWNUM &lt;=1;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="MAX-函数"><a href="#MAX-函数" class="headerlink" title="MAX() 函数"></a>MAX() 函数</h3><p>返回指定列的最大值。</p>
+<p><strong>SQL MAX() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT MAX(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="MIN-函数"><a href="#MIN-函数" class="headerlink" title="MIN() 函数"></a>MIN() 函数</h3><p>返回指定列的最大值。</p>
+<p><strong>SQL MIN() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT MIN(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="SUM-函数"><a href="#SUM-函数" class="headerlink" title="SUM() 函数"></a>SUM() 函数</h3><p>返回指定列的最大值。</p>
+<p><strong>SQL SUM() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT SUM(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="GROUP-BY-语句"><a href="#GROUP-BY-语句" class="headerlink" title="GROUP BY 语句"></a>GROUP BY 语句</h3><p>用于结合聚合函数，根据一个或多个列对结果集进行分组。</p>
+<p><strong>SQL GROUP BY 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name, aggregate_function(column_name)</span><br><span class="line">FROM table_name</span><br><span class="line">WHERE column_name operator value</span><br><span class="line">GROUP BY column_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="HAVING-子句"><a href="#HAVING-子句" class="headerlink" title="HAVING 子句"></a>HAVING 子句</h3><p>在 SQL 中增加 HAVING 子句原因是，WHERE 关键字无法与聚合函数一起使用。</p>
+<p>HAVING 子句可以在筛选分组后的各组数据。</p>
+<p><strong>SQL HAVING 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name, aggregate_function(column_name) </span><br><span class="line">FROM table_name </span><br><span class="line">WHERE column_name operator value </span><br><span class="line">GROUP BY column_name </span><br><span class="line">HAVING aggregate_function(column_name) operator value;</span><br></pre></td></tr></table></figure>
+
+<h3 id="EXISTS-运算符"><a href="#EXISTS-运算符" class="headerlink" title="EXISTS 运算符"></a>EXISTS 运算符</h3><p>用于判断查询子句是否有记录，如果有一条或多条记录存在返回 True，否则返回 False。</p>
+<p><strong>SQL EXISTS 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT column_name(s)</span><br><span class="line">FROM table_name</span><br><span class="line">WHERE EXISTS</span><br><span class="line">(SELECT column_name FROM table_name WHERE condition);</span><br></pre></td></tr></table></figure>
+
+<h3 id="UCASE-函数"><a href="#UCASE-函数" class="headerlink" title="UCASE() 函数"></a>UCASE() 函数</h3><p>把字段的值转换为大写。</p>
+<p><strong>SQL UCASE() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT UCASE(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<p><strong>用于 SQL Server 的语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT UPPER(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="LCASE-函数"><a href="#LCASE-函数" class="headerlink" title="LCASE() 函数"></a>LCASE() 函数</h3><p>把字段的值转换为小写。</p>
+<p><strong>SQL LCASE() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT LCASE(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<p><strong>用于 SQL Server 的语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT LOWER(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="MID-函数"><a href="#MID-函数" class="headerlink" title="MID() 函数"></a>MID() 函数</h3><p>用于从文本字段中提取字符。</p>
+<p><strong>SQL MID() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT MID(column_name,start[,length]) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">column_name</td>
+<td align="left">必需。要提取字符的字段。</td>
+</tr>
+<tr>
+<td align="left">start</td>
+<td align="left">必需。规定开始位置（起始值是 1）。</td>
+</tr>
+<tr>
+<td align="left">length</td>
+<td align="left">可选。要返回的字符数。如果省略，则 MID() 函数返回剩余文本。</td>
+</tr>
+</tbody></table>
+<h3 id="LEN-函数"><a href="#LEN-函数" class="headerlink" title="LEN() 函数"></a>LEN() 函数</h3><p>返回文本字段中值的长度。</p>
+<p><strong>SQL LEN() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT LEN(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<p>MySQL 中函数为 LENGTH():</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT LENGTH(column_name) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="ROUND-函数"><a href="#ROUND-函数" class="headerlink" title="ROUND() 函数"></a>ROUND() 函数</h3><p>用于把数值字段舍入为指定的小数位数。</p>
+<p><strong>SQL ROUND() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT ROUND(column_name,decimals) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">column_name</td>
+<td align="left">必需。要舍入的字段。</td>
+</tr>
+<tr>
+<td align="left">decimals</td>
+<td align="left">必需。规定要返回的小数位数。</td>
+</tr>
+</tbody></table>
+<h3 id="NOW-函数"><a href="#NOW-函数" class="headerlink" title="NOW() 函数"></a>NOW() 函数</h3><p>返回当前系统的日期和时间。</p>
+<p><strong>SQL NOW() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT NOW() FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<h3 id="FORMAT-函数"><a href="#FORMAT-函数" class="headerlink" title="FORMAT() 函数"></a>FORMAT() 函数</h3><p>用于对字段的显示进行格式化。</p>
+<p><strong>SQL FORMAT() 语法</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT FORMAT(column_name,format) FROM table_name;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">column_name</td>
+<td align="left">必需。要格式化的字段。</td>
+</tr>
+<tr>
+<td align="left">format</td>
+<td align="left">必需。规定格式。</td>
+</tr>
+</tbody></table>
+<h2 id="附：SQL语法查看表"><a href="#附：SQL语法查看表" class="headerlink" title="附：SQL语法查看表"></a>附：SQL语法查看表</h2><table>
+<thead>
+<tr>
+<th align="left">SQL 语句</th>
+<th align="left">语法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">AND / OR</td>
+<td align="left">SELECT column_name(s) FROM table_name WHERE condition AND|OR condition</td>
+</tr>
+<tr>
+<td align="left">ALTER TABLE</td>
+<td align="left">ALTER TABLE table_name ADD column_name datatypeorALTER TABLE table_name DROP COLUMN column_name</td>
+</tr>
+<tr>
+<td align="left">AS (alias)</td>
+<td align="left">SELECT column_name AS column_alias FROM table_nameorSELECT column_name FROM table_name AS table_alias</td>
+</tr>
+<tr>
+<td align="left">BETWEEN</td>
+<td align="left">SELECT column_name(s) FROM table_name WHERE column_name BETWEEN value1 AND value2</td>
+</tr>
+<tr>
+<td align="left">CREATE DATABASE</td>
+<td align="left">CREATE DATABASE database_name</td>
+</tr>
+<tr>
+<td align="left">CREATE TABLE</td>
+<td align="left">CREATE TABLE table_name ( column_name1 data_type, column_name2 data_type, column_name2 data_type, … )</td>
+</tr>
+<tr>
+<td align="left">CREATE INDEX</td>
+<td align="left">CREATE INDEX index_name ON table_name (column_name)orCREATE UNIQUE INDEX index_name ON table_name (column_name)</td>
+</tr>
+<tr>
+<td align="left">CREATE VIEW</td>
+<td align="left">CREATE VIEW view_name AS SELECT column_name(s) FROM table_name WHERE condition</td>
+</tr>
+<tr>
+<td align="left">DELETE</td>
+<td align="left">DELETE FROM table_name WHERE some_column=some_valueorDELETE FROM table_name (<strong>Note:</strong> Deletes the entire table!!)DELETE * FROM table_name (<strong>Note:</strong> Deletes the entire table!!)</td>
+</tr>
+<tr>
+<td align="left">DROP DATABASE</td>
+<td align="left">DROP DATABASE database_name</td>
+</tr>
+<tr>
+<td align="left">DROP INDEX</td>
+<td align="left">DROP INDEX table_name.index_name (SQL Server) DROP INDEX index_name ON table_name (MS Access) DROP INDEX index_name (DB2/Oracle) ALTER TABLE table_name DROP INDEX index_name (MySQL)</td>
+</tr>
+<tr>
+<td align="left">DROP TABLE</td>
+<td align="left">DROP TABLE table_name</td>
+</tr>
+<tr>
+<td align="left">GROUP BY</td>
+<td align="left">SELECT column_name, aggregate_function(column_name) FROM table_name WHERE column_name operator value GROUP BY column_name</td>
+</tr>
+<tr>
+<td align="left">HAVING</td>
+<td align="left">SELECT column_name, aggregate_function(column_name) FROM table_name WHERE column_name operator value GROUP BY column_name HAVING aggregate_function(column_name) operator value</td>
+</tr>
+<tr>
+<td align="left">IN</td>
+<td align="left">SELECT column_name(s) FROM table_name WHERE column_name IN (value1,value2,..)</td>
+</tr>
+<tr>
+<td align="left">INSERT INTO</td>
+<td align="left">INSERT INTO table_name VALUES (value1, value2, value3,….)<em>or</em>INSERT INTO table_name (column1, column2, column3,…) VALUES (value1, value2, value3,….)</td>
+</tr>
+<tr>
+<td align="left">INNER JOIN</td>
+<td align="left">SELECT column_name(s) FROM table_name1 INNER JOIN table_name2 ON table_name1.column_name=table_name2.column_name</td>
+</tr>
+<tr>
+<td align="left">LEFT JOIN</td>
+<td align="left">SELECT column_name(s) FROM table_name1 LEFT JOIN table_name2 ON table_name1.column_name=table_name2.column_name</td>
+</tr>
+<tr>
+<td align="left">RIGHT JOIN</td>
+<td align="left">SELECT column_name(s) FROM table_name1 RIGHT JOIN table_name2 ON table_name1.column_name=table_name2.column_name</td>
+</tr>
+<tr>
+<td align="left">FULL JOIN</td>
+<td align="left">SELECT column_name(s) FROM table_name1 FULL JOIN table_name2 ON table_name1.column_name=table_name2.column_name</td>
+</tr>
+<tr>
+<td align="left">LIKE</td>
+<td align="left">SELECT column_name(s) FROM table_name WHERE column_name LIKE pattern</td>
+</tr>
+<tr>
+<td align="left">ORDER BY</td>
+<td align="left">SELECT column_name(s) FROM table_name ORDER BY column_name [ASC|DESC]</td>
+</tr>
+<tr>
+<td align="left">SELECT</td>
+<td align="left">SELECT column_name(s) FROM table_name</td>
+</tr>
+<tr>
+<td align="left">SELECT *</td>
+<td align="left">SELECT * FROM table_name</td>
+</tr>
+<tr>
+<td align="left">SELECT DISTINCT</td>
+<td align="left">SELECT DISTINCT column_name(s) FROM table_name</td>
+</tr>
+<tr>
+<td align="left">SELECT INTO</td>
+<td align="left">SELECT * INTO new_table_name [IN externaldatabase] FROM old_table_name<em>or</em>SELECT column_name(s) INTO new_table_name [IN externaldatabase] FROM old_table_name</td>
+</tr>
+<tr>
+<td align="left">SELECT TOP</td>
+<td align="left">SELECT TOP number|percent column_name(s) FROM table_name</td>
+</tr>
+<tr>
+<td align="left">TRUNCATE TABLE</td>
+<td align="left">TRUNCATE TABLE table_name</td>
+</tr>
+<tr>
+<td align="left">UNION</td>
+<td align="left">SELECT column_name(s) FROM table_name1 UNION SELECT column_name(s) FROM table_name2</td>
+</tr>
+<tr>
+<td align="left">UNION ALL</td>
+<td align="left">SELECT column_name(s) FROM table_name1 UNION ALL SELECT column_name(s) FROM table_name2</td>
+</tr>
+<tr>
+<td align="left">UPDATE</td>
+<td align="left">UPDATE table_name SET column1=value, column2=value,… WHERE some_column=some_value</td>
+</tr>
+<tr>
+<td align="left">WHERE</td>
+<td align="left">SELECT column_name(s) FROM table_name WHERE column_name operator value</td>
+</tr>
+</tbody></table>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p><a target="_blank" rel="noopener" href="https://www.runoob.com/sql/sql-tutorial.html">https://www.runoob.com/sql/sql-tutorial.html</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/SQL%E5%85%A5%E9%97%A8%E8%AF%AD%E6%B3%95%E6%80%BB%E7%BB%93.html" title="SQL入门语法总结">https://leeyuxun.github.io/SQL入门语法总结.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/SQL/" rel="tag"><i class="fa fa-tag"></i> SQL</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E7%BD%91%E7%BB%9C%E5%B1%82%E3%80%81%E4%BC%A0%E8%BE%93%E5%B1%82%E3%80%81%E5%BA%94%E7%94%A8%E5%B1%82%E5%B8%B8%E7%94%A8%E5%8D%8F%E8%AE%AE.html" rel="prev" title="网络层、传输层、应用层常用协议">
+      <i class="fa fa-chevron-left"></i> 网络层、传输层、应用层常用协议
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/Sublist3r%E5%9F%BA%E7%A1%80%E4%BD%BF%E7%94%A8%E6%95%99%E7%A8%8B.html" rel="next" title="Sublist3r基础使用教程">
+      Sublist3r基础使用教程 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#SQL%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">SQL介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95"><span class="nav-number">1.1.</span> <span class="nav-text">基础语法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B1%95%E7%A4%BA%E3%80%81%E5%88%9B%E5%BB%BA%E3%80%81%E4%BD%BF%E7%94%A8%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">1.1.1.</span> <span class="nav-text">展示、创建、使用数据库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B1%95%E7%A4%BA%E3%80%81%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E8%A1%A8"><span class="nav-number">1.1.2.</span> <span class="nav-text">展示、创建数据表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E8%A6%81%E7%9A%84SQL%E5%91%BD%E4%BB%A4"><span class="nav-number">1.1.3.</span> <span class="nav-text">重要的SQL命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SELECT%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.1.4.</span> <span class="nav-text">SELECT语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SELECT-DISTINCT-%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.1.5.</span> <span class="nav-text">SELECT DISTINCT 语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WHERE%E5%AD%90%E5%8F%A5"><span class="nav-number">1.1.6.</span> <span class="nav-text">WHERE子句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AND-amp-OR-%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="nav-number">1.1.7.</span> <span class="nav-text">AND &amp; OR 运算符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ORDER-BY-%E5%85%B3%E9%94%AE%E5%AD%97"><span class="nav-number">1.1.8.</span> <span class="nav-text">ORDER BY 关键字</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#INSERT-INTO-%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.1.9.</span> <span class="nav-text">INSERT INTO 语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UPDATE-%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.1.10.</span> <span class="nav-text">UPDATE 语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DELETE-%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.1.11.</span> <span class="nav-text">DELETE 语句</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7%E8%AF%AD%E6%B3%95"><span class="nav-number">1.2.</span> <span class="nav-text">高级语法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SELECT-TOP-LIMIT-ROWNUM-%E5%AD%90%E5%8F%A5"><span class="nav-number">1.2.1.</span> <span class="nav-text">SELECT TOP, LIMIT, ROWNUM 子句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LIKE-%E6%93%8D%E4%BD%9C%E7%AC%A6%E2%80%94%E2%80%94%E7%94%A8%E4%BA%8E%E5%9C%A8-WHERE-%E5%AD%90%E5%8F%A5%E4%B8%AD%E6%90%9C%E7%B4%A2%E5%88%97%E4%B8%AD%E7%9A%84%E6%8C%87%E5%AE%9A%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.2.2.</span> <span class="nav-text">LIKE 操作符——用于在 WHERE 子句中搜索列中的指定模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-%E9%80%9A%E9%85%8D%E7%AC%A6%E2%80%94%E2%80%94%E7%94%A8%E4%BA%8E%E6%9B%BF%E4%BB%A3%E5%AD%97%E7%AC%A6%E4%B8%B2%E4%B8%AD%E7%9A%84%E4%BB%BB%E4%BD%95%E5%85%B6%E4%BB%96%E5%AD%97%E7%AC%A6"><span class="nav-number">1.2.3.</span> <span class="nav-text">SQL 通配符——用于替代字符串中的任何其他字符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IN-%E6%93%8D%E4%BD%9C%E7%AC%A6"><span class="nav-number">1.2.4.</span> <span class="nav-text">IN 操作符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BETWEEN-%E6%93%8D%E4%BD%9C%E7%AC%A6"><span class="nav-number">1.2.5.</span> <span class="nav-text">BETWEEN 操作符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%AB%E5%90%8D"><span class="nav-number">1.2.6.</span> <span class="nav-text">别名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9E%E6%8E%A5-JOIN"><span class="nav-number">1.2.7.</span> <span class="nav-text">连接(JOIN)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UNION-%E6%93%8D%E4%BD%9C%E7%AC%A6"><span class="nav-number">1.2.8.</span> <span class="nav-text">UNION 操作符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SELECT-INTO-%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.2.9.</span> <span class="nav-text">SELECT INTO 语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#INSERT-INTO-SELECT-%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.2.10.</span> <span class="nav-text">INSERT INTO SELECT 语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%A6%E6%9D%9F%EF%BC%88Constraints%EF%BC%89"><span class="nav-number">1.2.11.</span> <span class="nav-text">约束（Constraints）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CREATE-INDEX-%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.2.12.</span> <span class="nav-text">CREATE INDEX 语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Drop-%E5%AD%90%E5%8F%A5"><span class="nav-number">1.2.13.</span> <span class="nav-text">Drop 子句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ALTER-TABLE-%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.2.14.</span> <span class="nav-text">ALTER TABLE 语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AUTO-INCREMENT-%E5%AD%97%E6%AE%B5"><span class="nav-number">1.2.15.</span> <span class="nav-text">AUTO INCREMENT 字段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL%E8%A7%86%E5%9B%BE"><span class="nav-number">1.2.16.</span> <span class="nav-text">SQL视图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-Date-%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.17.</span> <span class="nav-text">SQL Date 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-NULL-%E5%80%BC"><span class="nav-number">1.2.18.</span> <span class="nav-text">SQL NULL 值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-NULL-%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.19.</span> <span class="nav-text">SQL NULL 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-%E9%80%9A%E7%94%A8%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.20.</span> <span class="nav-text">SQL 通用数据类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SQL-DB%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.21.</span> <span class="nav-text">SQL DB数据类型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SQL%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.</span> <span class="nav-text">SQL函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#AVG-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.1.</span> <span class="nav-text">AVG() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#COUNT-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.2.</span> <span class="nav-text">COUNT() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FIRST-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.3.</span> <span class="nav-text">FIRST() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LAST-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.4.</span> <span class="nav-text">LAST() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MAX-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.5.</span> <span class="nav-text">MAX() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MIN-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.6.</span> <span class="nav-text">MIN() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SUM-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.7.</span> <span class="nav-text">SUM() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GROUP-BY-%E8%AF%AD%E5%8F%A5"><span class="nav-number">1.3.8.</span> <span class="nav-text">GROUP BY 语句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HAVING-%E5%AD%90%E5%8F%A5"><span class="nav-number">1.3.9.</span> <span class="nav-text">HAVING 子句</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EXISTS-%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="nav-number">1.3.10.</span> <span class="nav-text">EXISTS 运算符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UCASE-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.11.</span> <span class="nav-text">UCASE() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LCASE-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.12.</span> <span class="nav-text">LCASE() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MID-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.13.</span> <span class="nav-text">MID() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LEN-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.14.</span> <span class="nav-text">LEN() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ROUND-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.15.</span> <span class="nav-text">ROUND() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NOW-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.16.</span> <span class="nav-text">NOW() 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FORMAT-%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.17.</span> <span class="nav-text">FORMAT() 函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%EF%BC%9ASQL%E8%AF%AD%E6%B3%95%E6%9F%A5%E7%9C%8B%E8%A1%A8"><span class="nav-number">1.4.</span> <span class="nav-text">附：SQL语法查看表</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">2.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

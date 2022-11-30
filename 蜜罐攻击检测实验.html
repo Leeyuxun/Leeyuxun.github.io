@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验内容 使用honeyd软件实现低交互蜜罐，要求能够模拟主机、服务、漏洞和网络拓扑。 在虚拟机上部署具有可利用漏洞的系统、软件或网站。 使用扫描器、metasploit等攻击工具对网络靶场进行攻击，达到扫描探测、信息获取、获取管理员权限、窃取管理员密码、拒绝服务、文件篡改、进程操作等攻击效果。 物理蜜罐上使用入侵检测工具snort，或编写信息采集、日志分析代码，检测并记录受到的攻击。记录形式如：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="蜜罐攻击检测实验">
+<meta property="og:url" content="https://leeyuxun.github.io/%E8%9C%9C%E7%BD%90%E6%94%BB%E5%87%BB%E6%A3%80%E6%B5%8B%E5%AE%9E%E9%AA%8C.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验内容 使用honeyd软件实现低交互蜜罐，要求能够模拟主机、服务、漏洞和网络拓扑。 在虚拟机上部署具有可利用漏洞的系统、软件或网站。 使用扫描器、metasploit等攻击工具对网络靶场进行攻击，达到扫描探测、信息获取、获取管理员权限、窃取管理员密码、拒绝服务、文件篡改、进程操作等攻击效果。 物理蜜罐上使用入侵检测工具snort，或编写信息采集、日志分析代码，检测并记录受到的攻击。记录形式如：">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565763010078.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767984997.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764175954.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764181622.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764325222.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764345368.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764350258.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764466896.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764498045.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764543952.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764549209.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565765754290.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565765815890.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766059427.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766150653.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766422794.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766497207.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766512229.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766748326.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766767823.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766807924.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766822946.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766888821.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766949919.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766975491.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767036734.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767058474.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767090009.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767122319.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767134174.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767256750.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767344496.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767393800.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767407235.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767425902.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767471994.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767498529.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767586483.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767619513.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767660232.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767691050.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767716793.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767738851.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767760977.png">
+<meta property="article:published_time" content="2019-08-14T05:36:21.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:29:10.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="Honedy">
+<meta property="article:tag" content="Snort">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565763010078.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E8%9C%9C%E7%BD%90%E6%94%BB%E5%87%BB%E6%A3%80%E6%B5%8B%E5%AE%9E%E9%AA%8C.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>蜜罐攻击检测实验 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E8%9C%9C%E7%BD%90%E6%94%BB%E5%87%BB%E6%A3%80%E6%B5%8B%E5%AE%9E%E9%AA%8C.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          蜜罐攻击检测实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-14 13:36:21" itemprop="dateCreated datePublished" datetime="2019-08-14T13:36:21+08:00">2019-08-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:29:10" itemprop="dateModified" datetime="2020-04-02T14:29:10+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">网络安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验内容"><a href="#实验内容" class="headerlink" title="实验内容"></a>实验内容</h1><ol>
+<li>使用<code>honeyd</code>软件实现低交互蜜罐，要求能够模拟主机、服务、漏洞和网络拓扑。</li>
+<li>在虚拟机上部署具有可利用漏洞的系统、软件或网站。</li>
+<li>使用扫描器、<code>metasploit</code>等攻击工具对网络靶场进行攻击，达到扫描探测、信息获取、获取管理员权限、窃取管理员密码、拒绝服务、文件篡改、进程操作等攻击效果。</li>
+<li>物理蜜罐上使用入侵检测工具<code>snort</code>，或编写信息采集、日志分析代码，检测并记录受到的攻击。记录形式如：日志文件、告警文件、实时显示等方式。<span id="more"></span></li>
+</ol>
+<h1 id="安装配置Honeyd"><a href="#安装配置Honeyd" class="headerlink" title="安装配置Honeyd"></a>安装配置<code>Honeyd</code></h1><h2 id="Honeyd及其依赖项简介"><a href="#Honeyd及其依赖项简介" class="headerlink" title="Honeyd及其依赖项简介"></a>Honeyd及其依赖项简介</h2><p>​        <code>Honeyd</code>是一个可以在网络上创建虚拟主机的小型<code>daemon</code>。可以对此虚拟主机的服务和TCP进行配置，使其在网络中看起来是在运行某种操作系统。<code>Honeyd</code>可以使一台主机在局域网中模拟出多个地址以满足网络实验环境的要求。通过对配置文件进行设置可以使虚拟计算机模拟运行任何服务。也可以使用服务代理替代服务模拟。</p>
+<ol>
+<li><code>libevent</code>,一个非同步事件通知的函数库。通过使用<code>libevent</code>，开发者能够设定某些事件发生时所运行的函数，能够取代以往程序所使用的循环检查。</li>
+<li><code>libdnet</code>，为若干个低层的网络例程提供了一个简单的可移植的接口，包括网络地址处理，内核 <code>arp</code> 缓冲和路由表查找和管理，网络防火墙（<code>IP filter</code>, <code>ipfw</code>, <code>ipchains</code>, <code>pf</code>, <code>PktFilter</code>, …)，网络接口查找和管理，IP 隧道（<code>BSD/Linux tun</code>, <code>Universal TUN/TAP device</code>)，未加工的 IP 包和以太网帧的传输。</li>
+<li><code>libpcap</code>，<code>unix/linux</code>平台下的网络数据包捕获函数包，大多数网络监控软件都以它为基础。<code>Libpcap</code> 可以在绝大多数类 <code>unix </code>平台下工作。</li>
+<li><code>arpd</code>，执行在与<code>honeyd</code>同样的系统上。是<code>honeyd</code>众多协作工具中最重要的一个。<code>Arpd</code>工作时监视局域网内的流量。并通过查看<code>honeyd</code>系统的<code>ARP表</code>推断其他系统的活动与否。<code>arpd</code>将对指定的 IP 地址范围内未使用的 IP 用 <code>honeyd</code>主机的 <code>MAC 地址</code>做出<code>arp应答</code>。</li>
+<li><code>zlib</code>，<code>Linux</code>核心使用<code>zlib</code>以实作网络协定的压缩、档案系统的压缩以及开机时解压缩自身的核心。</li>
+</ol>
+<h2 id="安装Honeyd及其依赖项"><a href="#安装Honeyd及其依赖项" class="headerlink" title="安装Honeyd及其依赖项"></a>安装Honeyd及其依赖项</h2><ol>
+<li><p>从官网下载安装<code>honeyd-1.5c</code></p>
+<p>下载地址<a target="_blank" rel="noopener" href="http://www.honeyd.org/release.php">http://www.honeyd.org/release.php</a></p>
+</li>
+<li><p>下载解压编译安装honeyd的依赖库：<code>libevent</code>、<code>libdumbnet</code>、<code>libpcap</code>、<code>libedit</code>，参考<a target="_blank" rel="noopener" href="https://www.cnblogs.com/yjbjingcha/p/6791631.html">https://www.cnblogs.com/yjbjingcha/p/6791631.html</a></p>
+</li>
+<li><p>安装<code>arpd-0.2</code>库</p>
+</li>
+<li><p>成功安装<code>honeyd</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565763010078.png" alt="1565763010078"></p>
+</li>
+</ol>
+<h2 id="网络拓扑结构"><a href="#网络拓扑结构" class="headerlink" title="网络拓扑结构"></a>网络拓扑结构</h2><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767984997.png" alt="1565767984997"></p>
+<h2 id="日志及配置文件"><a href="#日志及配置文件" class="headerlink" title="日志及配置文件"></a>日志及配置文件</h2><ol>
+<li><p>日志文件及位置为<code>/var/log/honeyd/honeyd.log</code>和<code>/var/log/honeyd/service.log</code></p>
+</li>
+<li><p><code>honeyd</code>配置文件及位置为<code>/root/桌面/honeyd.conf</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">route entry 192.168.43.153 network 192.168.43.144/28   </span><br><span class="line">route 192.168.43.153 link 192.168.43.152/29  </span><br><span class="line"></span><br><span class="line">route 192.168.43.153 add net 192.168.43.156/30 192.168.43.157</span><br><span class="line">route 192.168.43.157 link 192.168.43.165/30</span><br><span class="line"></span><br><span class="line">create windows</span><br><span class="line">set windows personality &quot;Microsoft Windows 2000 SP2&quot;   </span><br><span class="line">set windows default tcp action reset   </span><br><span class="line">set windows default udp action reset   </span><br><span class="line">set windows default icmp action open</span><br><span class="line">add windows tcp port 110 &quot;/usr/share/honeyd-1.5c/scripts/pop3.pl&quot;</span><br><span class="line">add windows tcp port 80 &quot;/usr/share/honeyd-1.5c/scripts/web.sh&quot;</span><br><span class="line">add windows tcp port 25 &quot;/usr/share/honeyd-1.5c/scripts/smtp.pl&quot;</span><br><span class="line">add windows tcp port 23 &quot;/usr/share/honeyd-1.5c/scripts/router-telnet.pl&quot;</span><br><span class="line">add windows tcp port 21 proxy 192.168.43.1:21</span><br><span class="line"></span><br><span class="line">create linux</span><br><span class="line">set linux personality &quot;Linux 2.4.20&quot;   </span><br><span class="line">set linux default tcp action reset   </span><br><span class="line">set linux default udp action reset   </span><br><span class="line">set linux default icmp action open</span><br><span class="line">add linux tcp port 80 &quot;/usr/share/honeyd-1.5c/scripts/web.sh&quot;</span><br><span class="line">add linux tcp port 23 &quot;/usr/share/honeyd-1.5c/scripts/router-telnet.pl&quot;</span><br><span class="line">add linux tcp port 22 &quot;/usr/share/honeyd-1.5c/scripts/ssh.sh&quot;</span><br><span class="line">add linux tcp port 21 proxy 192.168.43.1:21</span><br><span class="line">add linux tcp port 20 open</span><br><span class="line"></span><br><span class="line">create router   </span><br><span class="line">set router personality &quot;Cisco 7206 running IOS 11.1(24)&quot;   </span><br><span class="line">set router default tcp action reset</span><br><span class="line">add router tcp port 23 &quot;/usr/share/honeyd-1.5c/scripts/router-telnet.pl&quot;  </span><br><span class="line"></span><br><span class="line">bind 192.168.43.153 router   </span><br><span class="line">bind 192.168.43.156 router  </span><br><span class="line"></span><br><span class="line">bind 192.168.43.154 windows   </span><br><span class="line">bind 192.168.43.155 linux   </span><br><span class="line">bind 192.168.43.157 windows   </span><br><span class="line">bind 192.168.43.158 linux  </span><br></pre></td></tr></table></figure></li>
+<li><p>各种端口配置文件位于<code>/honeyd/honeyd-1.5c/script</code>位置，包括</p>
+<p><code>ssh.sh</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># $1: srcip, $2: srcport, $3: dstip, $4: dstport, $5: config</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># modified by Fabian Bieker &lt;fabian.bieker@web.de&gt;</span></span><br><span class="line"><span class="comment"># modified by DataSoft Corporation</span></span><br><span class="line"><span class="comment">#. scripts/misc/base.sh</span></span><br><span class="line">SRCIP=<span class="variable">$1</span></span><br><span class="line">SRCPORT=<span class="variable">$2</span></span><br><span class="line">DSTIP=<span class="variable">$3</span></span><br><span class="line">DSTPORT=<span class="variable">$4</span></span><br><span class="line"></span><br><span class="line">STRINGSFILE=<span class="variable">$5</span></span><br><span class="line">VERSION=`perl -nle <span class="string">&#x27;/SSH_VERSION (.*)/ and print $1&#x27;</span> &lt; <span class="variable">$STRINGSFILE</span>`</span><br><span class="line"></span><br><span class="line">SERVICE=<span class="string">&quot;ssh&quot;</span></span><br><span class="line">HOST=<span class="string">&quot;serv&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">my_start</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> -e <span class="string">&quot;<span class="variable">$VERSION</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> <span class="built_in">read</span> name; <span class="keyword">do</span></span><br><span class="line">	<span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$name</span>&quot;</span> &gt;&gt; <span class="variable">$LOG</span></span><br><span class="line">	LINE=`<span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$name</span>&quot;</span> | egrep -i <span class="string">&quot;[\n ]&quot;</span>`</span><br><span class="line">	<span class="keyword">if</span> [ -z <span class="string">&quot;<span class="variable">$LINE</span>&quot;</span> ]; <span class="keyword">then</span></span><br><span class="line">		<span class="built_in">echo</span> <span class="string">&quot;Protocol mismatch.&quot;</span></span><br><span class="line">		my_stop	</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$name</span>&quot;</span></span><br><span class="line">	<span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line">my_stop</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><code>web.sh</code></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line">REQUEST=<span class="string">&quot;&quot;</span></span><br><span class="line"><span class="keyword">while</span> <span class="built_in">read</span> name</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">	LINE=`<span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$name</span>&quot;</span> | egrep -i <span class="string">&quot;[a-z:]&quot;</span>`</span><br><span class="line">	<span class="keyword">if</span> [ -z <span class="string">&quot;<span class="variable">$LINE</span>&quot;</span> ]</span><br><span class="line">	<span class="keyword">then</span></span><br><span class="line">		<span class="built_in">break</span></span><br><span class="line">	<span class="keyword">fi</span></span><br><span class="line">	<span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$name</span>&quot;</span> &gt;&gt; /tmp/log</span><br><span class="line">	NEWREQUEST=`<span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$name</span>&quot;</span> | grep <span class="string">&quot;GET .scripts.*cmd.exe.*dir.* HTTP/1.0&quot;</span>`</span><br><span class="line">	<span class="keyword">if</span> [ ! -z <span class="string">&quot;<span class="variable">$NEWREQUEST</span>&quot;</span> ] ; <span class="keyword">then</span></span><br><span class="line">		REQUEST=<span class="variable">$NEWREQUEST</span></span><br><span class="line">	<span class="keyword">fi</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ -z <span class="string">&quot;<span class="variable">$REQUEST</span>&quot;</span> ] ; <span class="keyword">then</span></span><br><span class="line">	<span class="built_in">cat</span> &lt;&lt; <span class="string">_eof_</span></span><br><span class="line"><span class="string">HTTP/1.1 404 NOT FOUND</span></span><br><span class="line"><span class="string">Server: Microsoft-IIS/5.0</span></span><br><span class="line"><span class="string">P3P: CP=&#x27;ALL IND DSP COR ADM CONo CUR CUSo IVAo IVDo PSA PSD TAI TELo OUR SAMo CNT COM INT NAV ONL PHY PRE PUR UNI&#x27;</span></span><br><span class="line"><span class="string">Content-Location: http://cpmsftwbw27/default.htm</span></span><br><span class="line"><span class="string">Date: Thu, 04 Apr 2002 06:42:18 GMT</span></span><br><span class="line"><span class="string">Content-Type: text/html</span></span><br><span class="line"><span class="string">Accept-Ranges: bytes</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">&lt;html&gt;&lt;title&gt;You are in Error&lt;/title&gt;</span></span><br><span class="line"><span class="string">&lt;body&gt;</span></span><br><span class="line"><span class="string">&lt;h1&gt;You are in Error&lt;/h1&gt;</span></span><br><span class="line"><span class="string">O strange and inconceivable thing! We did not really die, we were not really buried, we were not really crucified and raised again, but our imitation was but a figure, while our salvation is in reality. Christ was actually crucified, and actually buried, and truly rose again; and all these things have been vouchsafed to us, that we, by imitation communicating in His sufferings, might gain salvation in reality. O surpassing loving-kindness! Christ received the nails in His undefiled hands and feet, and endured anguish; while to me without suffering or toil, by the fellowship of His pain He vouchsafed salvation.</span></span><br><span class="line"><span class="string">&lt;p&gt;</span></span><br><span class="line"><span class="string">St. Cyril of Jerusalem, On the Christian Sacraments.</span></span><br><span class="line"><span class="string">&lt;/body&gt;</span></span><br><span class="line"><span class="string">&lt;/html&gt;</span></span><br><span class="line"><span class="string">_eof_</span></span><br><span class="line">	<span class="built_in">exit</span> 0</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">DATE=`<span class="built_in">date</span>`</span><br><span class="line"><span class="built_in">cat</span> &lt;&lt; <span class="string">_eof_</span></span><br><span class="line"><span class="string">HTTP/1.0 200 OK</span></span><br><span class="line"><span class="string">Date: $DATE</span></span><br><span class="line"><span class="string">Server: Microsoft-IIS/5.0</span></span><br><span class="line"><span class="string">Connection: close</span></span><br><span class="line"><span class="string">Content-Type: text/plain</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string"> Volume in drive C is Webserver      </span></span><br><span class="line"><span class="string"> Volume Serial Number is 3421-07F5</span></span><br><span class="line"><span class="string"> Directory of C:\inetpub</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">01-20-02   3:58a      &lt;DIR&gt;          .</span></span><br><span class="line"><span class="string">08-21-01   9:12a      &lt;DIR&gt;          ..</span></span><br><span class="line"><span class="string">08-21-01  11:28a      &lt;DIR&gt;          AdminScripts</span></span><br><span class="line"><span class="string">08-21-01   6:43p      &lt;DIR&gt;          ftproot</span></span><br><span class="line"><span class="string">07-09-00  12:04a      &lt;DIR&gt;          iissamples</span></span><br><span class="line"><span class="string">07-03-00   2:09a      &lt;DIR&gt;          mailroot</span></span><br><span class="line"><span class="string">07-16-00   3:49p      &lt;DIR&gt;          Scripts</span></span><br><span class="line"><span class="string">07-09-00   3:10p      &lt;DIR&gt;          webpub</span></span><br><span class="line"><span class="string">07-16-00   4:43p      &lt;DIR&gt;          wwwroot</span></span><br><span class="line"><span class="string">             0 file(s)              0 bytes</span></span><br><span class="line"><span class="string">            20 dir(s)     290,897,920 bytes free</span></span><br><span class="line"><span class="string">_eof_</span></span><br></pre></td></tr></table></figure>
+
+<p><code>router.pl</code></p>
+<figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/perl</span></span><br><span class="line"><span class="comment"># Copyright 2002 Niels Provos &lt;provos@citi.umich.edu&gt;</span></span><br><span class="line"><span class="comment"># All rights reserved.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># For the license refer to the main source code of Honeyd.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Don&#x27;t echo Will Echo Will Surpress Go Ahead</span></span><br><span class="line">$return = <span class="keyword">pack</span>(<span class="string">&#x27;ccccccccc&#x27;</span>, <span class="number">255</span>, <span class="number">254</span>, <span class="number">1</span>, <span class="number">255</span>, <span class="number">251</span>, <span class="number">1</span>, <span class="number">255</span>, <span class="number">251</span>, <span class="number">3</span>);</span><br><span class="line"><span class="keyword">syswrite</span> STDOUT, $return,<span class="number">9</span>;</span><br><span class="line"></span><br><span class="line">$count = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">while</span> ($count &lt; <span class="number">3</span>) &#123;</span><br><span class="line">  <span class="keyword">do</span> &#123;</span><br><span class="line">    $count++;</span><br><span class="line">    <span class="keyword">syswrite</span> STDOUT, <span class="string">&quot;\r\n&quot;</span>;</span><br><span class="line">    $word = read_word(<span class="string">&quot;Username: &quot;</span>, <span class="number">1</span>);</span><br><span class="line">  &#125; <span class="keyword">while</span> (!$word &amp;&amp; $count &lt; <span class="number">3</span>);</span><br><span class="line">  <span class="keyword">if</span> ($count &gt;= <span class="number">3</span> &amp;&amp; !$word) &#123;</span><br><span class="line">    <span class="keyword">exit</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  $password = read_word(<span class="string">&quot;Password: &quot;</span>, <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">if</span> (!$password) &#123;</span><br><span class="line">    <span class="keyword">syswrite</span> STDOUT, <span class="string">&quot;% Login invalid\r\n&quot;</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">syswrite</span> STDERR, <span class="string">&quot;Attempted login: $word/$password&quot;</span>;</span><br><span class="line">    <span class="keyword">syswrite</span> STDOUT, <span class="string">&quot;% Access denied\r\n&quot;</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">exit</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">sub</span> <span class="title">read_word</span> </span>&#123;</span><br><span class="line">  <span class="keyword">local</span> $prompt = <span class="keyword">shift</span>;</span><br><span class="line">  <span class="keyword">local</span> $echo = <span class="keyword">shift</span>;</span><br><span class="line">  <span class="keyword">local</span> $word;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">syswrite</span> STDOUT, <span class="string">&quot;$prompt&quot;</span>;</span><br><span class="line"></span><br><span class="line">  $word = <span class="string">&quot;&quot;</span>;</span><br><span class="line">  $alarmed = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">eval</span> &#123;</span><br><span class="line">    <span class="keyword">local</span> $SIG<span class="string">&#123;ALRM&#125;</span> = <span class="function"><span class="keyword">sub</span> </span>&#123; $alarmed = <span class="number">1</span>; <span class="keyword">die</span>; &#125;;</span><br><span class="line">    <span class="keyword">alarm</span> <span class="number">30</span>;</span><br><span class="line">    $finished = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">      $nread = <span class="keyword">sysread</span> STDIN, $buffer, <span class="number">1</span>;</span><br><span class="line">      <span class="keyword">die</span> <span class="keyword">unless</span> $nread;</span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">ord</span>($buffer) == <span class="number">0</span>) &#123;</span><br><span class="line">	; <span class="comment">#ignore</span></span><br><span class="line">      &#125; <span class="keyword">elsif</span> (<span class="keyword">ord</span>($buffer) == <span class="number">255</span>) &#123;</span><br><span class="line">	<span class="keyword">sysread</span> STDIN, $buffer, <span class="number">2</span>;</span><br><span class="line">      &#125; <span class="keyword">elsif</span> (<span class="keyword">ord</span>($buffer) == <span class="number">13</span> || <span class="keyword">ord</span>($buffer) == <span class="number">10</span>) &#123;</span><br><span class="line">	<span class="keyword">syswrite</span> STDOUT, <span class="string">&quot;\r\n&quot;</span> <span class="keyword">if</span> $echo;</span><br><span class="line">	$finished = <span class="number">1</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">	<span class="keyword">syswrite</span> STDOUT, $buffer, <span class="number">1</span> <span class="keyword">if</span> $echo;</span><br><span class="line">	$word = $word.$buffer;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> (!$finished);</span><br><span class="line">    <span class="keyword">alarm</span> <span class="number">0</span>;</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="comment">#syswrite STDOUT, &quot;\r\n&quot; if $alarmed || ! $echo;</span></span><br><span class="line">  <span class="comment">#if ($alarmed) &#123;</span></span><br><span class="line">   <span class="comment"># syswrite STDOUT, &quot;% $prompt timeout expired!\r\n&quot;;</span></span><br><span class="line">    <span class="comment">#return (0);</span></span><br><span class="line">  <span class="comment">#&#125;</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> ($word);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="启动Honeyd"><a href="#启动Honeyd" class="headerlink" title="启动Honeyd"></a>启动<code>Honeyd</code></h2><p>命令行输入命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">arpd 192.168.43.152/29</span><br><span class="line">honeyd -f honeyd.conf -d -l /var/log/honeyd/honeyd.log -s /var/log/honeyd/service.log --fix-webserver-permissions 192.168.43.152/29</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764175954.png" alt="1565764175954"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764181622.png" alt="1565764181622"></p>
+<h2 id="检查honeyd搭建情况"><a href="#检查honeyd搭建情况" class="headerlink" title="检查honeyd搭建情况"></a>检查<code>honeyd</code>搭建情况</h2><ol>
+<li><p><code>telnet</code>连接</p>
+<p>kali使用<code>telnet</code>命令，连接<code>192.168.43.157</code>，观察日志文件和连接结果。</p>
+<p>输入命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">telnet 192.168.43.157</span><br></pre></td></tr></table></figure>
+
+<p>检测与IP地址为<code>192.168.43.157</code>的<code>telnet连接</code>是否成功。结果如下图所示，连接成功，但因为不知道用户名和密码，输入三次用户名和密码后直接退出。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764325222.png" alt="1565764325222"></p>
+<p>日志文件如下，可以查看输入的用户名和密码</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764345368.png" alt="1565764345368"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764350258.png" alt="1565764350258"></p>
+</li>
+<li><p><code>ssh</code>连接</p>
+<p>使用<code>ssh命令</code>，连接<code>192.168.43.155</code>观察日志文件和连接结果。</p>
+<p>输入命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssh 192.168.43.155</span><br></pre></td></tr></table></figure>
+
+<p>检测<code>ssh连接</code>是否有效，结果如下，与<code>ssh.sh</code>配置文件符合</p>
+</li>
+<li><p><code>web</code>运行</p>
+<p>在浏览器输入URL:<code>192.168.43.155</code>，检测<code>web</code>是否运行</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764466896.png" alt="1565764466896"></p>
+<p>在网页中输入用户名和密码后点击登录跳转到网页如下，与<code>web.sh</code>配置文件相符合</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764498045.png" alt="1565764498045"></p>
+<p>查看<code>honeyd</code>日志文件，成功运行<code>web.sh</code>的脚本</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764543952.png" alt="1565764543952"></p>
+<p>如下所示，从<code>192.168.43.195</code>的<code>52304</code>端口访问了<code>192.168.43.155</code>的<code>80</code>端口</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565764549209.png" alt="1565764549209"></p>
+</li>
+</ol>
+<h1 id="部署漏洞虚拟机"><a href="#部署漏洞虚拟机" class="headerlink" title="部署漏洞虚拟机"></a>部署漏洞虚拟机</h1><ol>
+<li><code>永恒之蓝</code>漏洞，操作系统为win7家庭版虚拟机，ip地址为<code>192.168.43.59</code></li>
+<li><code>CVE-2012-5613</code>，部署在<code>win xp</code>上的<code>mysql5.5.19</code>版本的权限提升漏洞，ip地址为<code>192.168.43.213</code></li>
+<li><code>metasploitable2</code>虚拟机，一个特别制作的<code>ubuntu</code>操作系统，本身设计作为安全工具测试和演示常见漏洞攻击。默认只开启一个网络适配器并且开启<code>NAT</code>和<code>Host-only</code>，该虚拟机的ip为<code>192.168.43.120</code></li>
+</ol>
+<h1 id="在Honeyd虚拟机中安装配置Snort"><a href="#在Honeyd虚拟机中安装配置Snort" class="headerlink" title="在Honeyd虚拟机中安装配置Snort"></a>在<code>Honeyd</code>虚拟机中安装配置<code>Snort</code></h1><h2 id="Snor简介"><a href="#Snor简介" class="headerlink" title="Snor简介"></a><code>Snor</code>简介</h2><p>​        <code>Snort</code>是1998年用C语言开发的开源的入侵检测系统。直至今天，<code>Snort</code>已发展成为一个具有多平台(<code>Multi-Platform</code>)、实时(<code>Real-Time</code>)流量分析、网络IP数据包(<code>Pocket</code>)记录等特性的强大的网络入侵检测/防御系统(<code>Network Intrusion Detection/Prevention System</code>)，即<code>NIDS/NIPS</code>。<code>Snort</code>符合通用公共许可(<code>GPL——GNU General Pubic License</code>)，在网上可以通过免费下载获得<code>Snort</code>。</p>
+<p>​        由于<code>Snort混杂模式</code>可以抓取网段中的所有数据包，<code>snort</code>部署在同一子网下的<code>win7</code>虚拟机上。</p>
+<h2 id="local-rules配置"><a href="#local-rules配置" class="headerlink" title="local.rules配置"></a><code>local.rules</code>配置</h2><p>对尝试对密网中每个主机的访问写入类似如下告警规则：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alert tcp any any -&gt; 192.168.43.153 any (msg:&quot;TCP detected&quot;; sid:1000004; rev:12;)</span><br></pre></td></tr></table></figure>
+
+<p>检测对所有蜜罐虚拟主机和漏洞虚拟机的访问，并产生告警：<code>TCP detected</code>。</p>
+<p>对<code>Sqlmap</code>, <code>WebInspect</code>, <code>Netsparker</code>, <code>Appscan</code>, <code>Nmap</code>, <code>Awvscan</code>的扫描写入告警规则。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565765754290.png" alt="1565765754290"></p>
+<p>经过反复实验后，又修改了NMAP检测规则：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alert icmp any any -&gt; 192.168.43.0/24 any (msg: &quot;NMAP ping sweep Scan&quot;; dsize:0;sid:10000004; rev: 1;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="mysql-rules配置"><a href="#mysql-rules配置" class="headerlink" title="mysql.rules配置"></a><code>mysql.rules</code>配置</h2><p>对<code>3306</code>的<code>sql攻击</code>写入如下告警规则</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL root login attempt&quot;; flow:to_server,established; content:&quot;|0A 00 00 01 85 04 00 00 80|root|00|&quot;; metadata:service mysql; classtype:protocol-command-decode; sid:1775; rev:3;)</span><br><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL show databases attempt&quot;; flow:to_server,established; content:&quot;|0F 00 00 00 03|show databases&quot;; metadata:service mysql; classtype:protocol-command-decode; sid:1776; rev:3;)</span><br><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL 4.0 root login attempt&quot;; flow:to_server,established; content:&quot;|01|&quot;; depth:1; offset:3; content:&quot;root|00|&quot;; within:5; distance:5; nocase; metadata:service mysql; classtype:protocol-command-decode; sid:3456; rev:4;)</span><br><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL CREATE FUNCTION attempt&quot;; flow:to_server,established; content:&quot;|03|create&quot;; offset:4; nocase; pcre:&quot;/\x03create\s+(aggregate\s+)*function/smi&quot;; metadata:service mysql; reference:bugtraq,12781; reference:cve,2005-0709; classtype:misc-activity; sid:3528; rev:3;)</span><br><span class="line">alert tcp any 3306 -&gt; 192.168.43.128/25 any (msg:&quot;MYSQL server greeting&quot;; flow:from_server,established; content:&quot;|00|&quot;; depth:1; offset:3; flowbits:set,mysql.server_greeting; flowbits:noalert; metadata:policy balanced-ips drop, policy connectivity-ips drop, policy security-ips drop, service mysql; reference:bugtraq,10655; reference:cve,2004-0627; reference:nessus,12639; reference:url,www.nextgenss.com/advisories/mysql-authbypass.txt; classtype:attempted-user; sid:3665; rev:6;)</span><br><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL protocol 41 secure client overflow attempt&quot;; flow:to_server,established; flowbits:isset,mysql.server_greeting; content:&quot;|01|&quot;; depth:1; offset:3; byte_test:1,&amp;,0x80,4; byte_test:1,&amp;,0x02,4; content:&quot;|00 14|&quot;; offset:36; isdataat:74,relative; content:!&quot;|00|&quot;; within:74; metadata:policy balanced-ips drop, policy connectivity-ips drop, policy security-ips drop, service mysql; reference:bugtraq,10655; reference:cve,2004-0627; reference:nessus,12639; reference:url,www.nextgenss.com/advisories/mysql-authbypass.txt; classtype:misc-attack; sid:3669; rev:6;)</span><br><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL client authentication bypass attempt&quot;; flow:to_server,established; flowbits:isset,mysql.server_greeting; content:&quot;|01|&quot;; depth:1; offset:3; byte_test:1,&amp;,0x80,4; byte_test:1,!&amp;,0x02,4; content:&quot;|00 14 00|&quot;; offset:9; metadata:policy balanced-ips drop, policy connectivity-ips drop, policy security-ips drop, service mysql; reference:bugtraq,10655; reference:cve,2004-0627; reference:nessus,12639; reference:url,www.nextgenss.com/advisories/mysql-authbypass.txt; classtype:misc-attack; sid:3668; rev:8;)</span><br><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL client overflow attempt&quot;; flow:to_server,established; flowbits:isset,mysql.server_greeting; content:&quot;|01|&quot;; depth:1; offset:3; byte_test:1,!&amp;,0x80,4; byte_test:1,!&amp;,0x02,4; content:&quot;|00|&quot;; offset:9; isdataat:74,relative; content:!&quot;|00|&quot;; within:74; metadata:policy balanced-ips drop, policy connectivity-ips drop, policy security-ips drop, service mysql; reference:bugtraq,10655; reference:cve,2004-0627; reference:nessus,12639; reference:url,www.nextgenss.com/advisories/mysql-authbypass.txt; classtype:misc-attack; sid:3672; rev:6;)</span><br><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL secure client overflow attempt&quot;; flow:to_server,established; flowbits:isset,mysql.server_greeting; content:&quot;|01|&quot;; depth:1; offset:3; byte_test:1,&amp;,0x80,4; byte_test:1,!&amp;,0x02,4; content:&quot;|00 14|&quot;; offset:9; isdataat:74,relative; content:!&quot;|00|&quot;; within:74; metadata:policy balanced-ips drop, policy connectivity-ips drop, policy security-ips drop, service mysql; reference:bugtraq,10655; reference:cve,2004-0627; reference:nessus,12639; reference:url,www.nextgenss.com/advisories/mysql-authbypass.txt; classtype:misc-attack; sid:3670; rev:6;)</span><br><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL protocol 41 client authentication bypass attempt&quot;; flow:to_server,established; flowbits:isset,mysql.server_greeting; content:&quot;|01|&quot;; depth:1; offset:3; byte_test:1,&amp;,0x80,4; byte_test:1,&amp;,0x02,4; content:&quot;|00 14 00|&quot;; offset:36; metadata:policy connectivity-ips drop, policy security-ips drop, service mysql; reference:bugtraq,10655; reference:cve,2004-0627; reference:nessus,12639; reference:url,www.nextgenss.com/advisories/mysql-authbypass.txt; classtype:misc-attack; sid:3667; rev:6;)</span><br><span class="line">alert tcp any any -&gt; 192.168.43.128/25 3306 (msg:&quot;MYSQL protocol 41 client overflow attempt&quot;; flow:to_server,established; flowbits:isset,mysql.server_greeting; content:&quot;|01|&quot;; depth:1; offset:3; byte_test:1,!&amp;,0x80,4; byte_test:1,&amp;,0x02,4; content:&quot;|00|&quot;; offset:36; isdataat:74,relative; content:!&quot;|00|&quot;; within:74; metadata:policy balanced-ips drop, policy connectivity-ips drop, policy security-ips drop, service mysql; reference:bugtraq,10655; reference:cve,2004-0627; reference:nessus,12639; reference:url,www.nextgenss.com/advisories/mysql-authbypass.txt; classtype:misc-attack; sid:3671; rev:6;)</span><br><span class="line">alert tcp $SQL_SERVERS 3306 -&gt; $EXTERNAL_NET any (msg:&quot;MYSQL server greeting finished&quot;; flow:from_server,established; byte_test:1,&gt;,0,3; flowbits:isset,mysql.server_greeting; flowbits:unset,mysql.server_greeting; flowbits:noalert; metadata:policy balanced-ips drop, policy connectivity-ips drop, policy security-ips drop, service mysql; reference:bugtraq,10655; reference:cve,2004-0627; reference:nessus,12639; reference:url,www.nextgenss.com/advisories/mysql-authbypass.txt; classtype:attempted-user; sid:3666; rev:8;)</span><br><span class="line">alert tcp $EXTERNAL_NET any -&gt; $SQL_SERVERS 3306 (msg:&quot;MYSQL CREATE FUNCTION buffer overflow attempt&quot;; flow:to_server,established; content:&quot;|03|create&quot;; offset:4; nocase; pcre:&quot;/\x03create\s+(aggregate\s+)*function\s+\S&#123;50&#125;/smi&quot;; metadata:service mysql; reference:bugtraq,14509; reference:cve,2005-2558; classtype:misc-activity; sid:4649; rev:2;)</span><br><span class="line">alert tcp $EXTERNAL_NET any -&gt; $SQL_SERVERS 3306 (msg:&quot;MYSQL Date_Format denial of service attempt&quot;; flow:to_server,established; content:&quot;DATE_FORMAT&quot;; pcre:&quot;/DATE_FORMAT\x28\s*(\x22[^\x22]+\x25[^\x22]*\x22|\x27[^\x27]+\x25[^\x27]*\x27)/smi&quot;; metadata:service mysql; reference:bugtraq,19032; reference:cve,2006-3469; reference:url,dev.mysql.com/doc/refman/5.0/en/news-5-0-21.html; classtype:attempted-dos; sid:8057; rev:2;)</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565765815890.png" alt="1565765815890"></p>
+<p>检测<code>root login</code>, <code>show databases</code>, <code>create function</code>, <code>secure client overflow</code>等等攻击尝试，并产生对应的告警信息。</p>
+<h2 id="snort-conf配置"><a href="#snort-conf配置" class="headerlink" title="snort.conf配置"></a><code>snort.conf</code>配置</h2><p>设置<code>output database</code>，记录所有<code>alert</code>和<code>log</code>文件到数据库</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766059427.png" alt="1565766059427"></p>
+<p>并记录日志文件到数据库，可以从网站打开查看日志。</p>
+<h2 id="snort其他组件"><a href="#snort其他组件" class="headerlink" title="snort其他组件"></a><code>snort</code>其他组件</h2><p>安装<code>adobd</code>、<code>jgraph</code>、<code>acid</code>（网页文件）组件。</p>
+<p>配置<code>Acid</code>网页配置文件<code>acid_conf.php</code>，使其与<code>mysql</code>数据库匹配，并能输出日志和告警到网页端。</p>
+<p>浏览器输入<code>http://localhost/acid/acid_db_setup.php</code>，初始化数据库。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766150653.png" alt="1565766150653"></p>
+<h1 id="网络靶场攻击与检测"><a href="#网络靶场攻击与检测" class="headerlink" title="网络靶场攻击与检测"></a>网络靶场攻击与检测</h1><h2 id="靶场扫描检测"><a href="#靶场扫描检测" class="headerlink" title="靶场扫描检测"></a>靶场扫描检测</h2><h3 id="局域网设置"><a href="#局域网设置" class="headerlink" title="局域网设置"></a>局域网设置</h3><p><code>攻击机</code>和<code>靶机</code>、<code>snort</code>在同一局域网下。攻击机kali的ip地址为<code>192.168.43.257</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766422794.png" alt="1565766422794"></p>
+<p>据此可知子网为<code>192.168.43.0/24</code></p>
+<h3 id="攻击机nmap扫描局域网"><a href="#攻击机nmap扫描局域网" class="headerlink" title="攻击机nmap扫描局域网"></a>攻击机<code>nmap</code>扫描局域网</h3><p>攻击机<code>nmap</code>扫描<code>192.168.43.0/24</code>网段，发现该网段下共<code>19</code>台主机，其中图中MAC地址相同的主机为<code>honeyd</code>搭建的拓扑结构里面的虚拟主机，而不是此MAC地址的机器为具有漏洞的真实虚拟机。可见honeyd的MAC地址为<code>62:44:42:89:7D:46</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766497207.png" alt="1565766497207"></p>
+<p>第一次扫描后honeyd的日志</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766512229.png" alt="1565766512229"></p>
+<h2 id="攻击漏洞虚拟机"><a href="#攻击漏洞虚拟机" class="headerlink" title="攻击漏洞虚拟机"></a>攻击漏洞虚拟机</h2><h3 id="对metasploitable2漏洞虚拟机攻击"><a href="#对metasploitable2漏洞虚拟机攻击" class="headerlink" title="对metasploitable2漏洞虚拟机攻击"></a>对<code>metasploitable2</code>漏洞虚拟机攻击</h3><p><code>metasploitable2</code>的ip地址为<code>192.168.32.120</code>，首先对<code>6667</code>端口使用<code>unreal_ircd_3281_backdoor</code>模块，即<code>irc_3281_backdoor</code>漏洞。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766748326.png" alt="1565766748326"></p>
+<p>成功植入后门，<code>getshell</code>:</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766767823.png" alt="1565766767823"></p>
+<p>攻击机端控制漏洞机<code>192.168.43.12</code>0后，在根目录下执行命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mkdir 77777777777777777</span><br></pre></td></tr></table></figure>
+
+<p>创建了新目录</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766807924.png" alt="1565766807924"></p>
+<p>在漏洞机可以看到已经被写入：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766822946.png" alt="1565766822946"></p>
+<h3 id="对-win-xp-漏洞机攻击"><a href="#对-win-xp-漏洞机攻击" class="headerlink" title="对 win xp 漏洞机攻击"></a>对 <code>win xp</code> 漏洞机攻击</h3><ol>
+<li><p>对局域网中第二个主机<code>192.168.43.59</code>检测端口，发现<code>3306</code>端口打开，由此推测存在<code>mysql</code>服务漏洞，随后检测<code>mysql版本</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766888821.png" alt="1565766888821"></p>
+</li>
+<li><p>扫描到<code>3306</code>端口开放后，使用<code>mysql_version</code>模块检测<code>mysql版本</code>，检测到是<code>5.5.19版本</code>，存在提权漏洞<code>CVE-2012-5613</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766949919.png" alt="1565766949919"></p>
+</li>
+<li><p><code>Metasploit</code>拥有如下模块，使用<code>mysql</code>中的<code>mysql_mof</code>对目标主机进行本地提权</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565766975491.png" alt="1565766975491"></p>
+<p>设置用户名<code>root</code>, 密码<code>root</code>，<code>RHOSTS</code>为目标机<code>192.168.43.213</code>，<code>LHOST</code>监听主机为攻击机<code>192.168.43.247</code>，<code>LHOST</code>监听端口为<code>5012</code>，攻击漏洞虚拟机<code>192.168.43.213</code>，成功<code>getshell</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767036734.png" alt="1565767036734"></p>
+<p>命令行如下，打开了<code>Meterpreter session</code>:</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767058474.png" alt="1565767058474"></p>
+<p><code>getshell</code>之后，写入文件夹到C盘。在<code>winXP</code>漏洞机上发现了新文件夹</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767090009.png" alt="1565767090009"></p>
+<p>最后让被<code>getshell</code>的漏洞机关机：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767122319.png" alt="1565767122319"></p>
+<p>windows被迫关机 </p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767134174.png" alt="1565767134174"></p>
+</li>
+</ol>
+<h3 id="对win-7漏洞机攻击"><a href="#对win-7漏洞机攻击" class="headerlink" title="对win 7漏洞机攻击"></a>对<code>win 7</code>漏洞机攻击</h3><ol>
+<li><p>选择局域网中的第一台真机<code>192.168.43.59</code>，扫描该IP端口，如下图所示，可以发现<code>135</code>、<code>139</code>、<code>445</code>等端口开放。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767256750.png" alt="1565767256750"></p>
+<p><code>nmap</code>扫描到该主机的<code>445</code>端口开放，用永恒之蓝模块检测</p>
+</li>
+<li><p>使用<code>smb_ms17_010</code>对漏洞机进行检测，设置目标主机为<code>192.168.43.59</code>，检测到<code>Host is likely VULNERABLE to MS17-010</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">msf5 &gt; use auxiliary/scanner/smb/smb_ms17_010</span><br><span class="line">msf5 auxiliary(scanner/smb/smb_ms17_010) &gt; set rhosts 192.168.43.59</span><br><span class="line">rhosts =&gt; 192.168.43.59</span><br><span class="line">msf5 auxiliary(scanner/smb/smb_ms17_010) &gt; exploit</span><br><span class="line"></span><br><span class="line">[+] 192.168.43.59:445     - Host is likely VULNERABLE to MS17-010! - Windows 7 Home Basic 7601 Service Pack 1 x64 (64-bit)</span><br><span class="line">[*] 192.168.43.59:445     - Scanned 1 of 1 hosts (100% complete)</span><br><span class="line">[*] Auxiliary module execution completed</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767344496.png" alt="1565767344496"></p>
+<p>扫描确认存在永恒之蓝漏洞</p>
+</li>
+<li><p>获取控制权，使用<code>ms17_010_eternalblue</code>模块<code>getshell</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767393800.png" alt="1565767393800"></p>
+<p>添加文件</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767407235.png" alt="1565767407235"></p>
+<p>在漏洞主机上发现了新建的文件夹</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767425902.png" alt="1565767425902"></p>
+</li>
+<li><p>图形界面渗透成功图示</p>
+<p><code>192.168.43.59</code>为部署<code>永恒之蓝</code>漏洞的<code>win7</code>虚拟机，<code>192.168.43.213</code>为部署<code>mysql</code>漏洞的<code>winXP</code>虚拟机</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767471994.png" alt="1565767471994"></p>
+<p><code>mysql</code>提权漏洞获得<code>shell</code>之后，可以取得<code>screenshot</code>屏幕截图</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767498529.png" alt="1565767498529"></p>
+</li>
+</ol>
+<h2 id="snort检测"><a href="#snort检测" class="headerlink" title="snort检测"></a>snort检测</h2><h3 id="AWVS扫描检测"><a href="#AWVS扫描检测" class="headerlink" title="AWVS扫描检测"></a><code>AWVS</code>扫描检测</h3><p>攻击机kali使用<code>AWVS</code>扫描蜜罐虚拟机<code>192.168.43.154</code>的<code>80</code>端口</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767586483.png" alt="1565767586483"></p>
+<p>浏览器URL输入<code>http://localhost/acid/acid_db_setup.php</code>，即<code>snort网页报告</code>，可以看到检测到扫描</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767619513.png" alt="1565767619513"></p>
+<h3 id="NMAP扫描检测"><a href="#NMAP扫描检测" class="headerlink" title="NMAP扫描检测"></a><code>NMAP</code>扫描检测</h3><p>在扫描局域网时，<code>snort</code>检测到<code>nmap</code>扫描，攻击机为<code>192.168.43.247</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767660232.png" alt="1565767660232"></p>
+<h3 id="Metasploit渗透攻击检测"><a href="#Metasploit渗透攻击检测" class="headerlink" title="Metasploit渗透攻击检测"></a>Metasploit渗透攻击检测</h3><p><code>445</code>端口检测到攻击<code>NETBIOS SMB-DS Trans Max Param DOS attempt</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767691050.png" alt="1565767691050"></p>
+<p>对主机进行端口扫描，其实是使用了<code>nmap</code>工具，检测到<code>nmap ping sweep scan</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767716793.png" alt="1565767716793"></p>
+<p>利用<code>SQL提权漏洞</code>进行渗透攻击，<code>Snort</code>检测到<code>MYSQL attack</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767738851.png" alt="1565767738851"></p>
+<p>尝试建立<code>Meteroreter</code>会话时，<code>Snort</code>检测到<code>NMAP</code>扫描</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565767760977.png" alt="1565767760977"></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E8%9C%9C%E7%BD%90%E6%94%BB%E5%87%BB%E6%A3%80%E6%B5%8B%E5%AE%9E%E9%AA%8C.html" title="蜜罐攻击检测实验">https://leeyuxun.github.io/蜜罐攻击检测实验.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Honedy/" rel="tag"><i class="fa fa-tag"></i> Honedy</a>
+              <a href="/tags/Snort/" rel="tag"><i class="fa fa-tag"></i> Snort</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/VPN%E9%85%8D%E7%BD%AE%E5%AE%9E%E9%AA%8C.html" rel="prev" title="VPN配置实验">
+      <i class="fa fa-chevron-left"></i> VPN配置实验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E7%BC%93%E5%86%B2%E5%8C%BA%E6%BA%A2%E5%87%BA%E5%AE%9E%E9%AA%8C.html" rel="next" title="缓冲区溢出实验">
+      缓冲区溢出实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%86%85%E5%AE%B9"><span class="nav-number">1.</span> <span class="nav-text">实验内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AEHoneyd"><span class="nav-number">2.</span> <span class="nav-text">安装配置Honeyd</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Honeyd%E5%8F%8A%E5%85%B6%E4%BE%9D%E8%B5%96%E9%A1%B9%E7%AE%80%E4%BB%8B"><span class="nav-number">2.1.</span> <span class="nav-text">Honeyd及其依赖项简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Honeyd%E5%8F%8A%E5%85%B6%E4%BE%9D%E8%B5%96%E9%A1%B9"><span class="nav-number">2.2.</span> <span class="nav-text">安装Honeyd及其依赖项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E6%8B%93%E6%89%91%E7%BB%93%E6%9E%84"><span class="nav-number">2.3.</span> <span class="nav-text">网络拓扑结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E5%8F%8A%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">2.4.</span> <span class="nav-text">日志及配置文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8Honeyd"><span class="nav-number">2.5.</span> <span class="nav-text">启动Honeyd</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5honeyd%E6%90%AD%E5%BB%BA%E6%83%85%E5%86%B5"><span class="nav-number">2.6.</span> <span class="nav-text">检查honeyd搭建情况</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E6%BC%8F%E6%B4%9E%E8%99%9A%E6%8B%9F%E6%9C%BA"><span class="nav-number">3.</span> <span class="nav-text">部署漏洞虚拟机</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8Honeyd%E8%99%9A%E6%8B%9F%E6%9C%BA%E4%B8%AD%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AESnort"><span class="nav-number">4.</span> <span class="nav-text">在Honeyd虚拟机中安装配置Snort</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Snor%E7%AE%80%E4%BB%8B"><span class="nav-number">4.1.</span> <span class="nav-text">Snor简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#local-rules%E9%85%8D%E7%BD%AE"><span class="nav-number">4.2.</span> <span class="nav-text">local.rules配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mysql-rules%E9%85%8D%E7%BD%AE"><span class="nav-number">4.3.</span> <span class="nav-text">mysql.rules配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#snort-conf%E9%85%8D%E7%BD%AE"><span class="nav-number">4.4.</span> <span class="nav-text">snort.conf配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#snort%E5%85%B6%E4%BB%96%E7%BB%84%E4%BB%B6"><span class="nav-number">4.5.</span> <span class="nav-text">snort其他组件</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E9%9D%B6%E5%9C%BA%E6%94%BB%E5%87%BB%E4%B8%8E%E6%A3%80%E6%B5%8B"><span class="nav-number">5.</span> <span class="nav-text">网络靶场攻击与检测</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%B6%E5%9C%BA%E6%89%AB%E6%8F%8F%E6%A3%80%E6%B5%8B"><span class="nav-number">5.1.</span> <span class="nav-text">靶场扫描检测</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B1%80%E5%9F%9F%E7%BD%91%E8%AE%BE%E7%BD%AE"><span class="nav-number">5.1.1.</span> <span class="nav-text">局域网设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%BB%E5%87%BB%E6%9C%BAnmap%E6%89%AB%E6%8F%8F%E5%B1%80%E5%9F%9F%E7%BD%91"><span class="nav-number">5.1.2.</span> <span class="nav-text">攻击机nmap扫描局域网</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%BB%E5%87%BB%E6%BC%8F%E6%B4%9E%E8%99%9A%E6%8B%9F%E6%9C%BA"><span class="nav-number">5.2.</span> <span class="nav-text">攻击漏洞虚拟机</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9metasploitable2%E6%BC%8F%E6%B4%9E%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%94%BB%E5%87%BB"><span class="nav-number">5.2.1.</span> <span class="nav-text">对metasploitable2漏洞虚拟机攻击</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9-win-xp-%E6%BC%8F%E6%B4%9E%E6%9C%BA%E6%94%BB%E5%87%BB"><span class="nav-number">5.2.2.</span> <span class="nav-text">对 win xp 漏洞机攻击</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9win-7%E6%BC%8F%E6%B4%9E%E6%9C%BA%E6%94%BB%E5%87%BB"><span class="nav-number">5.2.3.</span> <span class="nav-text">对win 7漏洞机攻击</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#snort%E6%A3%80%E6%B5%8B"><span class="nav-number">5.3.</span> <span class="nav-text">snort检测</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#AWVS%E6%89%AB%E6%8F%8F%E6%A3%80%E6%B5%8B"><span class="nav-number">5.3.1.</span> <span class="nav-text">AWVS扫描检测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NMAP%E6%89%AB%E6%8F%8F%E6%A3%80%E6%B5%8B"><span class="nav-number">5.3.2.</span> <span class="nav-text">NMAP扫描检测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Metasploit%E6%B8%97%E9%80%8F%E6%94%BB%E5%87%BB%E6%A3%80%E6%B5%8B"><span class="nav-number">5.3.3.</span> <span class="nav-text">Metasploit渗透攻击检测</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

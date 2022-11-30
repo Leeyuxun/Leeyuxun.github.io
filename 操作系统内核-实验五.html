@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的 了解进程如何让在 Linux 中彼此同步； 理解 C 语言代码所阐述的文件共享、内存共享、管道通信、信号量互斥、队列通信等 IPC 机制； 运行实验代码理解代码执行过程； 实现内核和用户程序之间的文件通信；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="操作系统内核 实验五">
+<meta property="og:url" content="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%94.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的 了解进程如何让在 Linux 中彼此同步； 理解 C 语言代码所阐述的文件共享、内存共享、管道通信、信号量互斥、队列通信等 IPC 机制； 运行实验代码理解代码执行过程； 实现内核和用户程序之间的文件通信；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125112906.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125114909.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125115118.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125115349.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125115447185.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125122459.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125122557.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125120847.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125121030.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125121214465.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125121419.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125121535.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125121812.png">
+<meta property="article:published_time" content="2019-12-20T14:38:45.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:33:26.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="IPC机制">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125112906.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%94.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>操作系统内核 实验五 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%94.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          操作系统内核 实验五
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-20 22:38:45" itemprop="dateCreated datePublished" datetime="2019-12-20T22:38:45+08:00">2019-12-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:33:26" itemprop="dateModified" datetime="2020-04-02T14:33:26+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">操作系统内核实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><ol>
+<li>了解进程如何让在 Linux 中彼此同步；</li>
+<li>理解 C 语言代码所阐述的文件共享、内存共享、管道通信、信号量互斥、队列通信等 IPC 机制；</li>
+<li>运行实验代码理解代码执行过程；</li>
+<li>实现内核和用户程序之间的文件通信； </li>
+</ol>
+<span id="more"></span>
+
+<h1 id="实验基本概念"><a href="#实验基本概念" class="headerlink" title="实验基本概念"></a>实验基本概念</h1><ol>
+<li> 进程是运行着的程序，每个进程都有着它自己的地址空间，这些空间由进程被允许访问的内存地址组成。进程有一个或多个执行线程，而线程是一系列执行指令的集合：单线程进程就只有一个线程，而多线程的进程则有多个线程。一个进程中的线程共享各种资源，特别是地址空间。另外，一个进程中的线程可以直接通过共享内存来进行通信。</li>
+<li> 有多种方法启动之后要进行通信的进程，但主要有两种方式：一种是一个终端被用来启动一个进程，另一个不同的终端被用来启动另一个；另一种是在一个进程（父进程）中调用系统函数 fork，以此启动另一个进程（子进程）。</li>
+</ol>
+<h1 id="理解实验原理和代码"><a href="#理解实验原理和代码" class="headerlink" title="理解实验原理和代码"></a>理解实验原理和代码</h1><h2 id="文件共享-producer-consumer"><a href="#文件共享-producer-consumer" class="headerlink" title="文件共享 ./producer ./consumer"></a>文件共享 <code>./producer ./consumer</code></h2><ol>
+<li><p>文件共享是最基础的进程间通信<code>IPC</code>机制。实验所给的代码中考虑了一个相对简单的例子，其中一个进程(生产者producer)创建和写入一个文件，然后另一个进程(消费者consumer)从这个相同的文件中进行读取。在使用这个IPC机制时，生产者和消费者可能恰好在同一时间访问该文<br>件，从而使得输出结果不确定。为了避免竞争条件的发生，该文件在处于读或写状态时必须以某种方式处于被锁状态，从而阻止在写操作执行时和其他操作的冲突。</p>
+</li>
+<li><p><strong>解决办法</strong>：生产者在写入文件时获得一个文件的排斥锁。一个排斥锁最多被一个进程所拥有。这样就可以排除掉竞争条件的发生，因为在锁被释放之前没有其他的进程可以访问这个文件； 消费者在从文件中读取内容时得到至少一个共享锁。多个读取者可以同时保有一个共享锁，但是没有写入者可以获取到文件内容，甚至在当只有一个读取者保有一个共享锁时。标准的 I/O 库中包含了一个名为 fcntl 的实用函数，它可以被用来检查或者操作一个文件上的排斥锁和共享锁。 </p>
+</li>
+<li><p><code>producer.c</code>程序分析：首先声明了一个类型为<code>struct flock</code>的变量，它代表一个锁，对 <code>l_type</code>的初始化，使得这个锁是排斥锁而不是一个共享锁，假如生产者获得该锁，则其他进程不能对文件进行读写操作，直到生产者释放该锁或者显式地调用<code>fcntl</code>，又或者隐式地关闭这个文件。当进程终止时，所有被它打开的文件都会被自动关闭，从而释放了锁。接着初始化其他的域。主要的效果是整个文件都将被锁上。然后调用<code>fcntl</code>尝试排斥性地将文件锁住，并检查调用是否成功。如果生产者获得了锁，则程序向文件中写入<code>DataString</code>，然后改变锁的结构为<code>F_UNLCK</code>，调用<code>fcntl</code>执行解锁操作，最后关闭文件并退出。 </p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> FileName <span class="string">&quot;data.dat&quot;</span> </span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">report_and_exit</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* msg)</span> </span>&#123;</span><br><span class="line">  <span class="built_in">perror</span>(msg);</span><br><span class="line">  <span class="built_in">exit</span>(<span class="number">-1</span>); <span class="comment">/* EXIT_FAILURE */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">struct</span> <span class="title class_">flock</span> lock;</span><br><span class="line">  lock.l_type = F_WRLCK;   <span class="comment">//读/写(独占对共享)锁</span></span><br><span class="line">  lock.l_whence = SEEK_SET;<span class="comment">//寻求偏移基址</span></span><br><span class="line">  lock.l_start = <span class="number">0</span>;        <span class="comment">//文件中的第1字节</span></span><br><span class="line">  lock.l_len = <span class="number">0</span>;          <span class="comment">//0意味着&#x27;until EOF&#x27;</span></span><br><span class="line">  lock.l_pid = <span class="built_in">getpid</span>();   <span class="comment">//进程id</span></span><br><span class="line">  </span><br><span class="line">  <span class="type">int</span> fd; <span class="comment">//文件描述符，用于标识进程中的文件</span></span><br><span class="line">  <span class="keyword">if</span> ((fd = <span class="built_in">open</span>(FileName, O_RDWR | O_CREAT, <span class="number">0666</span>)) &lt; <span class="number">0</span>)  <span class="comment">//-1标志着错误</span></span><br><span class="line">    <span class="built_in">report_and_exit</span>(<span class="string">&quot;open failed...&quot;</span>);</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">if</span> (<span class="built_in">fcntl</span>(fd, F_SETLK, &amp;lock) &lt; <span class="number">0</span>) <span class="comment">//F_SETLK 没有阻塞, F_SETLKW 阻塞</span></span><br><span class="line">    <span class="built_in">report_and_exit</span>(<span class="string">&quot;fcntl failed to get lock...&quot;</span>);</span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">write</span>(fd, DataString, <span class="built_in">strlen</span>(DataString)); <span class="comment">//填充数据文件</span></span><br><span class="line">    <span class="built_in">fprintf</span>(stderr, <span class="string">&quot;Process %d has written to data file...\n&quot;</span>, lock.l_pid);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 开始释放锁 */</span></span><br><span class="line">  lock.l_type = F_UNLCK;</span><br><span class="line">  <span class="keyword">if</span> (<span class="built_in">fcntl</span>(fd, F_SETLK, &amp;lock) &lt; <span class="number">0</span>)</span><br><span class="line">    <span class="built_in">report_and_exit</span>(<span class="string">&quot;explicit unlocking failed...&quot;</span>);</span><br><span class="line">  </span><br><span class="line">  <span class="built_in">close</span>(fd); <span class="comment">//关闭文件，如果需要将会解锁</span></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;  <span class="comment">//终止进程也会解锁</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p><code>consumer.c</code>程序分析：程序首先要检查一下文件是否被排斥性锁锁住了，即是否有生产者在写文件，然后才尝试去获取一个共享锁<code>F_RDLCK</code>。调用一个只读锁能够阻止其他进程向文件进行写的操作，但可以允许其他进程对文件进行读取，即共享锁可以被多个进程所保有。在获取了一个共享锁后，消费者程序将立即从文件中读取字节数据，然后在标准输出中打印这些字节的内容，接着释放锁，关闭文件并终止。 </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> FileName <span class="string">&quot;data.dat&quot;</span> </span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">report_and_exit</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* msg)</span> &#123;</span><br><span class="line">  perror(msg);</span><br><span class="line">  <span class="built_in">exit</span>(<span class="number">-1</span>); <span class="comment">/* EXIT_FAILURE */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">flock</span> <span class="title">lock</span>;</span></span><br><span class="line">  lock.l_type = F_WRLCK;   <span class="comment">//读/写(独占对共享)锁</span></span><br><span class="line">  lock.l_whence = SEEK_SET;<span class="comment">//寻求偏移基址</span></span><br><span class="line">  lock.l_start = <span class="number">0</span>;        <span class="comment">//文件中的第1字节</span></span><br><span class="line">  lock.l_len = <span class="number">0</span>;          <span class="comment">//0意味着&#x27;until EOF&#x27;</span></span><br><span class="line">  lock.l_pid = getpid();   <span class="comment">//进程id</span></span><br><span class="line">  </span><br><span class="line">  <span class="type">int</span> fd; <span class="comment">//文件描述符，用于标识进程中的文件</span></span><br><span class="line">  <span class="keyword">if</span> ((fd = open(FileName, O_RDONLY)) &lt; <span class="number">0</span>)  <span class="comment">//-1标志着错误</span></span><br><span class="line">    report_and_exit(<span class="string">&quot;open to read failed...&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 如果文件被写锁定，将无法继续 */</span></span><br><span class="line">  fcntl(fd, F_GETLK, &amp;lock); <span class="comment">//如果没有写锁，将lock.l_type设置为F_UNLCK</span></span><br><span class="line">  <span class="keyword">if</span> (lock.l_type != F_UNLCK)</span><br><span class="line">    report_and_exit(<span class="string">&quot;file is still write locked...&quot;</span>);</span><br><span class="line"></span><br><span class="line">  lock.l_type = F_RDLCK; <span class="comment">//在阅读过程中防止任何写</span></span><br><span class="line">  <span class="keyword">if</span> (fcntl(fd, F_SETLK, &amp;lock) &lt; <span class="number">0</span>)</span><br><span class="line">    report_and_exit(<span class="string">&quot;can&#x27;t get a read-only lock...&quot;</span>);</span><br><span class="line">  </span><br><span class="line">  <span class="comment">/* 一次读取一个字节(恰好是ASCII码) */</span></span><br><span class="line">  <span class="type">int</span> c; <span class="comment">//读字节缓冲区</span></span><br><span class="line">  <span class="keyword">while</span> (read(fd, &amp;c, <span class="number">1</span>) &gt; <span class="number">0</span>)    <span class="comment">//0标志着EOF</span></span><br><span class="line">   	write(STDOUT_FILENO, &amp;c, <span class="number">1</span>); <span class="comment">//向标准输出写入一个字节</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 开始释放锁 */</span></span><br><span class="line">  lock.l_type = F_UNLCK;</span><br><span class="line">  <span class="keyword">if</span> (fcntl(fd, F_SETLK, &amp;lock) &lt; <span class="number">0</span>)</span><br><span class="line">    report_and_exit(<span class="string">&quot;explicit unlocking failed...&quot;</span>);</span><br><span class="line">  </span><br><span class="line">  close(fd); </span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="内存共享-memwriter-memreader"><a href="#内存共享-memwriter-memreader" class="headerlink" title="内存共享 ./memwriter ./memreader"></a>内存共享 <code>./memwriter ./memreader</code></h2><ol>
+<li><p>对于内存共享，Linux系统提供了两类不同的API：传统的<code>System V API</code>和较为新颖的<code>POSIX API</code>。在单个应用中，这些API不能混用。但是，<code>POSIX</code>方式的一个坏处是它的特性仍在发展中，并且依赖于安装的内核版本，这非常影响代码的可移植性。例如，默认情况下，POSIX API 用内存映射文件来实现共享内存：对于一个共享的内存段，系统为相应的内容维护一个备份文<br>件。在<code>POSIX</code>规范下共享内存可以被配置为不需要备份文件，但这可能会影响可移植性。实验课代码中使用的是带有备份文件的<code>POSIX API</code>，这既结合了内存获取的速度优势，又获得了文件存储的持久性。</p>
+</li>
+<li><p>内存共享中的两个程序<code>memewrite</code>和<code>memreader</code>使用的信号量来同步对内存的访问。一般的信号量也被叫做一个计数信号量，因为带有一个可以增加的值(通常初始化为 0)。考虑一家租用自行车的商店，在它的库存中有 100 辆自行车，还有一个供职员用于租赁的程序。每当一辆自行车被租出去，信号量就增加 1；当一辆自行车被还回来，信号量就减 1。在信号量的值为 100 之前都还可以进行租赁业务，但如果等于 100 时，就必须停止业务，直到至少有一辆自行车被还回来，从而信号量减为 99。二元信号量只有两个值：0 和1，信号量的表现为互斥，即信号量为 0 的时候，只有<code>memwriter</code>可以获取共享内存，在进行写操作完成后，这个进程将增加信号量的值使其为 1，从而允许<code>memreader</code> 来读取共享内存。</p>
+</li>
+<li><p><code>memwrite.c</code>程序分析：程序调用<code>shm_open</code>函数来得到作为系统协调共享内存的备份文件描述符，此时还没有内存被分配。然后调用<code>ftruncate</code>函数分配<code>ByteSize</code>字节的内存。接着<code>memwrite</code>调用<code>mmap</code>函数来获取共享内存的指针。其中调用的是<code>calloc</code>动态分配内存时将其初始化为 0。目前，<code>memwrite</code>已经准备好进行写操作了，但是它要调用<code>sem_open</code>创建一个信号量来确保共享内存的互斥性，写操作完成后再调用 <code>sem_post</code> 函数将信号量的值增加到 1，释放互斥锁，使得<code>memreader</code>可以执行它的读操作。<code>memwriter</code>也将从它自己的地址空间中取消映射，使得<code>memwriter</code>不能进一步地访问共享内存。 </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/stat.h&gt;</span>       </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span>          </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;semaphore.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;shmem.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">report_and_exit</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* msg)</span> &#123;</span><br><span class="line">  perror(msg);</span><br><span class="line">  <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="type">int</span> fd = shm_open(BackingFile,      <span class="comment">/* name from smem.h */</span></span><br><span class="line">		    O_RDWR | O_CREAT, <span class="comment">/* read/write, create if needed */</span></span><br><span class="line">		    AccessPerms);     <span class="comment">/* access permissions (0644) */</span></span><br><span class="line">  <span class="keyword">if</span> (fd &lt; <span class="number">0</span>) report_and_exit(<span class="string">&quot;Can&#x27;t open shared mem segment...&quot;</span>);</span><br><span class="line"></span><br><span class="line">  ftruncate(fd, ByteSize); <span class="comment">/* get the bytes */</span></span><br><span class="line"></span><br><span class="line">  <span class="type">caddr_t</span> memptr = mmap(<span class="literal">NULL</span>,       <span class="comment">/* let system pick where to put segment */</span></span><br><span class="line">			ByteSize,   <span class="comment">/* how many bytes */</span></span><br><span class="line">			PROT_READ | PROT_WRITE, <span class="comment">/* access protections */</span></span><br><span class="line">			MAP_SHARED, <span class="comment">/* mapping visible to other processes */</span></span><br><span class="line">			fd,         <span class="comment">/* file descriptor */</span></span><br><span class="line">			<span class="number">0</span>);         <span class="comment">/* offset: start at 1st byte */</span></span><br><span class="line">  <span class="keyword">if</span> ((<span class="type">caddr_t</span>) <span class="number">-1</span>  == memptr) report_and_exit(<span class="string">&quot;Can&#x27;t get segment...&quot;</span>);</span><br><span class="line">  </span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;shared mem address: %p [0..%d]\n&quot;</span>, memptr, ByteSize - <span class="number">1</span>);</span><br><span class="line">  <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;backing file:       /dev/shm%s\n&quot;</span>, BackingFile );</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* semahore code to lock the shared mem */</span></span><br><span class="line">  <span class="type">sem_t</span>* semptr = sem_open(SemaphoreName, <span class="comment">/* name */</span></span><br><span class="line">			   O_CREAT,       <span class="comment">/* create the semaphore */</span></span><br><span class="line">			   AccessPerms,   <span class="comment">/* protection perms */</span></span><br><span class="line">			   <span class="number">0</span>);            <span class="comment">/* initial value */</span></span><br><span class="line">  <span class="keyword">if</span> (semptr == (<span class="type">void</span>*) <span class="number">-1</span>) report_and_exit(<span class="string">&quot;sem_open&quot;</span>);</span><br><span class="line">  </span><br><span class="line">  <span class="built_in">strcpy</span>(memptr, MemContents); <span class="comment">/* copy some ASCII bytes to the segment */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* increment the semaphore so that memreader can read */</span></span><br><span class="line">  <span class="keyword">if</span> (sem_post(semptr) &lt; <span class="number">0</span>) report_and_exit(<span class="string">&quot;sem_post&quot;</span>);</span><br><span class="line"></span><br><span class="line">  sleep(<span class="number">12</span>); <span class="comment">/* give reader a chance */</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">/* clean up */</span></span><br><span class="line">  munmap(memptr, ByteSize); <span class="comment">/* unmap the storage */</span></span><br><span class="line">  close(fd);</span><br><span class="line">  sem_close(semptr);</span><br><span class="line">  shm_unlink(BackingFile); <span class="comment">/* unlink from the backing file */</span></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p><code>memreader.c</code>程序分析：调用<code>shm_open</code>使用<code>memwrite</code>中的文件描述符从共享内存段中获取一个指针。接着是对<code>mmap</code>的调用，第一个参数为<code>NULL</code>，这意味着让系统自己决定在虚拟内存地址的哪个地方分配内存；<code>MAP_SHARED</code>标志着被分配的内存在进程中是共享的。另外的保护参数<code>AccessPerms</code>暗示着共享内存是可读可写的。然后调用<code>sem_open</code>函数时，通过信号量的名字来获取信号量。但<code>memreader</code>随后将进入等待状态，直到<code>memwriter</code>将初始值为 0 的信号量的值增加。一旦等待结束，<code>memreader</code>将从共享内存中读取<code>ASCII</code>数据，然后做些清理工作并终止。 </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/stat.h&gt;</span>       </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span>          </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;semaphore.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;shmem.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">report_and_exit</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* msg)</span> &#123;</span><br><span class="line">  perror(msg);</span><br><span class="line">  <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="type">int</span> fd = shm_open(BackingFile, O_RDWR, AccessPerms);  <span class="comment">/*empty to begin*/</span></span><br><span class="line">  <span class="keyword">if</span> (fd &lt; <span class="number">0</span>) report_and_exit(<span class="string">&quot;Can&#x27;t get file descriptor...&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* get a pointer to memory */</span></span><br><span class="line">  <span class="type">caddr_t</span> memptr = mmap(<span class="literal">NULL</span>, <span class="comment">/* let system pick where to put segment */</span></span><br><span class="line">			ByteSize,   <span class="comment">/* how many bytes */</span></span><br><span class="line">			PROT_READ | PROT_WRITE, <span class="comment">/* access protections */</span></span><br><span class="line">			MAP_SHARED, <span class="comment">/* mapping visible to other processes */</span></span><br><span class="line">			fd,         <span class="comment">/* file descriptor */</span></span><br><span class="line">			<span class="number">0</span>);         <span class="comment">/* offset: start at 1st byte */</span></span><br><span class="line">  <span class="keyword">if</span> ((<span class="type">caddr_t</span>) <span class="number">-1</span> == memptr) report_and_exit(<span class="string">&quot;Can&#x27;t access segment...&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* create a semaphore for mutual exclusion */</span></span><br><span class="line">  <span class="type">sem_t</span>* semptr = sem_open(SemaphoreName, <span class="comment">/* name */</span></span><br><span class="line">			   O_CREAT,       <span class="comment">/* create the semaphore */</span></span><br><span class="line">			   AccessPerms,   <span class="comment">/* protection perms */</span></span><br><span class="line">			   <span class="number">0</span>);            <span class="comment">/* initial value */</span></span><br><span class="line">  <span class="keyword">if</span> (semptr == (<span class="type">void</span>*) <span class="number">-1</span>) report_and_exit(<span class="string">&quot;sem_open&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* use semaphore as a mutex (lock) by waiting for writer to increment it */</span></span><br><span class="line">  <span class="keyword">if</span> (!sem_wait(semptr)) &#123; <span class="comment">/* wait until semaphore != 0 */</span></span><br><span class="line">    <span class="type">int</span> i;</span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; <span class="built_in">strlen</span>(MemContents); i++)</span><br><span class="line">      write(STDOUT_FILENO, memptr + i, <span class="number">1</span>); <span class="comment">/* one byte at a time */</span></span><br><span class="line">    sem_post(semptr);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* cleanup */</span></span><br><span class="line">  munmap(memptr, ByteSize);</span><br><span class="line">  close(fd);</span><br><span class="line">  sem_close(semptr);</span><br><span class="line">  unlink(BackingFile);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="管道通信-fifoWriter-fifoReader"><a href="#管道通信-fifoWriter-fifoReader" class="headerlink" title="管道通信 ./fifoWriter ./fifoReader"></a>管道通信 <code>./fifoWriter ./fifoReader</code></h2><ol>
+<li><p>管道通信发送进程以字符流形式将大量数据送入管道，接收进程可从管道接收数据，二者利用管道进行通信。 </p>
+</li>
+<li><p>无名管道<code>pipeUN.c</code>程序分析：首先使用<code>forrk</code>创建一个进程，虽然它只有单一的源文件，在它正确执行的情况下将会发生多进程的情况。如果成功地产生一个子进程，<code>pipeFDs[2]</code>来保存两个文件描述符，一个用来向管道中写入，另一个从管道中写入。(数组元素<code>pipeFDs[0]</code>是读端的文件描述符，元素<code>pipeFDs[1]</code>是写端的文件描述符)</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span> <span class="comment">/* wait */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span>   <span class="comment">/* exit functions */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span>   <span class="comment">/* read, write, pipe, _exit */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ReadEnd  0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> WriteEnd 1</span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">report_and_exit</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* msg)</span> &#123;</span><br><span class="line">  perror(msg);</span><br><span class="line">  <span class="built_in">exit</span>(<span class="number">-1</span>);    <span class="comment">/** failure **/</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="type">int</span> pipeFDs[<span class="number">2</span>]; <span class="comment">/* two file descriptors */</span></span><br><span class="line">  <span class="type">char</span> buf;       <span class="comment">/* 1-byte buffer */</span></span><br><span class="line">  <span class="type">const</span> <span class="type">char</span>* msg = <span class="string">&quot;Nature&#x27;s first green is gold\n&quot;</span>; <span class="comment">/* bytes to write */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (pipe(pipeFDs) &lt; <span class="number">0</span>) report_and_exit(<span class="string">&quot;pipeFD&quot;</span>);</span><br><span class="line">  <span class="type">pid_t</span> cpid = fork();<span class="comment">/* fork a child process */</span></span><br><span class="line">  <span class="keyword">if</span> (cpid &lt; <span class="number">0</span>) report_and_exit(<span class="string">&quot;fork&quot;</span>);  <span class="comment">/* check for failure */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (<span class="number">0</span> == cpid) &#123;    <span class="comment">/*** child ***/</span>     <span class="comment">/* child process */</span></span><br><span class="line">    close(pipeFDs[WriteEnd]);<span class="comment">/* child reads, doesn&#x27;t write */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (read(pipeFDs[ReadEnd], &amp;buf, <span class="number">1</span>) &gt; <span class="number">0</span>)<span class="comment">/* read until end of byte stream */</span></span><br><span class="line">      write(STDOUT_FILENO, &amp;buf, <span class="keyword">sizeof</span>(buf)); <span class="comment">/* echo to the standard output */</span></span><br><span class="line"></span><br><span class="line">    close(pipeFDs[ReadEnd]);<span class="comment">/* close the ReadEnd: all done */</span></span><br><span class="line">    _exit(<span class="number">0</span>);<span class="comment">/* exit and notify parent at once  */</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> &#123;              <span class="comment">/*** parent ***/</span></span><br><span class="line">    close(pipeFDs[ReadEnd]);<span class="comment">/* parent writes, doesn&#x27;t read */</span></span><br><span class="line"></span><br><span class="line">    write(pipeFDs[WriteEnd], msg, <span class="built_in">strlen</span>(msg));<span class="comment">/* write the bytes to the pipe */</span></span><br><span class="line">    close(pipeFDs[WriteEnd]);           </span><br></pre></td></tr></table></figure></li>
+<li><p>命令管道：无名管道没有备份文件，系统将维持一个内存缓存来将字节数据从写方传给读方。一旦写方和读方终止，这个缓存将会被回收，进而无名管道消失。相反的，命名管道有备份文件和一个不同的<code>API</code>。</p>
+</li>
+<li><p><code>fifoWriter.c</code>程序分析：首先创建一个命名管道来写入数据，然后调用<code>open</code>函数，返回以一个文件描述符。<code>fifoWriter</code>不会一次性将所有的数据都写入，而是写入一个块，然后休息随机数目的微秒时间，接着再循环往复。关闭命名管道后，<code>fifoWriter</code>也将使用<code>unlink</code>取消对该文件的连接。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span> </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;time.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MaxLoops         12000   <span class="comment">/* outer loop */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ChunkSize           16   <span class="comment">/* how many written at a time */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IntsPerChunk         4   <span class="comment">/* four 4-byte ints per chunk */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MaxZs              250   <span class="comment">/* max microseconds to sleep */</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="type">const</span> <span class="type">char</span>* pipeName = <span class="string">&quot;./fifoChannel&quot;</span>;</span><br><span class="line">  mkfifo(pipeName, <span class="number">0666</span>);                      <span class="comment">/* read/write for user/group/others */</span></span><br><span class="line">  <span class="type">int</span> fd = open(pipeName, O_CREAT | O_WRONLY); <span class="comment">/* open as write-only */</span></span><br><span class="line">  <span class="keyword">if</span> (fd &lt; <span class="number">0</span>) <span class="keyword">return</span> <span class="number">-1</span>;                       <span class="comment">/** error **/</span></span><br><span class="line">  </span><br><span class="line">  <span class="type">int</span> i;</span><br><span class="line">  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; MaxLoops; i++) &#123;    <span class="comment">/* write MaxWrites times */</span></span><br><span class="line">    <span class="type">int</span> j;</span><br><span class="line">    <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt; ChunkSize; j++) &#123; <span class="comment">/*each time, write ChunkSize bytes*/</span></span><br><span class="line">      <span class="type">int</span> k;</span><br><span class="line">      <span class="type">int</span> chunk[IntsPerChunk];</span><br><span class="line">      <span class="keyword">for</span> (k = <span class="number">0</span>; k &lt; IntsPerChunk; k++) </span><br><span class="line">	chunk[k] = rand();             </span><br><span class="line">      write(fd, chunk, <span class="keyword">sizeof</span>(chunk)); </span><br><span class="line">    &#125;</span><br><span class="line">    usleep((rand() % MaxZs) + <span class="number">1</span>);      <span class="comment">/* pause a bit for realism */</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  close(fd);                           <span class="comment">/* close pipe: generates an end-of-file */</span></span><br><span class="line">  unlink(pipeName);    <span class="comment">/* unlink from the implementing file */</span></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;%i ints sent to the pipe.\n&quot;</span>, MaxLoops * ChunkSize * IntsPerChunk);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p><code>fifoReader.c</code>程序分析：因为<code>fifoWriter</code>已经创建了命名管道，所以<code>fifiReader</code>只需要调用<code>open</code>来通过备份文件来获取管道中的内容。接着程序进入一个潜在的无限循环，在每次循环时，尝试读取 4 字节的块在读入 4 字节整数后，<code>fifoReader</code> 检查这个数是否为质数。这个操作代表了一个生产级别的读取器可能在接收到的字节数据上执行的逻辑操作。在示例运行中，在接收到的768000个整数中有 37682 个质数。read 返回 0 来暗示该流的结束。在这种情况下，<code>fifoReader</code>跳出循环，关闭命名管道，并在终止前<code>unlink</code>备份文件。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">unsigned</span> <span class="title function_">is_prime</span><span class="params">(<span class="type">unsigned</span> n)</span> &#123; <span class="comment">/* not pretty, but gets the job done efficiently */</span></span><br><span class="line">  <span class="keyword">if</span> (n &lt;= <span class="number">3</span>) <span class="keyword">return</span> n &gt; <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">if</span> (<span class="number">0</span> == (n % <span class="number">2</span>) || <span class="number">0</span> == (n % <span class="number">3</span>)) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  <span class="type">unsigned</span> i;</span><br><span class="line">  <span class="keyword">for</span> (i = <span class="number">5</span>; (i * i) &lt;= n; i += <span class="number">6</span>) </span><br><span class="line">    <span class="keyword">if</span> (<span class="number">0</span> == (n % i) || <span class="number">0</span> == (n % (i + <span class="number">2</span>))) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">1</span>; <span class="comment">/* found a prime! */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="type">const</span> <span class="type">char</span>* file = <span class="string">&quot;./fifoChannel&quot;</span>;</span><br><span class="line">  <span class="type">int</span> fd = open(file, O_RDONLY); </span><br><span class="line">  <span class="keyword">if</span> (fd &lt; <span class="number">0</span>) <span class="keyword">return</span> <span class="number">-1</span>; <span class="comment">/* no point in continuing */</span></span><br><span class="line">  <span class="type">unsigned</span> count = <span class="number">0</span>, total = <span class="number">0</span>, primes_count = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (<span class="number">1</span>) &#123;</span><br><span class="line">    <span class="type">int</span> next;</span><br><span class="line">    <span class="type">int</span> i;</span><br><span class="line">    <span class="type">ssize_t</span> count = read(fd, &amp;next, <span class="keyword">sizeof</span>(<span class="type">int</span>));   </span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="number">0</span> == count) <span class="keyword">break</span>;                  <span class="comment">/* end of stream */</span></span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (count == <span class="keyword">sizeof</span>(<span class="type">int</span>)) &#123;        <span class="comment">/* read a 4-byte int value */</span></span><br><span class="line">      total++;c</span><br><span class="line">      <span class="title function_">if</span> <span class="params">(is_prime(next))</span> primes_count++;</span><br><span class="line">    &#125;   </span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  close(fd);       <span class="comment">/* close pipe from read end */</span></span><br><span class="line">  unlink(file);    <span class="comment">/* unlink from the underlying file */</span></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;Received ints: %u, primes: %u\n&quot;</span>, total, primes_count);  </span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="信号量互斥-shutdown"><a href="#信号量互斥-shutdown" class="headerlink" title="信号量互斥 ./shutdown"></a>信号量互斥 <code>./shutdown</code></h2><ol>
+<li><p>信号会中断一个正在执行的程序，在这种意义下，就是用信号与这个程序进行通信。大多数的信号要么可以被忽略(阻塞)或者被处理(通过特别设计的代码)。<code>SIGSTOP</code> (暂停)和<code>SIGKILL</code>(立即停止)是最应该提及的两种信号。这种符号常量有整数类型的值，例如<code>SIGKILL</code>对应的值为 9。信号可以在与用户交互的情况下发生。例如，一个用户从命令行中敲了<code>Ctrl+C</code>来终止一个从命令行中启动的程序；<code>Ctrl+C</code>将产生一个<code>SIGTERM</code>信号。<code>SIGTERM</code>即终止，它可以被阻塞或者被处理，而不像<code>SIGKILL</code>信号那样。一个进程也可以通过信号和另一个进程通信，这样使得信号也可以作为一种<code>IPC</code>机制。</p>
+</li>
+<li><p><code>shutdown.c</code>程序分析：该程序由一个父进程和一个子进程组成。首先父进程尝试去<code>fork</code>一个子进程，如果<code>fork</code>成功，每个进程去执行自己的代码，即子进程执行<code>child_code</code>，父进程执行<code>parent_code</code>。子进程将会进入一个潜在的无线循环，在该循环中子进程将睡眠一秒，然后打印一个信息。来自父进程的一个<code>SIGTERM</code>信号将引起子进程去执行一个信号处理回调函数 <code>graceful</code>。这样这个信号就使子进程跳出循环，然后进行子进程和父进程的终止，并打印消息。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">graceful</span><span class="params">(<span class="type">int</span> signum)</span> &#123;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;\tChild confirming received signal: %i\n&quot;</span>, signum);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;\tChild about to terminate gracefully...&quot;</span>);</span><br><span class="line"></span><br><span class="line">  sleep(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;\tChild terminating now...&quot;</span>);</span><br><span class="line">  _exit(<span class="number">0</span>); <span class="comment">/* fast-track notification of parent */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">set_handler</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">sigaction</span> <span class="title">current</span>;</span></span><br><span class="line">  sigemptyset(&amp;current.sa_mask);         <span class="comment">/* clear the signal set */</span></span><br><span class="line">  current.sa_flags = <span class="number">0</span>;<span class="comment">/* enables setting sa_handler, not sa_action */</span></span><br><span class="line">  current.sa_handler = graceful;         <span class="comment">/* specify a handler */</span></span><br><span class="line">  sigaction(SIGTERM, &amp;current, <span class="literal">NULL</span>);    <span class="comment">/* register the handler */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">child_code</span><span class="params">()</span> &#123;</span><br><span class="line">  set_handler();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (<span class="number">1</span>) &#123;   <span class="comment">/** loop until interrupted **/</span></span><br><span class="line">    sleep(<span class="number">1</span>);</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">&quot;\tChild just woke up, but going back to sleep.&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">parent_code</span><span class="params">(<span class="type">pid_t</span> cpid)</span> &#123;</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;Parent sleeping for a time...&quot;</span>);</span><br><span class="line">  sleep(<span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Try to terminate child. */</span></span><br><span class="line">  <span class="keyword">if</span> (<span class="number">-1</span> == kill(cpid, SIGTERM)) &#123;</span><br><span class="line">    perror(<span class="string">&quot;kill&quot;</span>);</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  wait(<span class="literal">NULL</span>); <span class="comment">/** wait for child to terminate **/</span></span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;My child terminated, about to exit myself...&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;main...&quot;</span>);</span><br><span class="line">  <span class="type">pid_t</span> pid = fork();</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;main...2&quot;</span>);</span><br><span class="line">  <span class="keyword">if</span> (pid &lt; <span class="number">0</span>) &#123;</span><br><span class="line">    perror(<span class="string">&quot;fork&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>; <span class="comment">/* error */</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;main...3&quot;</span>);</span><br><span class="line">  <span class="keyword">if</span> (<span class="number">0</span> == pid)&#123; </span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">&quot;child_code...&quot;</span>);</span><br><span class="line">    child_code();</span><br><span class="line">  &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">&quot;parent_code...&quot;</span>);</span><br><span class="line">    parent_code(pid);</span><br><span class="line">   &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;  <span class="comment">/* normal */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="队列通信-sender-receiver"><a href="#队列通信-sender-receiver" class="headerlink" title="队列通信 ./sender ./receiver"></a>队列通信 <code>./sender ./receiver</code></h2><ol>
+<li><p>消息队列是一系列的消息，每个消息包括两个部分：荷载，一个字节序列；类型，以一个正整数值得形式给定，类型用来分类消息，为了更灵活的回收。</p>
+</li>
+<li><p>下面展示的 4 个消息中，标记为 1 的是开头，即最接近接收端，接着连续标记为 2 的消息，最后接着一个标记为 3 的消息。假如按照严格的<code>FIFO</code>行为执行，消息将会以<code>1-2-2-3</code>这样的次序被接收。但是消息队列允许其他收取次序。例如，消息可以被接收方以<code>3-2-1-2</code>的次序接收。说明消息队列足够的灵活。<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125112906.png"></p>
+</li>
+<li><p><code>sender.c</code>：通过<code>megsnd</code>函数程序发送<code>sender</code>程序将发送出 6 个消息，每两个为一个类型：前两个是类型 1，接着的连个是类型 2，最后的两个为类型 3。且被配置为非阻塞的<code>IPC_NOWAIT</code>标志。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span> </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/ipc.h&gt;</span> </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/msg.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;queue.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">report_and_exit</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* msg)</span> &#123;</span><br><span class="line">  perror(msg);</span><br><span class="line">  <span class="built_in">exit</span>(<span class="number">-1</span>); <span class="comment">/* EXIT_FAILURE */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">  <span class="type">key_t</span> key = ftok(PathName, ProjectId); </span><br><span class="line">  <span class="keyword">if</span> (key &lt; <span class="number">0</span>) report_and_exit(<span class="string">&quot;couldn&#x27;t get key...&quot;</span>);</span><br><span class="line">  </span><br><span class="line">  <span class="type">int</span> qid = msgget(key, <span class="number">0666</span> | IPC_CREAT); </span><br><span class="line">  <span class="keyword">if</span> (qid &lt; <span class="number">0</span>) report_and_exit(<span class="string">&quot;couldn&#x27;t get queue id...&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="type">char</span>* payloads[] = &#123;<span class="string">&quot;msg1&quot;</span>, <span class="string">&quot;msg2&quot;</span>, <span class="string">&quot;msg3&quot;</span>, <span class="string">&quot;msg4&quot;</span>, <span class="string">&quot;msg5&quot;</span>, <span class="string">&quot;msg6&quot;</span>&#125;;</span><br><span class="line">  <span class="type">int</span> types[] = &#123;<span class="number">1</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">3</span>&#125;; <span class="comment">/* each must be &gt; 0 */</span></span><br><span class="line">  <span class="type">int</span> i;</span><br><span class="line">  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; MsgCount; i++) &#123;</span><br><span class="line">    <span class="comment">/* build the message */</span></span><br><span class="line">    queuedMessage msg;</span><br><span class="line">    msg.type = types[i];</span><br><span class="line">    <span class="built_in">strcpy</span>(msg.payload, payloads[i]);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* send the message */</span></span><br><span class="line">    msgsnd(qid, &amp;msg, <span class="keyword">sizeof</span>(msg), IPC_NOWAIT); <span class="comment">/* don&#x27;t block */</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s sent as type %i\n&quot;</span>, msg.payload, (<span class="type">int</span>) msg.type);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p><code>receiver.c</code>程序分析：对<code>msgget</code>的调用可能因为带有<code>IPC_CREAT</code>标志而具有误导性，但是这个标志的真实意义是如果需要就创建，否则直接获取。<code>sender</code>程序调用<code>msgsnd</code>来发送消息，而<code>receiver</code>调用<code>msgrcv</code>来接收它们。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span> </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/ipc.h&gt;</span> </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/msg.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;queue.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">report_and_exit</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* msg)</span> &#123;</span><br><span class="line">  perror(msg);</span><br><span class="line">  <span class="built_in">exit</span>(<span class="number">-1</span>); <span class="comment">/* EXIT_FAILURE */</span></span><br><span class="line">&#125;</span><br><span class="line">  </span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123; </span><br><span class="line">  <span class="type">key_t</span> key= ftok(PathName, ProjectId); <span class="comment">/* key to identify the queue */</span></span><br><span class="line">  <span class="keyword">if</span> (key &lt; <span class="number">0</span>) report_and_exit(<span class="string">&quot;key not gotten...&quot;</span>);</span><br><span class="line">  </span><br><span class="line">  <span class="type">int</span> qid = msgget(key, <span class="number">0666</span> | IPC_CREAT); <span class="comment">/* access if created already */</span></span><br><span class="line">  <span class="keyword">if</span> (qid &lt; <span class="number">0</span>) report_and_exit(<span class="string">&quot;no access to queue...&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> types[] = &#123;<span class="number">3</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">2</span>&#125;; <span class="comment">/* different than in sender */</span></span><br><span class="line">  <span class="type">int</span> i;</span><br><span class="line">  <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; MsgCount; i++) &#123;</span><br><span class="line">    queuedMessage msg; <span class="comment">/* defined in queue.h */</span></span><br><span class="line">    <span class="keyword">if</span> (msgrcv(qid, &amp;msg, <span class="keyword">sizeof</span>(msg), types[i], MSG_NOERROR | IPC_NOWAIT) &lt; <span class="number">0</span>)</span><br><span class="line">      <span class="built_in">puts</span>(<span class="string">&quot;msgrcv trouble...&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s received as type %i\n&quot;</span>, msg.payload, (<span class="type">int</span>) msg.type);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/** remove the queue **/</span></span><br><span class="line">  <span class="keyword">if</span> (msgctl(qid, IPC_RMID, <span class="literal">NULL</span>) &lt; <span class="number">0</span>)  <span class="comment">/* NULL = &#x27;no flags&#x27; */</span></span><br><span class="line">    report_and_exit(<span class="string">&quot;trouble removing queue...&quot;</span>);</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>; </span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure></li>
+</ol>
+<h1 id="实验数据与结果"><a href="#实验数据与结果" class="headerlink" title="实验数据与结果"></a>实验数据与结果</h1><h2 id="文件共享"><a href="#文件共享" class="headerlink" title="文件共享"></a>文件共享</h2><ol>
+<li><p>使用<code>make</code>命令编译程序；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125114909.png"></p>
+</li>
+<li><p>执行<code>./producer</code>，程序向<code>data.dat</code>写入数据；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125115118.png"><br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125115349.png"></p>
+</li>
+<li><p>在终端输入<code>./consumer</code>，显示data.dat中的内容</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125115447185.png" alt="image-20191125115447185"></p>
+</li>
+</ol>
+<h2 id="内存共享"><a href="#内存共享" class="headerlink" title="内存共享"></a>内存共享</h2><ol>
+<li><p>向内存中写入信息</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125122459.png"></p>
+</li>
+<li><p>从内存中读取信息</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125122557.png"></p>
+</li>
+</ol>
+<h2 id="管道通信"><a href="#管道通信" class="headerlink" title="管道通信"></a>管道通信</h2><ol>
+<li><p>开启两个终端(两个终端工作目录相同)在其中一个终端输入以下命令：即先创建一个备份文件，名为2017213618，然后将管道的内容输出到stdout中。最开始并没有什么会出现在终端中，因为还没有向管道中写入任何数据。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125120847.png"></p>
+</li>
+<li><p>在第二个终端输入以下命令无论在这个终端中输入什么，它都会在第一个终端中显示出来；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125121030.png"></p>
+</li>
+<li><p>一旦键入<code>Ctrl+C</code>，就会回到正常的命令行提示符，因为管道已经被关闭了。最后通过移除实现命名管道的文件来进行清理。</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125121214465.png" alt="image-20191125121214465"></p>
+</li>
+<li><p>不同的终端中启动<code>fifoWriter</code> 和<code>fifoReader</code>，但二者处于相同的工作目录。<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125121419.png"></p>
+</li>
+</ol>
+<h2 id="信号量互斥"><a href="#信号量互斥" class="headerlink" title="信号量互斥"></a>信号量互斥</h2><ol>
+<li><p>在终端输入<code>./shutdown</code>，得到如下输出，成功的模拟了信号的这种轻量的<code>IPC</code>方法。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125121535.png"></p>
+</li>
+</ol>
+<h2 id="队列通信"><a href="#队列通信" class="headerlink" title="队列通信"></a>队列通信</h2><ol>
+<li><p>输出显示<code>sender</code>和<code>receiver</code>可以在同一个终端中启动。输出也显示消息队列是持久的，在这个例子中，<code>sender</code>以<code>1-1-2-2-3-3</code>的次序发送消息，但<code>receiver</code>接收它们的次序为<code>3-1-2-1-3-2</code>，表明消息队列没有被严格的<code>FIFO</code>行为所拘束。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125121812.png"> </p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%94.html" title="操作系统内核 实验五">https://leeyuxun.github.io/操作系统内核-实验五.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/IPC%E6%9C%BA%E5%88%B6/" rel="tag"><i class="fa fa-tag"></i> IPC机制</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E5%9B%9B.html" rel="prev" title="操作系统内核 实验四">
+      <i class="fa fa-chevron-left"></i> 操作系统内核 实验四
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E5%85%AD.html" rel="next" title="操作系统内核 实验六">
+      操作系统内核 实验六 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">实验基本概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%90%86%E8%A7%A3%E5%AE%9E%E9%AA%8C%E5%8E%9F%E7%90%86%E5%92%8C%E4%BB%A3%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">理解实验原理和代码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%85%B1%E4%BA%AB-producer-consumer"><span class="nav-number">3.1.</span> <span class="nav-text">文件共享 .&#x2F;producer .&#x2F;consumer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%85%B1%E4%BA%AB-memwriter-memreader"><span class="nav-number">3.2.</span> <span class="nav-text">内存共享 .&#x2F;memwriter .&#x2F;memreader</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%A1%E9%81%93%E9%80%9A%E4%BF%A1-fifoWriter-fifoReader"><span class="nav-number">3.3.</span> <span class="nav-text">管道通信 .&#x2F;fifoWriter .&#x2F;fifoReader</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%A1%E5%8F%B7%E9%87%8F%E4%BA%92%E6%96%A5-shutdown"><span class="nav-number">3.4.</span> <span class="nav-text">信号量互斥 .&#x2F;shutdown</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%98%9F%E5%88%97%E9%80%9A%E4%BF%A1-sender-receiver"><span class="nav-number">3.5.</span> <span class="nav-text">队列通信 .&#x2F;sender .&#x2F;receiver</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%95%B0%E6%8D%AE%E4%B8%8E%E7%BB%93%E6%9E%9C"><span class="nav-number">4.</span> <span class="nav-text">实验数据与结果</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%85%B1%E4%BA%AB"><span class="nav-number">4.1.</span> <span class="nav-text">文件共享</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%85%B1%E4%BA%AB"><span class="nav-number">4.2.</span> <span class="nav-text">内存共享</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%A1%E9%81%93%E9%80%9A%E4%BF%A1"><span class="nav-number">4.3.</span> <span class="nav-text">管道通信</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%A1%E5%8F%B7%E9%87%8F%E4%BA%92%E6%96%A5"><span class="nav-number">4.4.</span> <span class="nav-text">信号量互斥</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%98%9F%E5%88%97%E9%80%9A%E4%BF%A1"><span class="nav-number">4.5.</span> <span class="nav-text">队列通信</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

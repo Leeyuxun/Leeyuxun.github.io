@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="目的 提供一个浏览器界面，可以实现基本的邮件头（发件人、收件人、主题等）输入和邮件内容编辑功 能； 作为Web服务器，接收来自浏览器的TCP连接请求，接收邮件数据，并保存在文件中；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="simple webmail">
+<meta property="og:url" content="https://leeyuxun.github.io/simple-webmail.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="目的 提供一个浏览器界面，可以实现基本的邮件头（发件人、收件人、主题等）输入和邮件内容编辑功 能； 作为Web服务器，接收来自浏览器的TCP连接请求，接收邮件数据，并保存在文件中；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200315191707.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200315191817.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200315191857.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200315191938.png">
+<meta property="article:published_time" content="2020-03-15T11:40:18.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:36:22.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="SMTP">
+<meta property="article:tag" content="webmail">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200315191707.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/simple-webmail.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>simple webmail | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/simple-webmail.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          simple webmail
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-03-15 19:40:18" itemprop="dateCreated datePublished" datetime="2020-03-15T19:40:18+08:00">2020-03-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:36:22" itemprop="dateModified" datetime="2020-04-02T14:36:22+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/personal-tools/" itemprop="url" rel="index"><span itemprop="name">personal tools</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h2><ol>
+<li>提供一个浏览器界面，可以实现基本的邮件头（发件人、收件人、主题等）输入和邮件内容编辑功 能；</li>
+<li>作为Web服务器，接收来自浏览器的TCP连接请求，接收邮件数据，并保存在文件中；<span id="more"></span></li>
+<li>作为SMTP客户端，建立到实际邮件服务器的TCP连接，发送SMTP命令，将保存的邮件发送给实际邮件服务器；</li>
+<li>支持一封邮件多个接收者，要求接收者属于不同的域，如bupt.edu.cn, 163.com, qq.com,…；</li>
+<li>提供发件人和收件人Email地址格式检查功能，例如下列邮件地址是错误的：chengli、 chengli@、bupt.edu.cn, ….；</li>
+<li>根据实际邮件服务器的响应码，显示错误信息，如用户名不存在等；</li>
+</ol>
+<h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><ol>
+<li>编程语言：PHP+HTML+Javascript</li>
+<li>服务器环境：PhpStudy v8.1(Apache2.4.39+php5.6.9+mysql5.7.26)</li>
+</ol>
+<h2 id="程序设计"><a href="#程序设计" class="headerlink" title="程序设计"></a>程序设计</h2><h3 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h3><p>数据结构是整个程序的要点之一，程序维护者充分了解数据结构就可以对主要算法和处理流程有个基本 的理解。下面描述程序中定义的全局变量和函数中的变量的变量名和变量所起的作用以及程序定义的标 识符含义；</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Public Variables */</span> </span><br><span class="line"><span class="keyword">var</span> <span class="variable">$smtpemailto</span>; <span class="comment">//收件人邮箱 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$mailbody</span>; <span class="comment">//邮件内容 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$mailsubject</span>; <span class="comment">//邮件主题 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$smtpusermail</span>; <span class="comment">//SMTP服务器的用户邮箱 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$smtpserver</span>; <span class="comment">//SMTP服务器 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$smtpserverport</span>;<span class="comment">//SMTP服务器端口 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$smtpuser</span>; <span class="comment">//SMTP服务器的用户帐号 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$smtppass</span>; <span class="comment">//SMTP服务器的用户密码 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$mailtype</span>; <span class="comment">//邮件格式（HTML/TXT）,TXT为文本邮件 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$client_ip</span>; <span class="comment">//客户端IP </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$client_port</span>; <span class="comment">//客户端端口号 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$server_ip</span>; <span class="comment">//服务器IP</span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$server_port</span>; <span class="comment">//服务器端口 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$smtp_port</span>; <span class="comment">//SMTP端口 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$header</span>; <span class="comment">//邮件头 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$message</span>; <span class="comment">//邮件内容 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$time_out</span>; <span class="comment">//过期时间 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$host_name</span>; <span class="comment">//三次握手需要用到 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$relay_host</span>; <span class="comment">//SMTP服务器 </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$debug</span>; <span class="comment">//是否debug </span></span><br><span class="line"><span class="keyword">var</span> <span class="variable">$auth</span>; <span class="comment">//身份验证，需要为true </span></span><br><span class="line"><span class="comment">/* Private Variables */</span> </span><br><span class="line"><span class="keyword">var</span> <span class="variable">$sock</span>; <span class="comment">//sock连接</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="模块结构"><a href="#模块结构" class="headerlink" title="模块结构"></a>模块结构</h3><h4 id="函数功能"><a href="#函数功能" class="headerlink" title="函数功能"></a>函数功能</h4><ol>
+<li><p>function smtp() ——构造结构 </p>
+<p>功能：构造邮件传输需要的变量 </p>
+</li>
+<li><p>function sendmail() ——主函数 </p>
+<ul>
+<li>功能：构造邮件头，调用子函数实现消息发送；</li>
+<li>参数<ul>
+<li>to：收件人 </li>
+<li>from：发件人 </li>
+<li>subject：邮件主题 </li>
+<li>body：邮件内容 </li>
+<li>mailtype：邮件格式 </li>
+<li>client_ip：浏览器IP </li>
+<li>client_port：浏览器端口 </li>
+<li>server_ip：服务器IP </li>
+<li>server_port：服务器端口</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>function smtp_send() </p>
+<ul>
+<li>功能：与收件人邮箱服务器进行交互，发送邮件 </li>
+<li>参数： <ul>
+<li>helo：连接请求 </li>
+<li>from：发件人 </li>
+<li>to：收件人 </li>
+<li>header：邮件头 </li>
+<li>body：邮件内容 </li>
+<li>filename：日志文件</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>function smtp_sockopen() ——sock函数 </p>
+<ul>
+<li>功能：搭建的邮箱服务器与收件人邮箱服务器建立sock连接 </li>
+<li>参数： <ul>
+<li>address：收件人邮箱地址 </li>
+<li>filename：日志文件</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>function smtp_message() </p>
+<ul>
+<li>功能：将邮件主题和内容组合在一起 </li>
+<li>参数： <ul>
+<li>header：邮件头 </li>
+<li>body：邮件内容</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>function smtp_eom()</p>
+<ul>
+<li>功能：将邮件主题和内容组合在一起 </li>
+<li>参数： <ul>
+<li>filename：日志文件；</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>function smtp_ok() </p>
+<ul>
+<li>功能：查看返回信息判断是否成功连接到smtp； </li>
+<li>参数： <ul>
+<li>filename：日志文件；</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>function smtp_putcmd() </p>
+<ul>
+<li>功能：构造需要发送的命令； </li>
+<li>参数： <ul>
+<li>cmd：指令； </li>
+<li>filename：日志文件；</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>function strip_comment() </p>
+<ul>
+<li>功能：邮箱地址过滤，有些时候会在邮箱后面写上一些评论，需要将评论删除； </li>
+<li>参数：<ul>
+<li>address：IP地址； </li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>function get_address() </p>
+<ul>
+<li>功能：邮箱地址过滤，有些邮箱地址会写成xxx@ 163.com,目的在于过滤掉 括号里面的内容、换行、缩进等； </li>
+<li>参数： <ul>
+<li>address：IP地址； </li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>function smtp_debug() </p>
+<ul>
+<li>功能：调试程序时用到； </li>
+<li>参数： <ul>
+<li>message：与收件人邮箱服务器交换的信息；</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="函数关系图"><a href="#函数关系图" class="headerlink" title="函数关系图"></a>函数关系图</h4><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200315191707.png"></p>
+<h4 id="算法流程图"><a href="#算法流程图" class="headerlink" title="算法流程图"></a>算法流程图</h4><h5 id="sendmail-函数NS盒图"><a href="#sendmail-函数NS盒图" class="headerlink" title="sendmail()函数NS盒图"></a>sendmail()函数NS盒图</h5><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200315191817.png"></p>
+<h5 id="smtp-send-函数NS盒图"><a href="#smtp-send-函数NS盒图" class="headerlink" title="smtp_send()函数NS盒图"></a>smtp_send()函数NS盒图</h5><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200315191857.png"></p>
+<h5 id="smtp-socketopen-函数NS盒图"><a href="#smtp-socketopen-函数NS盒图" class="headerlink" title="smtp_socketopen()函数NS盒图"></a>smtp_socketopen()函数NS盒图</h5><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200315191938.png"></p>
+<h4 id="函数实现要点"><a href="#函数实现要点" class="headerlink" title="函数实现要点"></a>函数实现要点</h4><ol>
+<li><p>php语言建立sock连接较为简单，只需要使用如下命令，通过smtp_ok判断连接是否建立即可；</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">$this</span>-&gt;sock = @<span class="title function_ invoke__">fsockopen</span>(<span class="variable">$this</span>-&gt;relay_host, <span class="variable">$this</span>-&gt;smtp_port, <span class="variable">$errno</span>,</span><br><span class="line"><span class="variable">$errstr</span>, <span class="variable">$this</span>-&gt;time_out);</span><br><span class="line"><span class="keyword">if</span> (!(<span class="variable language_">$this</span>-&gt;sock &amp;&amp; <span class="variable language_">$this</span>-&gt;<span class="title function_ invoke__">smtp_ok</span>(<span class="variable">$filename</span>))) &#123;</span><br><span class="line"><span class="variable">$log</span> = <span class="title function_ invoke__">fopen</span>(<span class="variable">$filename</span>,<span class="string">&quot;a&quot;</span>);</span><br><span class="line"><span class="title function_ invoke__">fwrite</span>(<span class="variable">$log</span>,<span class="string">&quot;Error:无法连接SMTP服务器&quot;</span> . <span class="variable">$this</span>-&gt;relay_host . <span class="string">&quot;\n&quot;</span>);</span><br><span class="line"><span class="title function_ invoke__">fwrite</span>(<span class="variable">$log</span>,<span class="string">&quot;Error: &quot;</span> . <span class="variable">$errstr</span> . <span class="string">&quot; (&quot;</span> . <span class="variable">$errno</span> . <span class="string">&quot;)\n&quot;</span>);</span><br><span class="line"><span class="title function_ invoke__">fclose</span>(<span class="variable">$log</span>);</span><br><span class="line"><span class="keyword">echo</span> <span class="string">&quot;&lt;script&gt;alert(&#x27;Error:无法连接SMTP服务器&#x27;. <span class="subst">$this</span>-</span></span><br><span class="line"><span class="string">&gt;relay_host);parent.document.ADDUser.cheheh.click();&lt;/script&gt;&quot;</span>;</span><br><span class="line"><span class="keyword">echo</span> <span class="string">&quot;</span></span><br><span class="line"><span class="string">&lt;script&gt;alert(&#x27;Error:&#x27;.<span class="subst">$errstr</span>.&#x27;(&#x27;.f<span class="subst">$errno</span>.&#x27;)&#x27;);parent.document.ADDUser.cheh</span></span><br><span class="line"><span class="string">eh.click();&lt;/script&gt;&quot;</span>;</span><br><span class="line"><span class="keyword">return</span> <span class="literal">FALSE</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>使用如下命令获取客户端和服务器的IP地址和端口号；</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$client_ip</span> = <span class="variable">$_SERVER</span>[<span class="string">&#x27;REMOTE_ADDR&#x27;</span>]; <span class="comment">//客户端IP</span></span><br><span class="line"><span class="variable">$client_port</span> = <span class="variable">$_SERVER</span>[<span class="string">&#x27;REMOTE_PORT&#x27;</span>]; <span class="comment">//客户端端口号</span></span><br><span class="line"><span class="variable">$server_ip</span> = <span class="variable">$_SERVER</span>[<span class="string">&#x27;SERVER_ADDR&#x27;</span>]; <span class="comment">//服务器IP</span></span><br><span class="line"><span class="variable">$server_port</span> = <span class="variable">$_SERVER</span>[<span class="string">&#x27;SERVER_PORT&#x27;</span>]; <span class="comment">//服务器端口</span></span><br></pre></td></tr></table></figure></li>
+<li><p>使用如下正则表达式检测邮箱地址的合法性；</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/\w+([-+.<span class="string">&#x27;]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/</span></span><br></pre></td></tr></table></figure></li>
+<li><p>为防止攻击，选择在后端检查邮箱的合法性，而不是在前端调用JavaScript；</p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/simple-webmail.html" title="simple webmail">https://leeyuxun.github.io/simple-webmail.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/SMTP/" rel="tag"><i class="fa fa-tag"></i> SMTP</a>
+              <a href="/tags/webmail/" rel="tag"><i class="fa fa-tag"></i> webmail</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E5%A4%A7%E9%87%8F%E7%9F%AD%E9%9F%B3%E9%A2%91%E5%85%8D%E8%B4%B9%E5%BF%AB%E9%80%9F%E8%BD%AC%E6%96%87%E5%AD%97.html" rel="prev" title="大量短音频免费快速转文字">
+      <i class="fa fa-chevron-left"></i> 大量短音频免费快速转文字
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E5%88%A9%E7%94%A8Fortuna%E7%AE%97%E6%B3%95%E7%94%9F%E6%88%90%E4%BC%AA%E9%9A%8F%E6%9C%BA%E6%95%B0.html" rel="next" title="利用Fortuna算法生成伪随机数">
+      利用Fortuna算法生成伪随机数 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">目的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83"><span class="nav-number">2.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1"><span class="nav-number">3.</span> <span class="nav-text">程序设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">3.1.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E7%BB%93%E6%9E%84"><span class="nav-number">3.2.</span> <span class="nav-text">模块结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%8A%9F%E8%83%BD"><span class="nav-number">3.2.1.</span> <span class="nav-text">函数功能</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%85%B3%E7%B3%BB%E5%9B%BE"><span class="nav-number">3.2.2.</span> <span class="nav-text">函数关系图</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">3.2.3.</span> <span class="nav-text">算法流程图</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#sendmail-%E5%87%BD%E6%95%B0NS%E7%9B%92%E5%9B%BE"><span class="nav-number">3.2.3.1.</span> <span class="nav-text">sendmail()函数NS盒图</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#smtp-send-%E5%87%BD%E6%95%B0NS%E7%9B%92%E5%9B%BE"><span class="nav-number">3.2.3.2.</span> <span class="nav-text">smtp_send()函数NS盒图</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#smtp-socketopen-%E5%87%BD%E6%95%B0NS%E7%9B%92%E5%9B%BE"><span class="nav-number">3.2.3.3.</span> <span class="nav-text">smtp_socketopen()函数NS盒图</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E5%AE%9E%E7%8E%B0%E8%A6%81%E7%82%B9"><span class="nav-number">3.2.4.</span> <span class="nav-text">函数实现要点</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

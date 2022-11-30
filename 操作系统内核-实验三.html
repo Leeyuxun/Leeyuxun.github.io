@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的 理解内存页面调度的机理； 掌握几种理论调度算法实现； 通过实验比较各种调度算法的优劣； 通过实验了解HASH表数据结构的使用；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="操作系统内核-实验三">
+<meta property="og:url" content="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%89.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的 理解内存页面调度的机理； 掌握几种理论调度算法实现； 通过实验比较各种调度算法的优劣； 通过实验了解HASH表数据结构的使用；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571155503183.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571062544372.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571157657346.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571070639492.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571190143264.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571280409171.png">
+<meta property="article:published_time" content="2019-10-17T04:54:21.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:33:50.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="存储器管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571155503183.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%89.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>操作系统内核-实验三 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%89.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          操作系统内核-实验三
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-17 12:54:21" itemprop="dateCreated datePublished" datetime="2019-10-17T12:54:21+08:00">2019-10-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:33:50" itemprop="dateModified" datetime="2020-04-02T14:33:50+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">操作系统内核实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><ol>
+<li>理解内存页面调度的机理；</li>
+<li>掌握几种理论调度算法实现；</li>
+<li>通过实验比较各种调度算法的优劣；</li>
+<li>通过实验了解HASH表数据结构的使用；<span id="more"></span></li>
+</ol>
+<h1 id="准备知识"><a href="#准备知识" class="headerlink" title="准备知识"></a>准备知识</h1><ol>
+<li><p>C++、指针和结构体(类)</p>
+</li>
+<li><p>哈希表查找方式</p>
+</li>
+<li><p>操作系统内存交换的知识</p>
+</li>
+<li><p>可能用到的几个函数</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">getpid</span> <span class="params">()</span>		<span class="comment">//获得当前进程的pid</span></span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">srand</span> <span class="params">(<span class="type">int</span> a)</span>	<span class="comment">//以a为种子产生随机数</span></span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">rand</span> <span class="params">()</span>			<span class="comment">//根据前面的种子，返回一个随机数  </span></span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<h1 id="实验内容"><a href="#实验内容" class="headerlink" title="实验内容"></a>实验内容</h1><p>对比以下几种页面置换算法的命中率</p>
+<ol>
+<li>先进先出的算法FIFO(First In First Out)</li>
+<li>最近最少使用的算法LRU(Least Recently Used)</li>
+<li>最近未使用算法NUR(Never Recently Used)</li>
+<li>最佳置换算法OPT(Optimal Replacement)</li>
+</ol>
+<h1 id="页面置换算法介绍"><a href="#页面置换算法介绍" class="headerlink" title="页面置换算法介绍"></a>页面置换算法介绍</h1><h2 id="FIFO页面置换算法"><a href="#FIFO页面置换算法" class="headerlink" title="FIFO页面置换算法"></a>FIFO页面置换算法</h2><h3 id="原理简述"><a href="#原理简述" class="headerlink" title="原理简述"></a>原理简述</h3><ol>
+<li>在分配内存页面数(AP)小于进程页面数(PP)时，最先的AP个页面放入内存；</li>
+<li>需要处理新页面时，将原来在内存中的AP个页面中最先进入的调出，放入新的页面；</li>
+<li>算法特点：使用内存页面构成一个队列；</li>
+</ol>
+<h3 id="图表描述"><a href="#图表描述" class="headerlink" title="图表描述"></a>图表描述</h3><ul>
+<li><p>假设某个进程在硬盘上被划分为5个页面(PP=5)，以<code>1、2、3、4、5</code>分别表示，处理机调用它们的顺序为：<code>1、4、2、5、3、3、2、4、2、5</code>；</p>
+</li>
+<li><p>假设内存控制的页面数为3(AP=3)，那么在FIFO算法时，这3个页面的内存使用情况如下图所示 </p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571155503183.png" alt="1571155503183"></p>
+</li>
+<li><p>共换入页面8次，<code>diseffect=8</code>；</p>
+</li>
+</ul>
+<h3 id="算法实现"><a href="#算法实现" class="headerlink" title="算法实现"></a>算法实现</h3><ul>
+<li>要得到命中率，必然要有一个常量<code>total_instruction</code>记录页面总共使用次数；此外需要一个变量记录总共换入页面的次数(需要换出页面，总是因为没有命中而产生的)diseffect，可利用公式得到命中率(公式如下)。<ol>
+<li><p>初始化，设置两个数组<code>page[ap]</code>和<code>pagecontrol[pp]</code>分别表示进程页面数和内存分配的页面数，并产生一个的随机数序列<code>main[total_instruction]</code>(当然这个序列由<code>page[]</code>的下标随机构成)，表示待处理的进程页面顺序，diseffect置0；</p>
+</li>
+<li><p>看<code>main[]</code>中是否有下一个元素，有就由<code>main[]</code>中获取该页面下标，并转到步骤3；若没有，就转到步骤7；</p>
+</li>
+<li><p>如果该page页已在内存中，就转到步骤2；否则就到步骤4，同时未命中的diseffect加1；</p>
+</li>
+<li><p>观察pagecontrol是否占满，如果占满需将使用队列(步骤六中建立的)中最先进入的(就是队列第一个单元)pagecontrol单元“清干净”，同时将对应的<code>page[]</code>单元置为“不在内存中”。</p>
+</li>
+<li><p>将该<code>page[]</code>与<code>pagecontrol[]</code>建立关系(可以改变<code>pagecontrol[]</code>的标示位，也可以采用指针连接。总之，至少要使对应的pagecontrol单元包含两个信息：一是它被使用了，二是哪个<code>page[]</code>单元使用的；<code>page[]</code>单元包含两个信息：对应的pagecontrol单元号、本<code>page[]</code>单元已在内存中)； </p>
+</li>
+<li><p>将用到的pagecontrol置入使用队列(这里的队列当然是一种先进先出的数据结构)，返回步骤2；</p>
+</li>
+<li><p>显示命中率(命中率公式如下) ，算法完成。<br>$$<br>hit_-rate=1-\frac{diseffect}{total_-instruction}\times100%<br>$$</p>
+</li>
+</ol>
+</li>
+</ul>
+<h2 id="LRU页面置换算法"><a href="#LRU页面置换算法" class="headerlink" title="LRU页面置换算法"></a>LRU页面置换算法</h2><h3 id="原理简述-1"><a href="#原理简述-1" class="headerlink" title="原理简述"></a>原理简述</h3><ol>
+<li>在分配内存页面数(AP)小于进程页面数(PP)时，最先的AP个页面放入内存；</li>
+<li>当需要调入页面进入内，而当前分配的内存页面不空闲时，选择其中最长时间没有用的那个页面调出，以控制内存来放置新调入的页面；</li>
+<li>算法特点：每个页面都有属性表示有多长时间未被CPU使用的信息；</li>
+</ol>
+<h3 id="图表描述-1"><a href="#图表描述-1" class="headerlink" title="图表描述"></a>图表描述</h3><ul>
+<li><p>假设某个进程与内存可控制页面数不变：<code>AP=3</code>，<code>PP=5</code>；</p>
+</li>
+<li><p>处理机调用它们的顺序不变：<code>1、4、2、5、3、3、2、4、2、5</code></p>
+</li>
+<li><p>使用LRU算法时，这3个页面的内存使用情况如下图所示</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571062544372.png" alt="1571062544372"></p>
+</li>
+<li><p>共换入页面7次，<code>diseffect=7</code>；</p>
+</li>
+</ul>
+<h3 id="算法实现-1"><a href="#算法实现-1" class="headerlink" title="算法实现"></a>算法实现</h3><ul>
+<li>和FIFO算法相同，只有先得到diseffect才能获得最终“命中率”；<ol>
+<li>初始化，主要是进程页面<code>page[]</code>和分配的内存页面<code>pagecontrol[]</code>，同时产生随机序列<code>main[]</code>，diseffect置0；</li>
+<li>看序列<code>main[]</code>是否有下一个元素，有就由<code>main[]</code>中获取该页面下标，并转到步骤3；若没有，就转到步骤6；</li>
+<li>如果该page页已在内存中，便改变页面属性，使它保留“最近使用”的信息，转到步骤2；否则就到步骤4，同时未命中的diseffect加1；</li>
+<li>判断是否有空闲的内存页面，如果有，就返回页指针，转到步骤5；否则在内存页面中找出最长时间没有使用到的页面，将其“清干净”，并返回该页面指针；</li>
+<li>在需要处理的<code>page[]</code>与步骤4中得到的<code>pagecontrol[]</code>建立关系，同时让对应的<code>page[]</code>单元保存“最新使用”的信息，返回步骤2； </li>
+<li>如果序列处理完成，就输出命中率(命中率公式同上)，算法结束。</li>
+</ol>
+</li>
+</ul>
+<h2 id="NUR页面置换算法"><a href="#NUR页面置换算法" class="headerlink" title="NUR页面置换算法"></a>NUR页面置换算法</h2><h3 id="原理简述-2"><a href="#原理简述-2" class="headerlink" title="原理简述"></a>原理简述</h3><ul>
+<li>所谓的“最近未使用”首先要对“近”做一个界定，比如<code>CLEAR_PERIOD=50</code>，便是在CPU最近执行的50次进程页面处理工作中，找出这50次都没有处理的页面；<ol>
+<li>如果这样的页面只有一个，就将其换出，放入需处理的新页面；</li>
+<li>如果有不止一个这样的页面，在这些页面中任取出一个换出，放入需处理的页面；</li>
+<li>如果没有这样的页面，则随意换出一个页面(页码可以最大也可以最小)；</li>
+</ol>
+</li>
+<li>算法特点：有一个循环周期，每达到这个周期，所有页面存放是否被CPU处理信息的属性均被置于初始态；</li>
+</ul>
+<h3 id="图表描述-2"><a href="#图表描述-2" class="headerlink" title="图表描述"></a>图表描述</h3><ul>
+<li><p>假设某个进程与内存可控制页面数不变：<code>AP=3，PP=5</code>；</p>
+</li>
+<li><p>处理机调用它们的顺序不变：<code>1、4、2、5、3、3、2、4、2、5</code>；</p>
+</li>
+<li><p>使用NUR算法时，这3个页面的内存使用情况如下图所示；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571157657346.png" alt="1571157657346"></p>
+</li>
+</ul>
+<h3 id="算法实现-2"><a href="#算法实现-2" class="headerlink" title="算法实现"></a>算法实现</h3><p>需要对数组设置“访问位”标识；</p>
+<ol>
+<li>初始化，设置两个数组<code>page[ap]</code>和<code>pagecontrol[pp]</code>分别表示进程页面数和内存分配的页面数，并产生一个的随机数序列<code>main[total_instruction]</code>（当然这个序列由<code>page[]</code>的下标随机构成），表示待处理的进程页面顺序，diseffect置0，设定循环周期CLEAR_PERIOD；</li>
+<li>看<code>main[]</code>中是否有下一个元素，有就从<code>main[]</code>中获得一个CPU将处理页面的序号；没有，就转到步骤8；</li>
+<li>如果待处理的页面已在内存中，就转到步骤2；否则diseffect加1，并转到步骤4；</li>
+<li>看是否有空闲的内存页面，如果有，返回空闲页面指针，转到步骤5；否则，在所有没有被访问且位于内存中的页面中按任意规则（或者取最近的一个页面；或者取下标最小的页面，等等）取出一个，返回清空后的内存页面指针；</li>
+<li>在待处理进程页面与内存页面之间建立联系，并标注该页面被访问；</li>
+<li>如果CPU已处理了CLEAR_PERIOD个页面，就将所有页面均设为“未访问”；</li>
+<li>返回步骤2；</li>
+<li>如果CPU所有处理工作完成，就返回命中率的结果，算法结束。</li>
+</ol>
+<h2 id="OPT页面置换算法"><a href="#OPT页面置换算法" class="headerlink" title="OPT页面置换算法"></a>OPT页面置换算法</h2><h3 id="原理简述-3"><a href="#原理简述-3" class="headerlink" title="原理简述"></a>原理简述</h3><p>在分配的内存页面占满的情况下，最佳置换算法是一种理想状况下的算法，他要求先遍历所有的CPU待处理的进程页面序列（实际上，由于待处理的页面有取决于先前处理的页面，所有很多情况下不可能得到完整的待处理页面序列。在这个层面上，才说该算法足理想的。)，在这些页面中，如果有已经在内存当中，而不再处理的，就将其换出：如果页面在内存中，并待处理，就取从当前位置算起，最后处理到的页面，将其换出。比如待处理的页面序列号为：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571070639492.png" alt="1571070639492"></p>
+<p>已经处理了5个页面，那么页面5是第一个待处理的页面：2是第二个；1是第四个；4是第五个；3是第六个。那么页面3就是针对当前位置而言，最后处理到的页面。</p>
+<h3 id="图表描述-3"><a href="#图表描述-3" class="headerlink" title="图表描述"></a>图表描述</h3><ul>
+<li><p>假设某个进程与内存可控制页面数不变：<code>AP=3，PP=5</code>；</p>
+</li>
+<li><p>处理机调用它们的顺序不变：<code>1、4、2、5、3、3、2、4、2、5</code></p>
+</li>
+<li><p>使用OPT算法时，这3个页面的内存使用情况如下图所示；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571190143264.png" alt="1571190143264"></p>
+</li>
+<li><p>一共发生了6次页面交换，<code>diseffect=6</code>；</p>
+</li>
+</ul>
+<h3 id="算法实现-3"><a href="#算法实现-3" class="headerlink" title="算法实现"></a>算法实现</h3><ol>
+<li>初始化，设置两个数组<code>page[ap]</code>和<code>pagecontrol[pp]</code>分别表示进程页面数和内存分配的页面数，并产生一个的随机数序列<code>main[total_instruction]</code>（当然这个序列由page[]的下标随机构成），表示待处理的进程页面顺序，diseffect置0，然后扫描整个页面访问序列,对<code>vDistance[TOTAL_VP]</code>数组进行赋值，表示该页面将在第几步被处理；</li>
+<li>看<code>main[]</code>中是否有下一个元素，有就从<code>main[]</code>中获取一个CPU待处理的页面号；没有，就转到步骤6；</li>
+<li>如果该page页已在内存中，就转到步骤2；否则就到步骤4，同时未命中的diseffect加1；</li>
+<li>看是否有空闲的内存页面，如果有，就直接返回该页面指针；如果没有，遍历所有未处理的进程页面序列，如果有位于内存中的页面，而以后CPU不再处理，首先将其换出，返回页面指针；如果没有这样的页面，找出CPU最晚处理到的页面，将其换出，返回该内存页面指针；</li>
+<li>在内存页面和待处理的进程页面之间建立联系，返回步骤2；</li>
+<li>输出命中率，算法结束。（命中率在扫描时完成计算）</li>
+</ol>
+<h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><p>数据结构的详细分析在注释中已经标注；</p>
+<h2 id="CPage类"><a href="#CPage类" class="headerlink" title="CPage类"></a>CPage类</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CPage</span>&#123;	<span class="comment">//进程使用的页面</span></span><br><span class="line">	<span class="keyword">public</span>:</span><br><span class="line">		<span class="type">int</span> m_nPageNumber;		<span class="comment">//页号 </span></span><br><span class="line">		<span class="type">int</span>	m_nPageFaceNumber;	<span class="comment">//对应的物理内存页号，初始为INVALID </span></span><br><span class="line">		<span class="type">int</span>	m_nCounter;			<span class="comment">//计数 </span></span><br><span class="line">		<span class="type">int</span>	m_nTime;			<span class="comment">//时间信息 </span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="CPageControl类"><a href="#CPageControl类" class="headerlink" title="CPageControl类"></a>CPageControl类</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CPageControl</span>&#123;		<span class="comment">//分配给进程的物理内存页面</span></span><br><span class="line">	<span class="keyword">public</span>:</span><br><span class="line">		<span class="type">int</span> m_nPageNumber;				<span class="comment">//表示物理内存页号（帧号） </span></span><br><span class="line">		<span class="type">int</span> m_nPageFaceNumber;			<span class="comment">//表示物理内存的页号</span></span><br><span class="line">		<span class="keyword">class</span> <span class="title class_">CPageControl</span> * m_pNext;	<span class="comment">//指示下一个页面</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="CMemory类"><a href="#CMemory类" class="headerlink" title="CMemory类"></a>CMemory类</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CMemory</span>&#123;</span><br><span class="line">	<span class="keyword">public</span>:</span><br><span class="line">		<span class="built_in">CMemory</span>();	<span class="comment">//构造函数，用来初始化变量</span></span><br><span class="line">    	<span class="comment">//参数nTotal_pf表示分配的内存页面个数</span></span><br><span class="line">		<span class="function"><span class="type">void</span> <span class="title">initialize</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span>;	<span class="comment">//初始化函数</span></span><br><span class="line">		<span class="function"><span class="type">void</span> <span class="title">FIFO</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span>;</span><br><span class="line">		<span class="function"><span class="type">void</span> <span class="title">LRU</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span>;</span><br><span class="line">		<span class="function"><span class="type">void</span> <span class="title">NUR</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span>;</span><br><span class="line">		<span class="function"><span class="type">void</span> <span class="title">OPT</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span>:</span><br><span class="line">		vector&lt;CPage&gt; _vDiscPages;<span class="comment">//进程使用的页向量,包含该进程空间内的所有页 </span></span><br><span class="line">		vector&lt;CPageControl&gt; _vMemoryPages;	<span class="comment">//为进程分配的物理内存页向量</span></span><br><span class="line">		CPageControl *_pFreepf_head;	<span class="comment">//空闲物理页头指针，用于LRU算法 </span></span><br><span class="line">		CPageControl *_pBusypf_head;	<span class="comment">//已使用页面头指针，用于FIFO算法</span></span><br><span class="line">    	CPageControl *_pBusypf_tail;	<span class="comment">//已使用页面尾指针，用于FIFO算法</span></span><br><span class="line">		vector&lt;<span class="type">int</span>&gt; _vMain;		<span class="comment">//_vMain表示某进程随机产生的指令序列</span></span><br><span class="line">    	vector&lt;<span class="type">int</span>&gt; _vPage;		<span class="comment">//_vPage表示待处理指令对应的页号 </span></span><br><span class="line">    	vector&lt;<span class="type">int</span>&gt; _vOffset;	<span class="comment">//_vOffset表示剩余待处理的指令数</span></span><br><span class="line">		<span class="type">int</span> _nDiseffect;	<span class="comment">//换入页面次数，即未命中次数 </span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="CMemory类的构造函数"><a href="#CMemory类的构造函数" class="headerlink" title="CMemory类的构造函数"></a>CMemory类的构造函数</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">CMemory::<span class="built_in">CMemory</span>():		<span class="comment">//构造函数</span></span><br><span class="line">    _vDiscPages(TOTAL_VP),</span><br><span class="line">	_vMemoryPages(TOTAL_VP),</span><br><span class="line">	_vMain(TOTAL_INSTRUCTION),</span><br><span class="line">	_vPage(TOTAL_INSTRUCTION),</span><br><span class="line">	_vOffset(TOTAL_INSTRUCTION) &#123;</span><br><span class="line">		<span class="type">int</span> S,i,nRand;</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">			通过随机数产生一个指令序列(实际上是指令的逻辑地址序列)，共320条指令。</span></span><br><span class="line"><span class="comment">			指令的地址按下述原则生成：</span></span><br><span class="line"><span class="comment">				A：50%的指令是顺序执行的</span></span><br><span class="line"><span class="comment">				B：25%的指令要实现向前跳转，均匀分布在前地址部分</span></span><br><span class="line"><span class="comment">				C：25%的指令要实现向后跳转，均匀分布在后地址部分</span></span><br><span class="line"><span class="comment">			函数void srand(unsigned seed)；参数seed是rand()的种子，</span></span><br><span class="line"><span class="comment">			用来初始化rand()的起始值。</span></span><br><span class="line"><span class="comment">			由于每次运行时进程号不同，故可用来作为初始化随机数队列的“种子”</span></span><br><span class="line"><span class="comment">		*/</span> </span><br><span class="line">		<span class="built_in">srand</span>(<span class="built_in">getpid</span>()*<span class="number">10</span>);</span><br><span class="line">        <span class="comment">/* 	函数int rand(void)；从srand (seed)中指定的seed开始，</span></span><br><span class="line"><span class="comment">        	返回一个[seed,RAND_MAX（32767）)间的随机整数。 */</span></span><br><span class="line">		nRand=<span class="built_in">rand</span>()%<span class="number">32767</span>; </span><br><span class="line">		S=(<span class="type">float</span>)<span class="number">319</span>*nRand/<span class="number">32767</span>+<span class="number">1</span>;		<span class="comment">//计算第一条指令的地址S </span></span><br><span class="line">		<span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;TOTAL_INSTRUCTION;i+=<span class="number">4</span>)</span><br><span class="line">		&#123;</span><br><span class="line">			_vMain[i]=S;	<span class="comment">//地址S存入_Main[i]</span></span><br><span class="line">			_vMain[i+<span class="number">1</span>]=_vMain[i]+<span class="number">1</span>;	<span class="comment">//顺序执行S的下一条指令 </span></span><br><span class="line">            <span class="comment">/* 计算S的一条任意的前地址指令的地址S&#x27;属于[0，S+1],</span></span><br><span class="line"><span class="comment">            并存入_Main[i+2],表示向前跳转 */</span></span><br><span class="line">			nRand=<span class="built_in">rand</span>()%<span class="number">32767</span>;</span><br><span class="line">			_vMain[i+<span class="number">2</span>]=(<span class="type">float</span>)_vMain[i]*nRand/<span class="number">32767</span>;</span><br><span class="line">			_vMain[i+<span class="number">3</span>]=_vMain[i+<span class="number">2</span>]+<span class="number">1</span>;	<span class="comment">//顺序执行S&#x27;下一条指令 </span></span><br><span class="line">            <span class="comment">/* 计算S&#x27;的一条任意的后指令地址S属于[S&#x27;+1,319],表示向后跳转 */</span></span><br><span class="line">			nRand=<span class="built_in">rand</span>()%<span class="number">32767</span>; </span><br><span class="line">			S=(<span class="type">float</span>)nRand*(<span class="number">318</span>-_vMain[i+<span class="number">2</span>])/<span class="number">32767</span>+_vMain[i+<span class="number">2</span>]+<span class="number">2</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">			将指令序列变成页地址流</span></span><br><span class="line"><span class="comment">			页面大小为1K；</span></span><br><span class="line"><span class="comment">			用户内存容量4页到32页；</span></span><br><span class="line"><span class="comment">			用户虚存容量为32K.</span></span><br><span class="line"><span class="comment">			在用户虚存中，按每K存放10条指令排列虚存地址，即320条指令在虚存中的存放方式为：</span></span><br><span class="line"><span class="comment">			第0 条-第9 条指令为第0页（对应逻辑地址为[0，9]）</span></span><br><span class="line"><span class="comment">			第10条-第19条指令为第1页（对应逻辑地址为[10，19]）</span></span><br><span class="line"><span class="comment">				………………………………</span></span><br><span class="line"><span class="comment">			第310条-第319条指令为第31页（对应逻辑地址为[310，319]）</span></span><br><span class="line"><span class="comment">			按以上方式，用户指令可组成32页。</span></span><br><span class="line"><span class="comment">		*/</span> </span><br><span class="line">		<span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;TOTAL_INSTRUCTION;i++)</span><br><span class="line">		&#123;</span><br><span class="line">			_vPage[i]=_vMain[i]/<span class="number">10</span>;</span><br><span class="line">			_vOffset[i]=_vMain[i]%<span class="number">10</span>;</span><br><span class="line">			_vPage[i]%=<span class="number">32</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="类成员函数initialize-const-int-nTotal-pf"><a href="#类成员函数initialize-const-int-nTotal-pf" class="headerlink" title="类成员函数initialize(const int nTotal_pf)"></a>类成员函数initialize(const int nTotal_pf)</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">CMemory::initialize</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span></span><br><span class="line"><span class="function"></span>&#123;	<span class="comment">//初始化函数，参数表示分配的内存页面个数</span></span><br><span class="line">	<span class="type">int</span> ix;				<span class="comment">//辅助变量，用于计数</span></span><br><span class="line">	_nDiseffect=<span class="number">0</span>;		<span class="comment">//换入页面次数置零</span></span><br><span class="line">	<span class="keyword">for</span>(ix=<span class="number">0</span>;ix&lt;_vDiscPages.<span class="built_in">size</span>();ix++)		<span class="comment">//初始化进程使用的页向量</span></span><br><span class="line">	&#123;</span><br><span class="line">		_vDiscPages[ix].m_nPageNumber=ix;</span><br><span class="line">		_vDiscPages[ix].m_nPageFaceNumber=INVALID;</span><br><span class="line">		_vDiscPages[ix].m_nCounter=<span class="number">0</span>;</span><br><span class="line">		_vDiscPages[ix].m_nTime=<span class="number">-1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">for</span>(ix=<span class="number">1</span>;ix&lt;nTotal_pf;ix++)			<span class="comment">//初始化为进程分配的物理内存页向量</span></span><br><span class="line">	&#123;</span><br><span class="line">		_vMemoryPages[ix<span class="number">-1</span>].m_pNext=&amp;_vMemoryPages[ix];</span><br><span class="line">		_vMemoryPages[ix<span class="number">-1</span>].m_nPageFaceNumber=ix<span class="number">-1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	_vMemoryPages[nTotal_pf<span class="number">-1</span>].m_pNext=<span class="literal">NULL</span>;</span><br><span class="line">	_vMemoryPages[nTotal_pf<span class="number">-1</span>].m_nPageFaceNumber=nTotal_pf<span class="number">-1</span>;</span><br><span class="line">	_pFreepf_head=&amp;_vMemoryPages[<span class="number">0</span>];	<span class="comment">//初始化空闲物理页头指针</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="类成员函数FIFO-const-int-nTotal-pf"><a href="#类成员函数FIFO-const-int-nTotal-pf" class="headerlink" title="类成员函数FIFO(const int nTotal_pf)"></a>类成员函数FIFO(const int nTotal_pf)</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">CMemory::FIFO</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> i;	<span class="comment">//辅助变量，用于计数</span></span><br><span class="line">	CPageControl *p;	<span class="comment">//辅助变量，用于中间过渡</span></span><br><span class="line">	<span class="built_in">initialize</span>(nTotal_pf);	<span class="comment">//初始化</span></span><br><span class="line">	_pBusypf_head=_pBusypf_tail=<span class="literal">NULL</span>;	<span class="comment">//将已使用页面的头指针和尾指针置空</span></span><br><span class="line">	<span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;TOTAL_INSTRUCTION;i++)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">if</span>(_vDiscPages[_vPage[i]].m_nPageFaceNumber==INVALID)</span><br><span class="line">		&#123;	<span class="comment">//如果页面页号不在物理内存中</span></span><br><span class="line">			_nDiseffect+=<span class="number">1</span>;</span><br><span class="line">			<span class="keyword">if</span>(_pFreepf_head==<span class="literal">NULL</span>)  <span class="comment">//如果分配给进程的物理内存页面无空闲 </span></span><br><span class="line">			&#123;</span><br><span class="line">				<span class="comment">/* 将队列中最先进入的(就是队列第一个单元)pagecontrol单元“清干净”*/</span> </span><br><span class="line">				p=_pBusypf_head-&gt;m_pNext;</span><br><span class="line">                <span class="comment">//将p指向已使用头指针指向的页面的下一个页面，即第二个已使用的页面 </span></span><br><span class="line">				_vDiscPages[_pBusypf_head-&gt;m_nPageNumber].</span><br><span class="line">                    m_nPageFaceNumber=INVALID;</span><br><span class="line">                <span class="comment">//将已使用页面头指针指向的内存单元清理干净 </span></span><br><span class="line">				_pFreepf_head=_pBusypf_head;<span class="comment">//将已使用页面头指针置为空闲页面头指针 </span></span><br><span class="line">				_pFreepf_head-&gt;m_pNext=<span class="literal">NULL</span>;<span class="comment">//将空闲页面头指针的下一个指针置空 </span></span><br><span class="line">				_pBusypf_head=p;<span class="comment">//将已使用页面头指针指向下一个页面 </span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">/* 将待处理指令对应的页面调入内存 */</span> </span><br><span class="line">			p=_pFreepf_head-&gt;m_pNext;	<span class="comment">//将p指向空闲头指针的指向的页面的下一个页面 </span></span><br><span class="line">			_pFreepf_head-&gt;m_pNext=<span class="literal">NULL</span>;	<span class="comment">//将空闲头指针指向页面的下一个页面置空 </span></span><br><span class="line">			_pFreepf_head-&gt;m_nPageNumber=_vPage[i];	</span><br><span class="line">            <span class="comment">//将待处理指令对应的页号放入空闲头指针指向的页面的页号中 </span></span><br><span class="line">			_vDiscPages[_vPage[i]].m_nPageFaceNumber=_pFreepf_head-&gt;m_nPageFaceNumber;</span><br><span class="line">            <span class="comment">//将进程页向量的页号置为待处理指令对应的页号 </span></span><br><span class="line">			<span class="keyword">if</span>(_pBusypf_tail==<span class="literal">NULL</span>)	</span><br><span class="line">			&#123;	<span class="comment">//如果已使用页面尾指针为空，即在此之前内存没有被占用 </span></span><br><span class="line">				_pBusypf_head=_pBusypf_tail=_pFreepf_head; 	</span><br><span class="line">                <span class="comment">//将已使用页面的头指针、尾指针都指向的页面即待处理指令 </span></span><br><span class="line">			&#125; </span><br><span class="line">			<span class="keyword">else</span>&#123;		<span class="comment">//如果已使用页面尾指针不为空，即在此之前已经有页面放入内存中 </span></span><br><span class="line">				_pBusypf_tail-&gt;m_pNext=_pFreepf_head;</span><br><span class="line">                <span class="comment">//已使用页面的尾指针的下一个指针指向空闲页面头指针指向的页面 </span></span><br><span class="line">				_pBusypf_tail=_pFreepf_head;</span><br><span class="line">                <span class="comment">//已使用页面的尾指针指向空闲页面头指针指向的页面 </span></span><br><span class="line">			&#125;</span><br><span class="line">			_pFreepf_head=p;<span class="comment">//将空闲页面的头指针指向下一个页面 </span></span><br><span class="line">	    &#125;</span><br><span class="line">	&#125;</span><br><span class="line"> 	cout&lt;&lt;<span class="string">&quot;FIFO: &quot;</span>&lt;&lt;fixed&lt;&lt;<span class="built_in">setprecision</span>(<span class="number">6</span>)&lt;&lt;<span class="number">1</span>-(<span class="type">float</span>)_nDiseffect/<span class="number">320</span>&lt;&lt;<span class="string">&quot;\t&quot;</span>;	</span><br><span class="line">    <span class="comment">//打印出命中率 </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="类成员函数LRU-const-int-nTotal-pf"><a href="#类成员函数LRU-const-int-nTotal-pf" class="headerlink" title="类成员函数LRU(const int nTotal_pf)"></a>类成员函数LRU(const int nTotal_pf)</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">CMemory::LRU</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> i,j,nMin,minj,<span class="built_in">nPresentTime</span>(<span class="number">0</span>);	<span class="comment">//辅助变量，用于计数和作为中间变量过渡 </span></span><br><span class="line">	<span class="built_in">initialize</span>(nTotal_pf);	<span class="comment">//初始化 </span></span><br><span class="line">	<span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;TOTAL_INSTRUCTION;i++)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">if</span>(_vDiscPages[_vPage[i]].m_nPageFaceNumber==INVALID)</span><br><span class="line">		&#123;	<span class="comment">//如果页面页号不在物理内存中</span></span><br><span class="line">			_nDiseffect++;</span><br><span class="line">			<span class="comment">/* 寻找最近最少使用的页面并将其调出内存 */</span> </span><br><span class="line">			<span class="keyword">if</span>(_pFreepf_head==<span class="literal">NULL</span>)	<span class="comment">//如果分配给进程的物理内存页面无空闲</span></span><br><span class="line">			&#123;</span><br><span class="line">    			nMin=<span class="number">32767</span>;</span><br><span class="line">    			<span class="comment">/*</span></span><br><span class="line"><span class="comment">					循环结束后，得到最近最少使用的页面的页号,</span></span><br><span class="line"><span class="comment">					nMin表示最近最少使用页面的访问次数;</span></span><br><span class="line"><span class="comment">					minj表示需要换出的页号</span></span><br><span class="line"><span class="comment">				*/</span> </span><br><span class="line">				<span class="keyword">for</span>(j=<span class="number">0</span>;j&lt;TOTAL_VP;j++)</span><br><span class="line">				&#123;</span><br><span class="line">					<span class="keyword">if</span>((nMin&gt;_vDiscPages[j].m_nTime)&amp;&amp;</span><br><span class="line">                       (_vDiscPages[j].m_nPageFaceNumber!=INVALID))	 </span><br><span class="line">					&#123;	<span class="comment">//进程页面访问次数小于nMin且页面页号在物理内存中 </span></span><br><span class="line">						nMin=_vDiscPages[j].m_nTime;</span><br><span class="line">		    			minj=j;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">				_pFreepf_head=&amp;_vMemoryPages[_vDiscPages[minj].</span><br><span class="line">                                             m_nPageFaceNumber];</span><br><span class="line">                <span class="comment">//将空闲页面的头指针指向需要换出的页号</span></span><br><span class="line">				_vDiscPages[minj].m_nPageFaceNumber=INVALID;</span><br><span class="line">                <span class="comment">//将需要换出的页面移出物理内存 </span></span><br><span class="line">				_vDiscPages[minj].m_nTime=<span class="number">-1</span>;<span class="comment">//将需要换出的页面的访问次数设置为-1 </span></span><br><span class="line">				_pFreepf_head-&gt;m_pNext=<span class="literal">NULL</span>;<span class="comment">//将空闲头指针的下一个指针置空 </span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">/* 将待执行指令的页面调入内存 */</span> </span><br><span class="line">			_vDiscPages[_vPage[i]].m_nPageFaceNumber=</span><br><span class="line">                _pFreepf_head-&gt;m_nPageFaceNumber;	</span><br><span class="line">            <span class="comment">//将需要换入的页面的页号置为之前空闲头指针指向的页面的页号，</span></span><br><span class="line">            <span class="comment">//即将要换入的页面放入内存中 </span></span><br><span class="line">			_vDiscPages[_vPage[i]].m_nTime=nPresentTime;	</span><br><span class="line">            <span class="comment">//将要放入的页面的访问次数设置为nPresentTime </span></span><br><span class="line">			_pFreepf_head=_pFreepf_head-&gt;m_pNext;</span><br><span class="line">            <span class="comment">//将空闲头指针指向下一个指针指向的页面 </span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span>&#123;	<span class="comment">//如果页面页号已经在物理内存中 </span></span><br><span class="line">			_vDiscPages[_vPage[i]].m_nTime=nPresentTime;</span><br><span class="line">            <span class="comment">//将页面的访问次数设置为nPresentTime</span></span><br><span class="line">		&#125;</span><br><span class="line">		nPresentTime++;</span><br><span class="line">	&#125;</span><br><span class="line">	cout&lt;&lt;<span class="string">&quot;LRU: &quot;</span>&lt;&lt;fixed&lt;&lt;<span class="built_in">setprecision</span>(<span class="number">6</span>)&lt;&lt;<span class="number">1</span>-(<span class="type">float</span>)_nDiseffect/<span class="number">320</span>&lt;&lt;<span class="string">&quot;\t&quot;</span>;	</span><br><span class="line">    <span class="comment">//打印出命中率 </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="类成员函数NUR-const-int-nTotal-pf"><a href="#类成员函数NUR-const-int-nTotal-pf" class="headerlink" title="类成员函数NUR(const int nTotal_pf)"></a>类成员函数NUR(const int nTotal_pf)</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">CMemory::NUR</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span>&#123;</span><br><span class="line">	<span class="type">int</span> i,j,nDiscPage,nOld_DiscPage;</span><br><span class="line">	<span class="type">bool</span> bCont_flag;<span class="comment">//设置循环条件 </span></span><br><span class="line">	<span class="built_in">initialize</span>(nTotal_pf);<span class="comment">//初始化 </span></span><br><span class="line">	nDiscPage=<span class="number">0</span>;<span class="comment">//将nDiscPage置为0 </span></span><br><span class="line">	<span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;TOTAL_INSTRUCTION;i++)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">if</span>(_vDiscPages[_vPage[i]].m_nPageFaceNumber==INVALID)</span><br><span class="line">		&#123;	<span class="comment">//如果页面页号不在物理内存中</span></span><br><span class="line">			_nDiseffect++;</span><br><span class="line">			<span class="keyword">if</span>(_pFreepf_head==<span class="literal">NULL</span>)	 </span><br><span class="line">			&#123;	<span class="comment">//如果分配给进程的物理内存页面无空闲，则将最近未使用的页面调出内存 </span></span><br><span class="line">    			bCont_flag=<span class="literal">true</span>;	</span><br><span class="line">    			nOld_DiscPage=nDiscPage;</span><br><span class="line">				<span class="keyword">while</span>(bCont_flag)</span><br><span class="line">				&#123;</span><br><span class="line">                    <span class="keyword">if</span>(_vDiscPages[nDiscPage].m_nCounter==<span class="number">0</span>&amp;&amp;</span><br><span class="line">                       _vDiscPages[nDiscPage].m_nPageFaceNumber!=INVALID) </span><br><span class="line">					&#123;	<span class="comment">//如果页面计数为零并且该页面的页号不在物理内存中 </span></span><br><span class="line">						bCont_flag=<span class="literal">false</span>;</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="keyword">else</span>&#123;	<span class="comment">//如果页面计数不为零并且该页面的页号在物理内存中  </span></span><br><span class="line">						nDiscPage++;</span><br><span class="line">						<span class="keyword">if</span>(nDiscPage==TOTAL_VP) </span><br><span class="line">						&#123;	<span class="comment">//一个循环后，重新置零 </span></span><br><span class="line">							nDiscPage=<span class="number">0</span>;</span><br><span class="line">						&#125; </span><br><span class="line">						<span class="keyword">if</span>(nDiscPage==nOld_DiscPage)</span><br><span class="line">						&#123;</span><br><span class="line">							<span class="keyword">for</span>(j=<span class="number">0</span>;j&lt;TOTAL_VP;j++) </span><br><span class="line">							&#123;	<span class="comment">//将所有页面的计数清零</span></span><br><span class="line">								_vDiscPages[j].m_nCounter=<span class="number">0</span>;</span><br><span class="line">							&#125;</span><br><span class="line">						&#125;</span><br><span class="line">	   				&#125;</span><br><span class="line">				&#125;</span><br><span class="line">				_pFreepf_head=&amp;_vMemoryPages[_vDiscPages[nDiscPage].</span><br><span class="line">                                             m_nPageFaceNumber];	</span><br><span class="line">                <span class="comment">//将空闲页面的头指针指向该物理页面的页号 </span></span><br><span class="line">				_vDiscPages[nDiscPage].m_nPageFaceNumber=INVALID;	</span><br><span class="line">                <span class="comment">//将该物理页面的页号置为不在内存中 </span></span><br><span class="line">    			_pFreepf_head-&gt;m_pNext=<span class="literal">NULL</span>;	</span><br><span class="line">                <span class="comment">//将空闲头指针的下一个地址设置为空 </span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="comment">/* 将待执行的指令的页面调入内存中 */</span> </span><br><span class="line">			_vDiscPages[_vPage[i]].m_nPageFaceNumber=</span><br><span class="line">                _pFreepf_head-&gt;m_nPageFaceNumber;	</span><br><span class="line">            <span class="comment">//将待执行页面的页号设置为空闲头指针指向的页号 </span></span><br><span class="line">			_pFreepf_head=_pFreepf_head-&gt;m_pNext;	</span><br><span class="line">            <span class="comment">//将空闲头指针指向下一个页面 </span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span>&#123;	<span class="comment">//如果页面页号已经在物理内存中 </span></span><br><span class="line">			_vDiscPages[_vPage[i]].m_nCounter=<span class="number">1</span>;<span class="comment">//将该页面的计数＋1 </span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">/* 定期将所有页面存放是否被CPU处理信息的属性均置于初始态 */</span> </span><br><span class="line">		<span class="keyword">if</span>(i%CLEAR_PERIOD==<span class="number">0</span>)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">for</span>(j=<span class="number">0</span>;j&lt;TOTAL_VP;j++)	 </span><br><span class="line">			&#123;	<span class="comment">//将所有页面的计数清零</span></span><br><span class="line">				_vDiscPages[j].m_nCounter=<span class="number">0</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">    &#125;</span><br><span class="line">	cout.<span class="built_in">setf</span>(ios::fixed);</span><br><span class="line">	cout&lt;&lt;<span class="string">&quot;NUR:&quot;</span>&lt;&lt;fixed&lt;&lt;<span class="built_in">setprecision</span>(<span class="number">6</span>)&lt;&lt;<span class="number">1</span>-(<span class="type">float</span>)_nDiseffect/<span class="number">320</span>&lt;&lt;<span class="string">&quot;\t&quot;</span>;	</span><br><span class="line">    <span class="comment">//打印命中率 </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="类成员函数OPT-const-int-nTotal-pf"><a href="#类成员函数OPT-const-int-nTotal-pf" class="headerlink" title="类成员函数OPT(const int nTotal_pf)"></a>类成员函数OPT(const int nTotal_pf)</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">CMemory::OPT</span><span class="params">(<span class="type">const</span> <span class="type">int</span> nTotal_pf)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> i,j,max,maxpage,nDistance,vDistance[TOTAL_VP];</span><br><span class="line">    <span class="comment">//vDistance[TOTAL_VP]表示页面在第几步被处理,其它的是辅助变量，用于计数和中间过渡 </span></span><br><span class="line">	<span class="built_in">initialize</span>(nTotal_pf);	<span class="comment">//初始化 </span></span><br><span class="line">	<span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;TOTAL_INSTRUCTION;i++)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">if</span>(_vDiscPages[_vPage[i]].m_nPageFaceNumber==INVALID) </span><br><span class="line">		&#123;	<span class="comment">//如果页面页号不在物理内存中 </span></span><br><span class="line">			_nDiseffect++;</span><br><span class="line">			<span class="comment">/* 将不在处理的页面或者最后待处理的页面调出内存 */</span> </span><br><span class="line">			<span class="keyword">if</span>(_pFreepf_head==<span class="literal">NULL</span>)</span><br><span class="line">			&#123;	<span class="comment">//如果分配给进程的物理内存页面无空闲 </span></span><br><span class="line">				<span class="keyword">for</span>(j=<span class="number">0</span>;j&lt;TOTAL_VP;j++)</span><br><span class="line">				&#123;</span><br><span class="line">					<span class="keyword">if</span>(_vDiscPages[j].m_nPageFaceNumber!=INVALID)</span><br><span class="line">					&#123;	<span class="comment">//如果虚页j已经在物理内存中，将其设置为最后处理 </span></span><br><span class="line">						vDistance[j]=<span class="number">32767</span>;</span><br><span class="line">					&#125;</span><br><span class="line">					<span class="keyword">else</span>&#123;	<span class="comment">//如果虚页j不在物理内存中，将vDistance[j]置为0</span></span><br><span class="line">						vDistance[j]=<span class="number">0</span>;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125; </span><br><span class="line">				nDistance=<span class="number">1</span>; </span><br><span class="line">				<span class="keyword">for</span>(j=i+<span class="number">1</span>;j&lt;TOTAL_INSTRUCTION;j++)</span><br><span class="line">				&#123;	<span class="comment">//遍历所有页面，得到所有页面在第几步被处理 </span></span><br><span class="line">					<span class="keyword">if</span>((_vDiscPages[_vPage[j]].m_nPageFaceNumber!=INVALID)&amp;&amp;</span><br><span class="line">                       (vDistance[_vPage[j]]==<span class="number">32767</span>))</span><br><span class="line">					&#123;	<span class="comment">//如果虚页j在物理内存中并且在第32767步被处理，</span></span><br><span class="line">                        <span class="comment">//则将处理步数重置为nDistance </span></span><br><span class="line">						vDistance[_vPage[j]]=nDistance;</span><br><span class="line">					&#125;</span><br><span class="line">					nDistance++;</span><br><span class="line">				&#125;</span><br><span class="line">    			max	=<span class="number">-1</span>;</span><br><span class="line">    			<span class="keyword">for</span>(j=<span class="number">0</span>;j&lt;TOTAL_VP;j++)</span><br><span class="line">				&#123;	<span class="comment">//遍历所有页面找出找出最后处理的页面 </span></span><br><span class="line">					<span class="keyword">if</span>(max&lt;vDistance[j])</span><br><span class="line">	  				&#123;</span><br><span class="line">					    max=vDistance[j];</span><br><span class="line">					    maxpage=j;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="comment">/* 将最后处理的页面调出 */</span> </span><br><span class="line">				_pFreepf_head=&amp;_vMemoryPages[_vDiscPages[maxpage].</span><br><span class="line">                                             m_nPageFaceNumber];	</span><br><span class="line">                <span class="comment">//将空闲头指针指向最后处理的页面 </span></span><br><span class="line">				_pFreepf_head-&gt;m_pNext=<span class="literal">NULL</span>;<span class="comment">//将空闲头指针指向的下一个位置置空 </span></span><br><span class="line">				_vDiscPages[maxpage].m_nPageFaceNumber=INVALID;	</span><br><span class="line">                <span class="comment">//将最后处理的页面调出内存 </span></span><br><span class="line">			&#125;</span><br><span class="line">			_vDiscPages[_vPage[i]].m_nPageFaceNumber=</span><br><span class="line">                _pFreepf_head-&gt;m_nPageFaceNumber;	</span><br><span class="line">            <span class="comment">//将待执行指令的页号置为空闲头指针指向的页号 </span></span><br><span class="line">			_pFreepf_head=_pFreepf_head-&gt;m_pNext;<span class="comment">//将空闲头指针指向下一个页面 </span></span><br><span class="line">		&#125;</span><br><span class="line">   &#125;</span><br><span class="line">	cout.<span class="built_in">setf</span>(ios::fixed);</span><br><span class="line">	cout&lt;&lt;<span class="string">&quot;OPT:&quot;</span>&lt;&lt;fixed&lt;&lt;<span class="built_in">setprecision</span>(<span class="number">6</span>)&lt;&lt;<span class="number">1</span>-(<span class="type">float</span>)_nDiseffect/<span class="number">320</span>&lt;&lt;<span class="string">&quot;\t&quot;</span>;</span><br><span class="line">    <span class="comment">//打印命中率 </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="main-函数"><a href="#main-函数" class="headerlink" title="main()函数"></a>main()函数</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span>	<span class="comment">//vector是一种顺序容器，事实上和数组差不多，但它比数组更优越。一般来说数组不能动态拓展，因此在程序运行的时候不是浪费内存，就是造成越界。而vector正好弥补了这个缺陷，它的特征是相当于可分配拓展的数组，它的随机访问快，在中间插入和删除慢，但在末端插入和删除快，而且如果用.at()访问的话，也可以做越界检查。</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cstdlib&gt;</span>	<span class="comment">//同&lt;stdlib.h&gt;，c开头是C++的习惯，.h结尾是C的习惯 </span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cstdio&gt;</span>	<span class="comment">//同&lt;stdio.h&gt;，c开头是C++的习惯，.h结尾是C的习惯  </span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span>	<span class="comment">//封装了类UNIX系统下的很多固定名称的system_call系统调用，提供对POSIX操作系统API的访问功能。所以，这个函数是依赖于编译器，依赖于操作系统的。 </span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iomanip&gt;</span>	<span class="comment">//声明流操作符，规范输出格式</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> INVALID -1</span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">int</span> <span class="title">TOTAL_INSTRUCTION</span><span class="params">(<span class="number">320</span>)</span></span>;	<span class="comment">//声明全局静态变量指令总数(TOTAL_INSTRUCTION)为320 </span></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">int</span> <span class="title">TOTAL_VP</span><span class="params">(<span class="number">32</span>)</span></span>;				<span class="comment">//声明虚页长度(TOTAL_VP)为32 </span></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">int</span> <span class="title">CLEAR_PERIOD</span><span class="params">(<span class="number">50</span>)</span></span>;			<span class="comment">//声明进程清零周期(CLEAR_PERIOD)为50</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;Page.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;PageControl.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;Memory.h&quot;</span></span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">	<span class="type">int</span> i;</span><br><span class="line">	CMemory a;</span><br><span class="line">	<span class="keyword">for</span>(i=<span class="number">4</span>;i&lt;=<span class="number">32</span>;i++)</span><br><span class="line">	&#123;</span><br><span class="line">		a.<span class="built_in">FIFO</span>(i);	<span class="comment">//FIFO算法命中率 </span></span><br><span class="line"> 	    a.<span class="built_in">LRU</span>(i);	<span class="comment">//LRU算法命中率 </span></span><br><span class="line">		a.<span class="built_in">NUR</span>(i);	<span class="comment">//NUR算法命中率</span></span><br><span class="line">		a.<span class="built_in">OPT</span>(i);	<span class="comment">//OPT算法命中率 </span></span><br><span class="line">		cout&lt;&lt;<span class="string">&quot;\n&quot;</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;	<span class="comment">//5p2O5rK76ZyW== </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="实验结果及分析"><a href="#实验结果及分析" class="headerlink" title="实验结果及分析"></a>实验结果及分析</h1><ol>
+<li><p>在RED Hat Linux中通过输入以下命令执行程序；</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">g++ -o main mian.cpp</span><br><span class="line">./main</span><br></pre></td></tr></table></figure></li>
+<li><p>得到程序结果如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/1571280409171.png" alt="1571280409171"></p>
+</li>
+<li><p>结果分析；</p>
+<ol>
+<li>四种页面置换算法OPT算法的命中率最高，其它三种基本相同；</li>
+<li>随着分配内存页面逐渐增加，每种页面置换算法的命中率也会相应增加，并且趋于一个稳定值90%；</li>
+<li>如果次数非常大，这四种置换算法的命中率基本一致；</li>
+</ol>
+</li>
+</ol>
+<h1 id="实验难点与收获"><a href="#实验难点与收获" class="headerlink" title="实验难点与收获"></a>实验难点与收获</h1><h2 id="难点"><a href="#难点" class="headerlink" title="难点"></a>难点</h2><ol>
+<li>对OPT置换算法和对NUR置换算法的理解；</li>
+<li>C++编程中类的使用规范等；</li>
+</ol>
+<h2 id="收获"><a href="#收获" class="headerlink" title="收获"></a>收获</h2><ol>
+<li>学习了四种置换算法的基本原理和C++语言实现；</li>
+<li>通过实验结果，对比得到了四种算法的优劣；</li>
+<li>了解了内存页面调度的机理；</li>
+<li>进一步熟悉了C++中类的调用规范；</li>
+</ol>
+<h1 id="实验思考"><a href="#实验思考" class="headerlink" title="实验思考"></a>实验思考</h1><p>实验通过对四种页面置换算法进行横向对比和纵向对比，展示了四种算法的优缺点；但是实验结果对实验的原理体现的不太明显，可以在实验结果中增加每种算法的执行过程，让算法原理理解。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%89.html" title="操作系统内核-实验三">https://leeyuxun.github.io/操作系统内核-实验三.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E5%AD%98%E5%82%A8%E5%99%A8%E7%AE%A1%E7%90%86/" rel="tag"><i class="fa fa-tag"></i> 存储器管理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%B8%80.html" rel="prev" title="漏洞分析技术实验一">
+      <i class="fa fa-chevron-left"></i> 漏洞分析技术实验一
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%BA%8C.html" rel="next" title="漏洞分析技术实验二">
+      漏洞分析技术实验二 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E7%9F%A5%E8%AF%86"><span class="nav-number">2.</span> <span class="nav-text">准备知识</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%86%85%E5%AE%B9"><span class="nav-number">3.</span> <span class="nav-text">实验内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95%E4%BB%8B%E7%BB%8D"><span class="nav-number">4.</span> <span class="nav-text">页面置换算法介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#FIFO%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95"><span class="nav-number">4.1.</span> <span class="nav-text">FIFO页面置换算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E7%90%86%E7%AE%80%E8%BF%B0"><span class="nav-number">4.1.1.</span> <span class="nav-text">原理简述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E8%A1%A8%E6%8F%8F%E8%BF%B0"><span class="nav-number">4.1.2.</span> <span class="nav-text">图表描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.1.3.</span> <span class="nav-text">算法实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LRU%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95"><span class="nav-number">4.2.</span> <span class="nav-text">LRU页面置换算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E7%90%86%E7%AE%80%E8%BF%B0-1"><span class="nav-number">4.2.1.</span> <span class="nav-text">原理简述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E8%A1%A8%E6%8F%8F%E8%BF%B0-1"><span class="nav-number">4.2.2.</span> <span class="nav-text">图表描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E5%AE%9E%E7%8E%B0-1"><span class="nav-number">4.2.3.</span> <span class="nav-text">算法实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#NUR%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95"><span class="nav-number">4.3.</span> <span class="nav-text">NUR页面置换算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E7%90%86%E7%AE%80%E8%BF%B0-2"><span class="nav-number">4.3.1.</span> <span class="nav-text">原理简述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E8%A1%A8%E6%8F%8F%E8%BF%B0-2"><span class="nav-number">4.3.2.</span> <span class="nav-text">图表描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E5%AE%9E%E7%8E%B0-2"><span class="nav-number">4.3.3.</span> <span class="nav-text">算法实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OPT%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2%E7%AE%97%E6%B3%95"><span class="nav-number">4.4.</span> <span class="nav-text">OPT页面置换算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E7%90%86%E7%AE%80%E8%BF%B0-3"><span class="nav-number">4.4.1.</span> <span class="nav-text">原理简述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%BE%E8%A1%A8%E6%8F%8F%E8%BF%B0-3"><span class="nav-number">4.4.2.</span> <span class="nav-text">图表描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%97%E6%B3%95%E5%AE%9E%E7%8E%B0-3"><span class="nav-number">4.4.3.</span> <span class="nav-text">算法实现</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">5.</span> <span class="nav-text">数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#CPage%E7%B1%BB"><span class="nav-number">5.1.</span> <span class="nav-text">CPage类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CPageControl%E7%B1%BB"><span class="nav-number">5.2.</span> <span class="nav-text">CPageControl类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CMemory%E7%B1%BB"><span class="nav-number">5.3.</span> <span class="nav-text">CMemory类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CMemory%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="nav-number">5.4.</span> <span class="nav-text">CMemory类的构造函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B1%BB%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0initialize-const-int-nTotal-pf"><span class="nav-number">5.5.</span> <span class="nav-text">类成员函数initialize(const int nTotal_pf)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B1%BB%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0FIFO-const-int-nTotal-pf"><span class="nav-number">5.6.</span> <span class="nav-text">类成员函数FIFO(const int nTotal_pf)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B1%BB%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0LRU-const-int-nTotal-pf"><span class="nav-number">5.7.</span> <span class="nav-text">类成员函数LRU(const int nTotal_pf)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B1%BB%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0NUR-const-int-nTotal-pf"><span class="nav-number">5.8.</span> <span class="nav-text">类成员函数NUR(const int nTotal_pf)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B1%BB%E6%88%90%E5%91%98%E5%87%BD%E6%95%B0OPT-const-int-nTotal-pf"><span class="nav-number">5.9.</span> <span class="nav-text">类成员函数OPT(const int nTotal_pf)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#main-%E5%87%BD%E6%95%B0"><span class="nav-number">5.10.</span> <span class="nav-text">main()函数</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C%E5%8F%8A%E5%88%86%E6%9E%90"><span class="nav-number">6.</span> <span class="nav-text">实验结果及分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E9%9A%BE%E7%82%B9%E4%B8%8E%E6%94%B6%E8%8E%B7"><span class="nav-number">7.</span> <span class="nav-text">实验难点与收获</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9A%BE%E7%82%B9"><span class="nav-number">7.1.</span> <span class="nav-text">难点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B6%E8%8E%B7"><span class="nav-number">7.2.</span> <span class="nav-text">收获</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%80%9D%E8%80%83"><span class="nav-number">8.</span> <span class="nav-text">实验思考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

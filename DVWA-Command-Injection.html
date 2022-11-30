@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="前言命令注入是未一些函数的参数做过滤或过滤不严导致的，可以执行系统或者应用指令（CMD命令或者bash命令）的一种注入攻击手段。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DVWA Command Injection">
+<meta property="og:url" content="https://leeyuxun.github.io/DVWA-Command-Injection.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="前言命令注入是未一些函数的参数做过滤或过滤不严导致的，可以执行系统或者应用指令（CMD命令或者bash命令）的一种注入攻击手段。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201120141222.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201120141534.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201120143423.png">
+<meta property="article:published_time" content="2019-11-20T04:10:59.000Z">
+<meta property="article:modified_time" content="2020-11-20T06:34:43.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="Command Injection">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201120141222.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/DVWA-Command-Injection.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DVWA Command Injection | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/DVWA-Command-Injection.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DVWA Command Injection
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-11-20 12:10:59" itemprop="dateCreated datePublished" datetime="2019-11-20T12:10:59+08:00">2019-11-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-20 14:34:43" itemprop="dateModified" datetime="2020-11-20T14:34:43+08:00">2020-11-20</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DVWA/" itemprop="url" rel="index"><span itemprop="name">DVWA</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>命令注入是未一些函数的参数做过滤或过滤不严导致的，可以执行系统或者应用指令（CMD命令或者bash命令）的一种注入攻击手段。<span id="more"></span>&gt;PHP命令注入攻击漏洞是PHP应用程序中常见的脚本漏洞之一。</p>
+<h1 id="管道符"><a href="#管道符" class="headerlink" title="管道符"></a>管道符</h1><p>利用命令注入，很多时候需要利用管道符，下面将分别介绍Windows和Linux的管道符；</p>
+<h2 id="Windows"><a href="#Windows" class="headerlink" title="Windows"></a>Windows</h2><ul>
+<li>  <code>｜</code>，直接执行后面的语句，例如：<code>ping 127.0.0.1 | whoami</code>；</li>
+<li>  <code>||</code>，如果前面的语句执行出错，则执行后面的语句；要执行后面的语句，前面的语句只能为假，例如：<code>ping 2 ｜| whoami</code>；</li>
+<li>  <code>&amp;</code>，无论前面的语句的真假，都会执行两个语句，例如：<code>ping 2 &amp; whoami</code></li>
+<li>  <code>&amp;&amp;</code>，如果前面的语句为假则直接出错，也不执行后面的语句；要执行后面的语句，前面的语句只能为真，例如：<code>ping 127.0.0.1 &amp;&amp; whoami</code>；</li>
+</ul>
+<h2 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h2><ul>
+<li>  <code>；</code>，执行完前面的语句再执行后面的，例如: <code>ping 127.0.0.1;whoami</code>；</li>
+<li>  <code>|</code>，只显示后面语句的执行结果，例如：<code>ping 127.0.0.1 | whoami</code>；</li>
+<li>  <code>||</code>，当前面的语句执行出错时，执行后面的语句；要执行后面的语句，前面的语句只能为假，例如：<code>ping 1|| whoami</code>；</li>
+<li>  <code>&amp;</code>， 无论前面的语句的真假，都会执行两个语句，例如：<code>ping 127.0.0.1 &amp; whoami</code>；</li>
+<li>  <code>&amp;&amp;</code>，如果前面的语句为假则直接出错，也不执行后面的；要执行后面的语句，前面的语句只能为真，例如：<code>ping 127.0.0.1 &amp;&amp; whoami</code>；</li>
+</ul>
+<h1 id="LOW"><a href="#LOW" class="headerlink" title="LOW"></a>LOW</h1><h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>( <span class="keyword">isset</span>( <span class="variable">$_POST</span>[ <span class="string">'Submit'</span> ]  ) ) {</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$target</span> = <span class="variable">$_REQUEST</span>[ <span class="string">'ip'</span> ];</span><br><span class="line">        <span class="comment">// Determine OS and execute the ping command.</span></span><br><span class="line">        <span class="keyword">if</span>( <span class="title function_ invoke__">stristr</span>( <span class="title function_ invoke__">php_uname</span>( <span class="string">'s'</span> ), <span class="string">'Windows NT'</span> ) ) {</span><br><span class="line">            <span class="comment">// Windows</span></span><br><span class="line">            <span class="variable">$cmd</span> = <span class="title function_ invoke__">shell_exec</span>( <span class="string">'ping  '</span> . <span class="variable">$target</span> );</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> {</span><br><span class="line">            <span class="comment">// *nix</span></span><br><span class="line">            <span class="variable">$cmd</span> = <span class="title function_ invoke__">shell_exec</span>( <span class="string">'ping  -c 4 '</span> . <span class="variable">$target</span> );</span><br><span class="line">        }</span><br><span class="line">        <span class="comment">// Feedback for the end user</span></span><br><span class="line">        <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;<span class="subst">{$cmd}</span>&lt;/pre&gt;"</span>;</span><br><span class="line">    }</span><br><span class="line"><span class="meta">?&gt;</span> </span><br></pre></td></tr></table></figure>
+
+<p>分析：</p>
+<p>函数</p>
+<ul>
+<li><p><code>stristr(string,search,before_search)</code></p>
+<p>  stristr函数搜索字符串在另一字符串中的第一次出现，返回字符串的剩余部分（从匹配点），如果未找到所搜索的字符串，则返回 FALSE。</p>
+<ul>
+<li>  参数string规定被搜索的字符串，</li>
+<li>  参数search规定要搜索的字符串（如果该参数是数字，则搜索匹配该数字对应的 ASCII 值的字符），</li>
+<li>  可选参数before_true为布尔型，默认为“false” ，如果设置为 “true”，</li>
+</ul>
+<p>  函数将返回 search 参数第一次出现之前的字符串部分。</p>
+</li>
+<li><p>php_uname(mode)</p>
+<p>  这个函数会返回运行php的操作系统的相关描述，参数mode可取值</p>
+<ul>
+<li>  <code>a</code> （此为默认，包含序列”snrvm”里的所有模式）</li>
+<li>  <code>s </code>（返回操作系统名称）</li>
+<li>  <code>n</code>（返回主机名）</li>
+<li>  <code>r</code>（返回版本名称）</li>
+<li>  <code>v</code>（返回版本信息）       </li>
+<li>  <code>m</code>（返回机器类型）</li>
+</ul>
+</li>
+</ul>
+<p>功能：</p>
+<p>获取 <code>IP</code> 的值，直接传参使用 <code>shell_exec</code> 执行。</p>
+<ul>
+<li>  <code>Windows</code> 的话执行 <code>ping</code> 命令。</li>
+<li>  <code>linux</code> 的话，执行 <code>ping -c 4</code> 命令。</li>
+</ul>
+<p>未对输入数据做过滤处理，可以使用管道添加其他命令，达到攻击的目的；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201120141222.png"></p>
+<h1 id="MEDIUM"><a href="#MEDIUM" class="headerlink" title="MEDIUM"></a>MEDIUM</h1><h2 id="分析-1"><a href="#分析-1" class="headerlink" title="分析"></a>分析</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>( <span class="keyword">isset</span>( <span class="variable">$_POST</span>[ <span class="string">'Submit'</span> ]  ) ) {</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$target</span> = <span class="variable">$_REQUEST</span>[ <span class="string">'ip'</span> ];</span><br><span class="line">        <span class="comment">// Set blacklist</span></span><br><span class="line">        <span class="variable">$substitutions</span> = <span class="keyword">array</span>(</span><br><span class="line">            <span class="string">'&amp;&amp;'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">';'</span>  =&gt; <span class="string">''</span>,</span><br><span class="line">        );</span><br><span class="line">        <span class="comment">// Remove any of the charactars in the array (blacklist).</span></span><br><span class="line">        <span class="variable">$target</span> = <span class="title function_ invoke__">str_replace</span>( <span class="title function_ invoke__">array_keys</span>( <span class="variable">$substitutions</span> ), <span class="variable">$substitutions</span>, <span class="variable">$target</span> );</span><br><span class="line">        <span class="comment">// Determine OS and execute the ping command.</span></span><br><span class="line">        <span class="keyword">if</span>( <span class="title function_ invoke__">stristr</span>( <span class="title function_ invoke__">php_uname</span>( <span class="string">'s'</span> ), <span class="string">'Windows NT'</span> ) ) {</span><br><span class="line">            <span class="comment">// Windows</span></span><br><span class="line">            <span class="variable">$cmd</span> = <span class="title function_ invoke__">shell_exec</span>( <span class="string">'ping  '</span> . <span class="variable">$target</span> );</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> {</span><br><span class="line">            <span class="comment">// *nix</span></span><br><span class="line">            <span class="variable">$cmd</span> = <span class="title function_ invoke__">shell_exec</span>( <span class="string">'ping  -c 4 '</span> . <span class="variable">$target</span> );</span><br><span class="line">        }</span><br><span class="line">        <span class="comment">// Feedback for the end user</span></span><br><span class="line">        <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;<span class="subst">{$cmd}</span>&lt;/pre&gt;"</span>;</span><br><span class="line">    }</span><br><span class="line"><span class="meta">?&gt;</span> </span><br></pre></td></tr></table></figure>
+
+<p>分析：</p>
+<p><code>str_replace</code>函数将<code>&amp;&amp;</code>,<code>;</code>替换为空字符，过滤了<code>&amp;&amp;</code>、<code>;</code>，但是其他 的符号仍然可用；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201120141534.png"></p>
+<h1 id="HIGH"><a href="#HIGH" class="headerlink" title="HIGH"></a>HIGH</h1><h2 id="分析-2"><a href="#分析-2" class="headerlink" title="分析"></a>分析</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"> <span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>( <span class="keyword">isset</span>( <span class="variable">$_POST</span>[ <span class="string">'Submit'</span> ]  ) ) {</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$target</span> = <span class="title function_ invoke__">trim</span>(<span class="variable">$_REQUEST</span>[ <span class="string">'ip'</span> ]);</span><br><span class="line">        <span class="comment">// Set blacklist</span></span><br><span class="line">        <span class="variable">$substitutions</span> = <span class="keyword">array</span>(</span><br><span class="line">            <span class="string">'&amp;'</span>  =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">';'</span>  =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'| '</span> =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'-'</span>  =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'$'</span>  =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'('</span>  =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">')'</span>  =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'`'</span>  =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'||'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">        );</span><br><span class="line">        <span class="comment">// Remove any of the charactars in the array (blacklist).</span></span><br><span class="line">        <span class="variable">$target</span> = <span class="title function_ invoke__">str_replace</span>( <span class="title function_ invoke__">array_keys</span>( <span class="variable">$substitutions</span> ), <span class="variable">$substitutions</span>, <span class="variable">$target</span> );</span><br><span class="line">        <span class="comment">// Determine OS and execute the ping command.</span></span><br><span class="line">        <span class="keyword">if</span>( <span class="title function_ invoke__">stristr</span>( <span class="title function_ invoke__">php_uname</span>( <span class="string">'s'</span> ), <span class="string">'Windows NT'</span> ) ) {</span><br><span class="line">            <span class="comment">// Windows</span></span><br><span class="line">            <span class="variable">$cmd</span> = <span class="title function_ invoke__">shell_exec</span>( <span class="string">'ping  '</span> . <span class="variable">$target</span> );</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> {</span><br><span class="line">            <span class="comment">// *nix</span></span><br><span class="line">            <span class="variable">$cmd</span> = <span class="title function_ invoke__">shell_exec</span>( <span class="string">'ping  -c 4 '</span> . <span class="variable">$target</span> );</span><br><span class="line">        }</span><br><span class="line">        <span class="comment">// Feedback for the end user</span></span><br><span class="line">        <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;<span class="subst">{$cmd}</span>&lt;/pre&gt;"</span>;</span><br><span class="line">    }</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>分析：</p>
+<p>黑名单看似过滤了所有的非法字符，但仔细观察到是把<code>|  </code>（注意这里|后有一个空格）替换为空字符，于是<code>|</code>就有用了；</p>
+<p>输入<code>127.0.0.1|ifconfig</code>执行后面的命令；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201120143423.png"></p>
+<h1 id="IMPOSSIBLE"><a href="#IMPOSSIBLE" class="headerlink" title="IMPOSSIBLE"></a>IMPOSSIBLE</h1><h2 id="分析-3"><a href="#分析-3" class="headerlink" title="分析"></a>分析</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">if</span>( <span class="keyword">isset</span>( <span class="variable">$_POST</span>[ <span class="string">'Submit'</span> ]  ) ) {</span><br><span class="line">        <span class="comment">// Check Anti-CSRF token</span></span><br><span class="line">        <span class="title function_ invoke__">checkToken</span>( <span class="variable">$_REQUEST</span>[ <span class="string">'user_token'</span> ], <span class="variable">$_SESSION</span>[ <span class="string">'session_token'</span> ], <span class="string">'index.php'</span> );</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$target</span> = <span class="variable">$_REQUEST</span>[ <span class="string">'ip'</span> ];</span><br><span class="line">        <span class="variable">$target</span> = <span class="title function_ invoke__">stripslashes</span>( <span class="variable">$target</span> );</span><br><span class="line">        <span class="comment">// Split the IP into 4 octects</span></span><br><span class="line">        <span class="variable">$octet</span> = <span class="title function_ invoke__">explode</span>( <span class="string">"."</span>, <span class="variable">$target</span> );</span><br><span class="line">        <span class="comment">// Check IF each octet is an integer</span></span><br><span class="line">        <span class="keyword">if</span>( ( <span class="title function_ invoke__">is_numeric</span>( <span class="variable">$octet</span>[<span class="number">0</span>] ) ) &amp;&amp; ( <span class="title function_ invoke__">is_numeric</span>( <span class="variable">$octet</span>[<span class="number">1</span>] ) ) &amp;&amp; ( <span class="title function_ invoke__">is_numeric</span>( <span class="variable">$octet</span>[<span class="number">2</span>] ) ) &amp;&amp; ( <span class="title function_ invoke__">is_numeric</span>( <span class="variable">$octet</span>[<span class="number">3</span>] ) ) &amp;&amp; ( <span class="title function_ invoke__">sizeof</span>( <span class="variable">$octet</span> ) == <span class="number">4</span> ) ) {</span><br><span class="line">            <span class="comment">// If all 4 octets are int's put the IP back together.</span></span><br><span class="line">            <span class="variable">$target</span> = <span class="variable">$octet</span>[<span class="number">0</span>] . <span class="string">'.'</span> . <span class="variable">$octet</span>[<span class="number">1</span>] . <span class="string">'.'</span> . <span class="variable">$octet</span>[<span class="number">2</span>] . <span class="string">'.'</span> . <span class="variable">$octet</span>[<span class="number">3</span>];</span><br><span class="line">            <span class="comment">// Determine OS and execute the ping command.</span></span><br><span class="line">            <span class="keyword">if</span>( <span class="title function_ invoke__">stristr</span>( <span class="title function_ invoke__">php_uname</span>( <span class="string">'s'</span> ), <span class="string">'Windows NT'</span> ) ) {</span><br><span class="line">                <span class="comment">// Windows</span></span><br><span class="line">                <span class="variable">$cmd</span> = <span class="title function_ invoke__">shell_exec</span>( <span class="string">'ping  '</span> . <span class="variable">$target</span> );</span><br><span class="line">            }</span><br><span class="line">            <span class="keyword">else</span> {</span><br><span class="line">                <span class="comment">// *nix</span></span><br><span class="line">                <span class="variable">$cmd</span> = <span class="title function_ invoke__">shell_exec</span>( <span class="string">'ping  -c 4 '</span> . <span class="variable">$target</span> );</span><br><span class="line">            }</span><br><span class="line">            <span class="comment">// Feedback for the end user</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;<span class="subst">{$cmd}</span>&lt;/pre&gt;"</span>;</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> {</span><br><span class="line">            <span class="comment">// Ops. Let the user name theres a mistake</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">'&lt;pre&gt;ERROR: You have entered an invalid IP.&lt;/pre&gt;'</span>;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    <span class="comment">// Generate Anti-CSRF token</span></span><br><span class="line">    <span class="title function_ invoke__">generateSessionToken</span>();</span><br><span class="line"><span class="meta">?&gt;</span> </span><br></pre></td></tr></table></figure>
+
+<p>分析：</p>
+<p>加入了Anti-CSRF token，同时对参数ip进行了严格的限制，只有诸如“数字.数字.数字.数字”的输入才会被接收执行，因此不存在命令注入漏洞。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/DVWA-Command-Injection.html" title="DVWA Command Injection">https://leeyuxun.github.io/DVWA-Command-Injection.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Command-Injection/" rel="tag"><i class="fa fa-tag"></i> Command Injection</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/DVWA-Brute-Force.html" rel="prev" title="DVWA Brute Force">
+      <i class="fa fa-chevron-left"></i> DVWA Brute Force
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/DVWA-File-Inclusion.html" rel="next" title="DVWA File Inclusion">
+      DVWA File Inclusion <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%A1%E9%81%93%E7%AC%A6"><span class="nav-number">2.</span> <span class="nav-text">管道符</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Windows"><span class="nav-number">2.1.</span> <span class="nav-text">Windows</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux"><span class="nav-number">2.2.</span> <span class="nav-text">Linux</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LOW"><span class="nav-number">3.</span> <span class="nav-text">LOW</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90"><span class="nav-number">3.1.</span> <span class="nav-text">分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MEDIUM"><span class="nav-number">4.</span> <span class="nav-text">MEDIUM</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90-1"><span class="nav-number">4.1.</span> <span class="nav-text">分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#HIGH"><span class="nav-number">5.</span> <span class="nav-text">HIGH</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90-2"><span class="nav-number">5.1.</span> <span class="nav-text">分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#IMPOSSIBLE"><span class="nav-number">6.</span> <span class="nav-text">IMPOSSIBLE</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90-3"><span class="nav-number">6.1.</span> <span class="nav-text">分析</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验目的 通过一个简单的OAuth CSRF攻击实验，来熟悉OAuth的协议流程； 通过攻击实验来理解OAuth协议的安全性；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="OAuth CSRF实验">
+<meta property="og:url" content="https://leeyuxun.github.io/OAuth-CSRF%E5%AE%9E%E9%AA%8C.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验目的 通过一个简单的OAuth CSRF攻击实验，来熟悉OAuth的协议流程； 通过攻击实验来理解OAuth协议的安全性；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205103141.jpg">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205132234.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205131553.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205131058.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205131553.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205133229.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205131553.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212000948.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212001103.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191206171558.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210164537.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210164752.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191206172513.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210164925.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165024.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212000208.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210110527.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210110847.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211233406.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212004236.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165401.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165635.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165722.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165947.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210170327.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210170204.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212005954.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210180148.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211235615.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210234832.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210235710.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211235504.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211234803.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212001438.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211105853.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211105825.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211235504.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211235408.png">
+<meta property="article:published_time" content="2019-12-19T15:52:15.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:36:54.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="CSRF">
+<meta property="article:tag" content="OAuth">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205103141.jpg">
+
+<link rel="canonical" href="https://leeyuxun.github.io/OAuth-CSRF%E5%AE%9E%E9%AA%8C.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>OAuth CSRF实验 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/OAuth-CSRF%E5%AE%9E%E9%AA%8C.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          OAuth CSRF实验
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-19 23:52:15" itemprop="dateCreated datePublished" datetime="2019-12-19T23:52:15+08:00">2019-12-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:36:54" itemprop="dateModified" datetime="2020-04-02T14:36:54+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">大数据安全实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h1><ol>
+<li>通过一个简单的OAuth CSRF攻击实验，来熟悉OAuth的协议流程；</li>
+<li>通过攻击实验来理解OAuth协议的安全性；</li>
+</ol>
+<span id="more"></span>
+
+<h1 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h1><ul>
+<li>IDE：IntelliJ IDEA 2019.3 x64</li>
+<li>JDK：1.8</li>
+<li>OS：Windows 10 x64</li>
+<li>数据库：mysql-5.6.46.0-winx64</li>
+<li>服务器：apache-tomcat-8.5.45</li>
+<li>IdP服务器地址：<a target="_blank" rel="noopener" href="http://localhost:8080/">http://localhost:8080</a></li>
+<li>RP服务器地址：<a target="_blank" rel="noopener" href="http://localhost:8081/">http://localhost:8081</a></li>
+<li>Attack服务器地址：<a target="_blank" rel="noopener" href="http://localhost:8081/">http://localhost:8082</a></li>
+</ul>
+<h1 id="实验内容"><a href="#实验内容" class="headerlink" title="实验内容"></a>实验内容</h1><p>通过OAuth CSRF攻击实验，达到如下效果：攻击者通过诱导用户点击恶意链接，使得用户的账号通过OAuth协议与攻击的IdP账号绑定在一起，从而可以使得攻击者用自己的IdP账号通过OAuth登录到用户的账号。  具体步骤如下：</p>
+<ol>
+<li>攻击者登录到RP，并且选择绑定自己的IdP账号；</li>
+<li>RP将攻击者重定向到IdP，攻击者登录IdP，IdP向他显示是否授权RP访问的页面；</li>
+<li>攻击者在点击”同意授权”之后，截获IdP服务器返回的含有Authorization code参数的HTTP响应;</li>
+<li>攻击者精心构造一个Web页面，它会触发向IdP发起令牌申请的请求，而这个请求中的Authorization Code参数正是上一步截获到的code；</li>
+<li>攻击者将这个Web页面放到互联网上，等待或者诱骗受害者来访问；</li>
+<li>受害者之前登录了RP网站，只是没有把自己的账号和其他社交账号绑定起来。在受害者访问了攻击者准备的这个Web页面，令牌申请流程在受害者的浏览器里被顺利触发，RP从IdP那里获取到access_token，但是这个token以及通过它进一步获取到的用户信息却都是攻击者的；</li>
+<li>RP将攻击者的IdP账号同受害者的RP账号关联绑定起来；</li>
+<li>从此以后，攻击者就可以用自己的IdP账号通过OAuth登录到受害者在RP中的账号，冒充受害者的身份执行各种操作。</li>
+</ol>
+<p>   具体的攻击流程图如下图所示：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205103141.jpg">备注：第9步中，攻击者应该获取到当前登录状态下用户的cookie，并且将cookie写入请求头中，RP会检查cookie来判断用户是否是登录状态，从而判断是否同意进行绑定请求，但目前从实现上来讲，获取cookie，并检查cookie较为困难，因此在实际实现中，cookie只是已简单的参数形式，传给RP，RP也不检查cookie；</p>
+<h1 id="实验步骤"><a href="#实验步骤" class="headerlink" title="实验步骤"></a>实验步骤</h1><p>环境配置没有按照实验要求，使用的是自己之前配置完成的JDK+Mysql+Apache环境，相关参数上述已经说明，但是由于环境和程序源代码出现冲突，做了一些改变，配置步骤不再赘述；</p>
+<h2 id="数据库创建"><a href="#数据库创建" class="headerlink" title="数据库创建"></a>数据库创建</h2><h3 id="RP数据库"><a href="#RP数据库" class="headerlink" title="RP数据库"></a>RP数据库</h3><ol>
+<li><p>建立名为<code>RP</code>的数据库；</p>
+</li>
+<li><p>并且建立<code>user</code>数据表，其字段为：</p>
+<ul>
+<li>id：编号</li>
+<li>userename：RP用户名</li>
+<li>password：RP密码</li>
+<li>idp：身份认证提供商</li>
+</ul>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205132234.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205131553.png"></p>
+</li>
+</ol>
+<h3 id="IdP数据库"><a href="#IdP数据库" class="headerlink" title="IdP数据库"></a>IdP数据库</h3><ol>
+<li><p>建立名为<code>shiro</code>的数据库；</p>
+</li>
+<li><p>建立<code>oauth2_client</code>数据表，其字段为：</p>
+<ul>
+<li>id：编号</li>
+<li>client_name：第三方应用名称</li>
+<li>client_id：第三方应用id</li>
+<li>client_secret：第三方应用密钥</li>
+</ul>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205131058.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205131553.png"></p>
+</li>
+<li><p>建立oauth2_user表，其字段为：</p>
+<ul>
+<li>id：编号</li>
+<li>username：IdP用户名</li>
+<li>password：IdP密码</li>
+<li>salt：盐</li>
+</ul>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205133229.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191205131553.png"></p>
+</li>
+</ol>
+<h3 id="检查RP数据库配置"><a href="#检查RP数据库配置" class="headerlink" title="检查RP数据库配置"></a>检查RP数据库配置</h3><p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212000948.png"></p>
+<p>程序中数据库配置正确；</p>
+   <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String driver=<span class="string">&quot;com.mysql.jdbc.Driver&quot;</span>;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String url=<span class="string">&quot;jdbc:mysql://localhost:3306/rp?characterEncoding=utf8&amp;useSSL=true&quot;</span>;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String username=<span class="string">&quot;root&quot;</span>;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> String password=<span class="string">&quot;123456&quot;</span>;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> Connection con=<span class="literal">null</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="检查IdP数据库配置"><a href="#检查IdP数据库配置" class="headerlink" title="检查IdP数据库配置"></a>检查IdP数据库配置</h3><p>   <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212001103.png"></p>
+<p>程序中数据库配置正确；</p>
+   <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#dataSource configure</span><br><span class="line">connection.url=jdbc:mysql:<span class="comment">//localhost:3306/shiro</span></span><br><span class="line">connection.username=root</span><br><span class="line">connection.password=toor</span><br></pre></td></tr></table></figure>
+
+<h2 id="服务器启动"><a href="#服务器启动" class="headerlink" title="服务器启动"></a>服务器启动</h2><h3 id="启动IdP服务器"><a href="#启动IdP服务器" class="headerlink" title="启动IdP服务器"></a>启动IdP服务器</h3><p>双击<code>jetty:run</code>，启动服务器；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191206171558.png"></p>
+<p>运行显示如下图，表示IdP服务器启动成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210164537.png"></p>
+<h3 id="启动RP服务器"><a href="#启动RP服务器" class="headerlink" title="启动RP服务器"></a>启动RP服务器</h3><p>将点击 Edit Configurations，修改RP配置如下；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210164752.png"></p>
+<p>将application context置为空；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191206172513.png"></p>
+<p>启动RP服务器，运行显示如下图，表示RP服务器启动成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210164925.png"></p>
+<h2 id="实验流程"><a href="#实验流程" class="headerlink" title="实验流程"></a>实验流程</h2><h3 id="注册RP，获得ClientID和Secret"><a href="#注册RP，获得ClientID和Secret" class="headerlink" title="注册RP，获得ClientID和Secret"></a>注册RP，获得ClientID和Secret</h3><ol>
+<li><p>打开IdP网址<a target="_blank" rel="noopener" href="http://localhost:8080/zetark-oauth2-server/client%E8%BF%9B%E8%A1%8C%E7%AC%AC%E4%B8%89%E6%96%B9%E5%BA%94%E7%94%A8(RP)%E6%B3%A8%E5%86%8C%EF%BC%9B">http://localhost:8080/zetark-oauth2-server/client进行第三方应用(RP)注册；</a></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165024.png"></p>
+</li>
+<li><p>点击应用新增，输入第三方应用RP的名称<code>testApp</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212000208.png"></p>
+<p>由于未将id设置为自动递增，报错如下：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210110527.png"></p>
+<p>更改数据库配置，将id设置为自动递增；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210110847.png"></p>
+<p>再次点击新增应用，注册完毕获得客户端ID(client_id)<code>88f55e00-5f78-44e1-abfb-fa6c5368366d</code>和客户端安全KEY(clinet_secret)<code>788639e3-8355-4fa8-aa38-ae04670ac30b</code>，RP需要记录这两个参数，用于后续的OAuth认证，即需要在源代码中一些位置更改上述的两个参数，这里只举例一处；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211233406.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212004236.png"></p>
+</li>
+</ol>
+<h3 id="攻击者：注册IdP账号"><a href="#攻击者：注册IdP账号" class="headerlink" title="攻击者：注册IdP账号"></a>攻击者：注册IdP账号</h3><ol>
+<li><p>打开IdP网址<a target="_blank" rel="noopener" href="http://localhost:8080/zetark-oauth2-server/user%E8%BF%9B%E8%A1%8C%E8%B4%A6%E5%8F%B7%E6%B3%A8%E5%86%8C%EF%BC%8C%E8%AF%A5%E8%B4%A6%E5%8F%B7%E5%B0%86%E7%94%A8%E4%BA%8E%E7%BB%91%E5%AE%9ARP%E8%B4%A6%E5%8F%B7%EF%BC%9B">http://localhost:8080/zetark-oauth2-server/user进行账号注册，该账号将用于绑定RP账号；</a></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165401.png"></p>
+</li>
+<li><p>点击用户新增，注册用户<code>attack</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165635.png"></p>
+</li>
+<li><p>注册成功后，显示用户；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165722.png"></p>
+</li>
+</ol>
+<h3 id="用户注册RP账号"><a href="#用户注册RP账号" class="headerlink" title="用户注册RP账号"></a>用户注册RP账号</h3><ol>
+<li><p>打开RP网站<a target="_blank" rel="noopener" href="http://localhost:8081/%E8%BF%9B%E8%A1%8C%E8%B4%A6%E5%8F%B7%E6%B3%A8%E5%86%8C%EF%BC%9B">http://localhost:8081/进行账号注册；</a></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210165947.png"></p>
+</li>
+<li><p>到注册页面，设置用户名为<code>Leeyuxun</code>，点击注册；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210170327.png"></p>
+</li>
+<li><p>注册成功后，返回登录页面，进行登录；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210170204.png"></p>
+</li>
+<li><p>调试窗口显示登录成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212005954.png"></p>
+</li>
+<li><p>网页显示登陆成功；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210180148.png"></p>
+</li>
+</ol>
+<h3 id="攻击者完成攻击前的状态"><a href="#攻击者完成攻击前的状态" class="headerlink" title="攻击者完成攻击前的状态"></a>攻击者完成攻击前的状态</h3><ol>
+<li><p>在IdP账号没有绑定RP账号<code>testApp</code>的情况下，用IdP账号<code>attacker</code>来登录RP网站，点击使用IdP授权，发现IdP显示，应用<code>testApp</code>正在请求接入；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211235615.png"></p>
+</li>
+<li><p>输入IdP账号，用户名<code>attack</code>，点击登录并授权，验证通过后会显示该用户未绑定。实际上<code>attack</code>用户只是IdP用户，并没有绑定过RP用户，因此无法用IdP的账号来登录RP网站；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210234832.png"></p>
+</li>
+</ol>
+<h3 id="攻击者的操作流程"><a href="#攻击者的操作流程" class="headerlink" title="攻击者的操作流程"></a>攻击者的操作流程</h3><ol>
+<li><p>下面进行CSRF攻击，首先让用户<code>Leeyuxun</code>登录到RP网站；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191210235710.png"></p>
+</li>
+<li><p>攻击者在用户<code>Leeyuxun</code>保持登录状态时，打开绑定用户的链接<a target="_blank" rel="noopener" href="http://localhost:8080/zetark-oauth2-server/authorize?client_id=88f55e00-5f78-44e1-abfb-fa6c5368366d&amp;response_type=code&amp;redirect_uri=http://localhost:8081/accesstoken.jsp&amp;scope=bindlogin">http://localhost:8080/zetark-oauth2-server/authorize?client_id=88f55e00-5f78-44e1-abfb-fa6c5368366d&amp;response_type=code&amp;redirect_uri=http://localhost:8081/accesstoken.jsp&amp;scope=bindlogin</a></p>
+</li>
+<li><p>输入攻击者<code>attack</code>在IdP上的账号，点击登录并授权；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211235504.png"></p>
+</li>
+<li><p>验证通过后，获得返回的授权码code，位于url地址中，为<code>38575af7f999713cffce720e74409ad6</code>；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211234803.png"></p>
+</li>
+<li><p>将code放入事先写好的攻击项目中，并build运行<code>attcak</code>项目；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191212001438.png"></p>
+</li>
+</ol>
+<h3 id="用户登录RP并访问攻击者的网站"><a href="#用户登录RP并访问攻击者的网站" class="headerlink" title="用户登录RP并访问攻击者的网站"></a>用户登录RP并访问攻击者的网站</h3><ol>
+<li><p>等待用户访问攻击者的网站，点击恶意链接<a target="_blank" rel="noopener" href="http://localhost:8082/attack%EF%BC%8C%E6%94%BB%E5%87%BB%E8%80%85%E4%BC%AA%E9%80%A0%E4%B8%80%E4%B8%AApost%E8%AF%B7%E6%B1%82%EF%BC%8C%E5%8F%91%E9%80%81%E7%BB%99RP%E7%BD%91%E7%AB%99http://localhost:8081/binding_request%EF%BC%8C%E5%85%B6%E4%B8%ADpost%E8%AF%B7%E6%B1%82%E5%90%AB%E6%9C%89%EF%BC%9A%E6%8E%88%E6%9D%83%E7%A0%81code%EF%BC%8C%E5%8F%97%E5%AE%B3%E8%80%85RP%E7%9A%84%E7%94%A8%E6%88%B7%E5%90%8Drp_user_name%EF%BC%9B">http://localhost:8082/attack，攻击者伪造一个post请求，发送给RP网站http://localhost:8081/binding_request，其中post请求含有：授权码code，受害者RP的用户名rp_user_name；</a></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211105853.png"></p>
+</li>
+<li><p>当用户点击恶意链接时，当前RP用户就会与攻击者的IdP账号绑定，完成CSRF攻击；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211105825.png"></p>
+</li>
+</ol>
+<h3 id="攻击者入侵用户的RP账户"><a href="#攻击者入侵用户的RP账户" class="headerlink" title="攻击者入侵用户的RP账户"></a>攻击者入侵用户的RP账户</h3><ol>
+<li><p>攻击者用攻击者的IdP账号成功登录用户的RP账号；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211235504.png"></p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191211235408.png"></p>
+</li>
+</ol>
+<h1 id="实验结论"><a href="#实验结论" class="headerlink" title="实验结论"></a>实验结论</h1><p>由于OAuth2的认证流程是分为好几步来完成的，当第三方应用在收到一个GET请求时，除了能知道当前用户的cookie，以及URL中的Authorization Code之外，难以分辨出这个请求到底是用户本人的意愿，还是攻击者利用用户的身份伪造出来的请求。因此，攻击者可使用移花接木的手段，提前准备一个含有自己的Authorization Code请求，并让受害者的浏览器来接着完成后续的令牌申请流程；</p>
+<h2 id="攻击者攻击前提条件"><a href="#攻击者攻击前提条件" class="headerlink" title="攻击者攻击前提条件"></a>攻击者攻击前提条件</h2><ol>
+<li>在攻击过程中，受害者在RP上的用户会话(User Session)必须是有效的，即受害者在受到攻击前已经登录了RP；</li>
+<li>整个攻击必须在短时间内完成，因为OAuth2提供者颁发的Authorization Code有效期很短，OAuth2官方推荐的时间是不大于10分钟，而一旦Authorization Code过期那么后续的攻击也就不能进行下去了；</li>
+<li>一个Authorization Code只能被使用一次，如果OAuth2提供者收到重复的Authorization Code，它会拒绝当前的令牌申请请求。不止如此，根据OAuth2官方推荐，它还可以把和这个已经使用过的Authorization Code相关联的access_token全部撤销掉，进一步降低安全风险；</li>
+</ol>
+<h2 id="预防方法"><a href="#预防方法" class="headerlink" title="预防方法"></a>预防方法</h2><p>要防止这样的攻击其实很容易，作为第三方应用的开发者，只需在OAuth2认证过程中加入state参数，并验证它的参数值即可。具体细节如下：</p>
+<p>在将用户重定向到OAuth2的Authorization Endpoint去的时候，为用户生成一个随机的字符串，并作为state参数加入到URL中。在收到OAuth2服务提供者返回的Authorization Code请求的时候，验证接收到的state参数值。如果是正确合法的请求，那么此时接受到的参数值应该和上一步提到的为该用户生成的state参数值完全一致，否则就是异常请求。state参数值需要具备下面几个特性：</p>
+<ol>
+<li><strong>不可预测性</strong>：足够的随机，使得攻击者难以猜到正确的参数值</li>
+<li><strong>关联性</strong>：state参数值和当前用户会话（user session）是相互关联的</li>
+<li><strong>唯一性</strong>：每个用户，甚至每次请求生成的state参数值都是唯一的</li>
+<li><strong>时效性</strong>：state参数一旦被使用则立即失效</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/OAuth-CSRF%E5%AE%9E%E9%AA%8C.html" title="OAuth CSRF实验">https://leeyuxun.github.io/OAuth-CSRF实验.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/CSRF/" rel="tag"><i class="fa fa-tag"></i> CSRF</a>
+              <a href="/tags/OAuth/" rel="tag"><i class="fa fa-tag"></i> OAuth</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/k-%E5%8C%BF%E5%90%8D%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4%E5%AE%9E%E9%AA%8C.html" rel="prev" title="k-匿名隐私保护实验">
+      <i class="fa fa-chevron-left"></i> k-匿名隐私保护实验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/CryptDB%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8.html" rel="next" title="CryptDB安装与使用">
+      CryptDB安装与使用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">实验目的</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">2.</span> <span class="nav-text">实验环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%86%85%E5%AE%B9"><span class="nav-number">3.</span> <span class="nav-text">实验内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%AD%A5%E9%AA%A4"><span class="nav-number">4.</span> <span class="nav-text">实验步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%9B%E5%BB%BA"><span class="nav-number">4.1.</span> <span class="nav-text">数据库创建</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RP%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">4.1.1.</span> <span class="nav-text">RP数据库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IdP%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">4.1.2.</span> <span class="nav-text">IdP数据库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5RP%E6%95%B0%E6%8D%AE%E5%BA%93%E9%85%8D%E7%BD%AE"><span class="nav-number">4.1.3.</span> <span class="nav-text">检查RP数据库配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5IdP%E6%95%B0%E6%8D%AE%E5%BA%93%E9%85%8D%E7%BD%AE"><span class="nav-number">4.1.4.</span> <span class="nav-text">检查IdP数据库配置</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%90%AF%E5%8A%A8"><span class="nav-number">4.2.</span> <span class="nav-text">服务器启动</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8IdP%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="nav-number">4.2.1.</span> <span class="nav-text">启动IdP服务器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%AF%E5%8A%A8RP%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="nav-number">4.2.2.</span> <span class="nav-text">启动RP服务器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">4.3.</span> <span class="nav-text">实验流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E5%86%8CRP%EF%BC%8C%E8%8E%B7%E5%BE%97ClientID%E5%92%8CSecret"><span class="nav-number">4.3.1.</span> <span class="nav-text">注册RP，获得ClientID和Secret</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%BB%E5%87%BB%E8%80%85%EF%BC%9A%E6%B3%A8%E5%86%8CIdP%E8%B4%A6%E5%8F%B7"><span class="nav-number">4.3.2.</span> <span class="nav-text">攻击者：注册IdP账号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%B3%A8%E5%86%8CRP%E8%B4%A6%E5%8F%B7"><span class="nav-number">4.3.3.</span> <span class="nav-text">用户注册RP账号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%BB%E5%87%BB%E8%80%85%E5%AE%8C%E6%88%90%E6%94%BB%E5%87%BB%E5%89%8D%E7%9A%84%E7%8A%B6%E6%80%81"><span class="nav-number">4.3.4.</span> <span class="nav-text">攻击者完成攻击前的状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%BB%E5%87%BB%E8%80%85%E7%9A%84%E6%93%8D%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="nav-number">4.3.5.</span> <span class="nav-text">攻击者的操作流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E7%99%BB%E5%BD%95RP%E5%B9%B6%E8%AE%BF%E9%97%AE%E6%94%BB%E5%87%BB%E8%80%85%E7%9A%84%E7%BD%91%E7%AB%99"><span class="nav-number">4.3.6.</span> <span class="nav-text">用户登录RP并访问攻击者的网站</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%94%BB%E5%87%BB%E8%80%85%E5%85%A5%E4%BE%B5%E7%94%A8%E6%88%B7%E7%9A%84RP%E8%B4%A6%E6%88%B7"><span class="nav-number">4.3.7.</span> <span class="nav-text">攻击者入侵用户的RP账户</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E8%AE%BA"><span class="nav-number">5.</span> <span class="nav-text">实验结论</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%BB%E5%87%BB%E8%80%85%E6%94%BB%E5%87%BB%E5%89%8D%E6%8F%90%E6%9D%A1%E4%BB%B6"><span class="nav-number">5.1.</span> <span class="nav-text">攻击者攻击前提条件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%84%E9%98%B2%E6%96%B9%E6%B3%95"><span class="nav-number">5.2.</span> <span class="nav-text">预防方法</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

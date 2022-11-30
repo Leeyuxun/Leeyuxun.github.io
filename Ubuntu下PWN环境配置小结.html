@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="前言简单梳理Pwn环境的搭建过程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ubuntu下PWN环境配置小结">
+<meta property="og:url" content="https://leeyuxun.github.io/Ubuntu%E4%B8%8BPWN%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%B0%8F%E7%BB%93.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="前言简单梳理Pwn环境的搭建过程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220304212812.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220304214057.png">
+<meta property="article:published_time" content="2021-03-04T09:22:57.000Z">
+<meta property="article:modified_time" content="2022-03-04T14:01:12.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="gdb">
+<meta property="article:tag" content="PWN环境配置">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220304212812.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/Ubuntu%E4%B8%8BPWN%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%B0%8F%E7%BB%93.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Ubuntu下PWN环境配置小结 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/Ubuntu%E4%B8%8BPWN%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%B0%8F%E7%BB%93.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ubuntu下PWN环境配置小结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-03-04 17:22:57" itemprop="dateCreated datePublished" datetime="2021-03-04T17:22:57+08:00">2021-03-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-03-04 22:01:12" itemprop="dateModified" datetime="2022-03-04T22:01:12+08:00">2022-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>简单梳理Pwn环境的搭建过程。<span id="more"></span></p>
+<h1 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h1><ol>
+<li>  Ubuntu 16.04.7</li>
+<li>  Python 3.5.2</li>
+<li>  Python 2.7.12</li>
+</ol>
+<h1 id="常用软件"><a href="#常用软件" class="headerlink" title="常用软件"></a>常用软件</h1><h2 id="pwntools"><a href="#pwntools" class="headerlink" title="pwntools"></a>pwntools</h2><p>一个ctf框架和漏洞利用python库。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># python3 </span></span><br><span class="line">sudo apt-get install python3-pip python3-dev git libssl-dev libffi-dev build-essential</span><br><span class="line">python3 -m pip install --upgrade pip==20.3.4</span><br><span class="line">python3 -m pip install --upgrade pwntools</span><br><span class="line"></span><br><span class="line"><span class="comment"># python2</span></span><br><span class="line">sudo apt-get install python-pip python-dev git libssl-dev libffi-dev build-essential</span><br><span class="line">python2 -m pip install --upgrade pip==20.3.4</span><br><span class="line">python2 -m pip install --upgrade pwntools</span><br></pre></td></tr></table></figure>
+
+<h2 id="gdb"><a href="#gdb" class="headerlink" title="gdb"></a>gdb</h2><p>动态调试软件。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install gdb</span><br></pre></td></tr></table></figure>
+
+<h2 id="peda-gef-pwndbg"><a href="#peda-gef-pwndbg" class="headerlink" title="peda/gef/pwndbg"></a>peda/gef/pwndbg</h2><p>gdb的三个插件，配合gdb使用可以提升调试效率。</p>
+<ol>
+<li><p>peda</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/longld/peda.git ~/peda</span><br></pre></td></tr></table></figure></li>
+<li><p>gef</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget -q -O- https://github.com/hugsy/gef/raw/master/scripts/gef.sh | sh</span><br><span class="line">wget -q -O ~/gef/.gdbinit-gef.py https://github.com/hugsy/gef/raw/master/gef.py</span><br></pre></td></tr></table></figure></li>
+<li><p>pwndbg</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/pwndbg/pwndbg ~/pwndbg</span><br><span class="line"><span class="built_in">cd</span> ~/pwndbg</span><br><span class="line">./setup.sh</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>在同一时刻只能使用一种插件，而且在解决不同类型的题目时使用不同的插件，因此需要配置三种插件的快捷切换。</p>
+<ul>
+<li><p>  找到文件<code>.gdbinit</code>，一般在根目录下，一般安装好pwndbg之后出现，内容为<code>source ～/pwndbg/gdbinit.py</code>，上述语句控制gdb使用的插件类型。</p>
+</li>
+<li><p>加一个可以识别的字符串<code>#this place is controled by user's shell</code>，不管是什么，需要注释并且不能与别的位置重复，并且需要把原来的source注释。</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># source ～/pwndbg/gdbinit.py</span></span><br><span class="line"><span class="comment"># this place is controled by user's shell</span></span><br></pre></td></tr></table></figure></li>
+<li><p>编写shell脚本：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!gdbstart.sh</span></span><br><span class="line"><span class="comment">#!/bin/bash</span></span><br><span class="line"><span class="keyword">function</span> Mode_change {</span><br><span class="line">    name=<span class="variable">$1</span></span><br><span class="line">    gdbinitfile=~/.gdbinit    <span class="comment">#路径按实际情况修改</span></span><br><span class="line">    </span><br><span class="line">    peda=<span class="string">"source ~/peda/peda.py"</span>   <span class="comment">#路径按实际情况修改</span></span><br><span class="line">    gef=<span class="string">"source ~/.gef/.gdbinit-gef.py"</span>   <span class="comment">#这个路径按照你的实际情况修改</span></span><br><span class="line">    pwndbg=<span class="string">"source /pwndbg/gdbinit.py"</span>   <span class="comment">#这个路径按照你的实际情况修改</span></span><br><span class="line"> </span><br><span class="line">    sign=$(<span class="built_in">cat</span> <span class="variable">$gdbinitfile</span> | grep -n <span class="string">"#this place is controled by user's shell"</span>)     </span><br><span class="line">           <span class="comment">#此处上面的查找内容要和文件'.gdbinit'保持一致</span></span><br><span class="line"> </span><br><span class="line">    pattern=<span class="string">":#this place is controled by user's shell"</span></span><br><span class="line">    number=<span class="variable">${sign%$pattern}</span></span><br><span class="line">    location=$[number+2]</span><br><span class="line"> </span><br><span class="line">    parameter_add=<span class="variable">${location}</span>i</span><br><span class="line">    parameter_del=<span class="variable">${location}</span>d</span><br><span class="line"> </span><br><span class="line">    message=<span class="string">"TEST"</span></span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> [ <span class="variable">$name</span> -eq <span class="string">"1"</span> ];<span class="keyword">then</span></span><br><span class="line">        sed -i <span class="string">"<span class="variable">$parameter_del</span>"</span> <span class="variable">$gdbinitfile</span></span><br><span class="line">        sed -i <span class="string">"<span class="variable">$parameter_add</span> <span class="variable">$peda</span>"</span> <span class="variable">$gdbinitfile</span></span><br><span class="line">        <span class="built_in">echo</span> -e <span class="string">"Please enjoy the peda!\n"</span></span><br><span class="line">    <span class="keyword">elif</span> [ <span class="variable">$name</span> -eq <span class="string">"2"</span> ];<span class="keyword">then</span></span><br><span class="line">        sed -i <span class="string">"<span class="variable">$parameter_del</span>"</span> <span class="variable">$gdbinitfile</span></span><br><span class="line">        sed -i <span class="string">"<span class="variable">$parameter_add</span> <span class="variable">$gef</span>"</span> <span class="variable">$gdbinitfile</span></span><br><span class="line">        <span class="built_in">echo</span> -e <span class="string">"Please enjoy the gef!\n"</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        sed -i <span class="string">"<span class="variable">$parameter_del</span>"</span> <span class="variable">$gdbinitfile</span></span><br><span class="line">        sed -i <span class="string">"<span class="variable">$parameter_add</span> <span class="variable">$pwndbg</span>"</span> <span class="variable">$gdbinitfile</span></span><br><span class="line">        <span class="built_in">echo</span> -e <span class="string">"Please enjoy the pwndbg!\n"</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">    </span><br><span class="line">}</span><br><span class="line"> </span><br><span class="line"><span class="built_in">echo</span> -e <span class="string">"Please choose one mode of GDB?\n1.peda    2.gef    3.pwndbg"</span></span><br><span class="line"> </span><br><span class="line"><span class="built_in">read</span> -p <span class="string">"Input your choice:"</span> num</span><br><span class="line"> </span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$num</span> -eq <span class="string">"1"</span> ];<span class="keyword">then</span></span><br><span class="line">    Mode_change <span class="variable">$num</span></span><br><span class="line"><span class="keyword">elif</span> [ <span class="variable">$num</span> -eq <span class="string">"2"</span> ];<span class="keyword">then</span></span><br><span class="line">    Mode_change <span class="variable">$num</span></span><br><span class="line"><span class="keyword">elif</span> [ <span class="variable">$num</span> -eq <span class="string">"3"</span> ];<span class="keyword">then</span></span><br><span class="line">    Mode_change <span class="variable">$num</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="built_in">echo</span> -e <span class="string">"Error!\nPleasse input right number!"</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"> </span><br><span class="line">gdb <span class="variable">$1</span> <span class="variable">$2</span> <span class="variable">$3</span> <span class="variable">$4</span> <span class="variable">$5</span> <span class="variable">$6</span> <span class="variable">$7</span> <span class="variable">$8</span> <span class="variable">$9</span></span><br></pre></td></tr></table></figure></li>
+<li><p>把shell脚本放到一个环境变量指向的路径里面，随便一个位置即可。</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220304212812.png" style="zoom:80%;"></li>
+<li><p>检验效果如下。</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20220304214057.png" style="zoom:80%;"></li>
+</ul>
+<h2 id="32位程序支持"><a href="#32位程序支持" class="headerlink" title="32位程序支持"></a>32位程序支持</h2><p>支持32位程序</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install libc6-dev-i386</span><br></pre></td></tr></table></figure>
+
+<h2 id="qemu"><a href="#qemu" class="headerlink" title="qemu"></a>qemu</h2><p>ARM的PWN环境。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 安装qemu</span></span><br><span class="line">sudo apt-get install qemu</span><br><span class="line">sudo apt-get install qemu-system qemu-user-static binfmt-support</span><br><span class="line"><span class="comment"># 安装依赖库</span></span><br><span class="line">sudo apt-get install -y gcc-arm-linux-gnueabi</span><br><span class="line">sudo apt-get install qemu libncurses5-dev gcc-arm-linux-gnueabi build-essential gdb-arm-none-eabi synaptic gcc-aarch64-linux-gnu eclipse-cdt git</span><br></pre></td></tr></table></figure>
+
+<h2 id="LibcSearcher"><a href="#LibcSearcher" class="headerlink" title="LibcSearcher"></a>LibcSearcher</h2><p>泄露libc库中函数的偏移的库。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">sudo pip install capstone</span><br><span class="line">git <span class="built_in">clone</span> https://github.com/lieanu/LibcSearcher.git</span><br><span class="line"><span class="built_in">cd</span> LibcSearcher</span><br><span class="line">sudo python2 setup.py develop</span><br><span class="line">sudo python3 setup.py develop</span><br><span class="line"></span><br><span class="line">e.g.</span><br><span class="line">from LibcSearcher import *</span><br><span class="line">obj = LibcSearcher(<span class="string">"fgets"</span>, 0X7ff39014bd90)</span><br><span class="line">obj.dump(<span class="string">"system"</span>)       </span><br><span class="line">obj.dump(<span class="string">"str_bin_sh"</span>)   </span><br><span class="line">obj.dump(<span class="string">"__libc_start_main_ret"</span>)    </span><br></pre></td></tr></table></figure>
+
+<h2 id="ROPgadget"><a href="#ROPgadget" class="headerlink" title="ROPgadget"></a>ROPgadget</h2><p>用于寻找gadget。首先需要安装Capstone，一个轻量级的多平台架构支持的反汇编架构。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install python-capstone</span><br><span class="line">git <span class="built_in">clone</span> https://github.com/JonathanSalwan/ROPgadget.git</span><br><span class="line"><span class="built_in">cd</span> ROPgadget</span><br><span class="line">sudo python setup.py install</span><br><span class="line"></span><br><span class="line">e.g.</span><br><span class="line">ROPgadget --binary elf  --only <span class="string">'pop|ret'</span> | grep <span class="string">'eax'</span></span><br><span class="line">ROPgadget --binary elf --string <span class="string">"/bin/sh"</span></span><br><span class="line">ROPgadget --binary elf  --only <span class="string">'int'</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="one-gatget"><a href="#one-gatget" class="headerlink" title="one_gatget"></a>one_gatget</h2><p>用于寻找寻找libc库中的execve(‘/bin/sh’, NULL, NULL)可以一个gadget就可以getshell的位置。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo add-apt-repository ppa:brightbox/ruby-ng</span><br><span class="line">sudo apt-get install ruby2.6 ruby2.6-dev</span><br><span class="line">sudo apt-get install gem</span><br><span class="line">sudo gem install one_gadget</span><br></pre></td></tr></table></figure>
+
+<p>————————未完待续————————</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/Ubuntu%E4%B8%8BPWN%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E5%B0%8F%E7%BB%93.html" title="Ubuntu下PWN环境配置小结">https://leeyuxun.github.io/Ubuntu下PWN环境配置小结.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/gdb/" rel="tag"><i class="fa fa-tag"></i> gdb</a>
+              <a href="/tags/PWN%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/" rel="tag"><i class="fa fa-tag"></i> PWN环境配置</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9E.html" rel="prev" title="二进制-逻辑漏洞">
+      <i class="fa fa-chevron-left"></i> 二进制-逻辑漏洞
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/ADWORLD-PWN-%E6%96%B0%E6%89%8B%E7%BB%83%E4%B9%A0%E5%8C%BA-WP.html" rel="next" title="ADWORLD PWN 新手练习区 WP">
+      ADWORLD PWN 新手练习区 WP <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83"><span class="nav-number">2.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E8%BD%AF%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">常用软件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pwntools"><span class="nav-number">3.1.</span> <span class="nav-text">pwntools</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gdb"><span class="nav-number">3.2.</span> <span class="nav-text">gdb</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#peda-gef-pwndbg"><span class="nav-number">3.3.</span> <span class="nav-text">peda&#x2F;gef&#x2F;pwndbg</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#32%E4%BD%8D%E7%A8%8B%E5%BA%8F%E6%94%AF%E6%8C%81"><span class="nav-number">3.4.</span> <span class="nav-text">32位程序支持</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#qemu"><span class="nav-number">3.5.</span> <span class="nav-text">qemu</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LibcSearcher"><span class="nav-number">3.6.</span> <span class="nav-text">LibcSearcher</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ROPgadget"><span class="nav-number">3.7.</span> <span class="nav-text">ROPgadget</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#one-gatget"><span class="nav-number">3.8.</span> <span class="nav-text">one_gatget</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

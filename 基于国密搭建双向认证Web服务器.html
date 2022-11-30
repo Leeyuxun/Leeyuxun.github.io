@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="目的 搭建一个Web服务器； 配置https访问，并且支持双向认证访问，即客户端和服务器端均需要提供证书访问； 所有的证书需要使用国密算法；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于国密搭建双向认证Web服务器">
+<meta property="og:url" content="https://leeyuxun.github.io/%E5%9F%BA%E4%BA%8E%E5%9B%BD%E5%AF%86%E6%90%AD%E5%BB%BA%E5%8F%8C%E5%90%91%E8%AE%A4%E8%AF%81Web%E6%9C%8D%E5%8A%A1%E5%99%A8.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="目的 搭建一个Web服务器； 配置https访问，并且支持双向认证访问，即客户端和服务器端均需要提供证书访问； 所有的证书需要使用国密算法；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514103205.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514103652.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514104000.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514100800.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515014435.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200513223122.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514162828.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514163616.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514165203.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514171605.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515014308.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515013441.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515013715.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515013843.png">
+<meta property="article:published_time" content="2020-05-16T15:45:11.000Z">
+<meta property="article:modified_time" content="2020-05-16T16:02:34.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="SM2">
+<meta property="article:tag" content="SM3">
+<meta property="article:tag" content="web服务器双向认证">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514103205.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E5%9F%BA%E4%BA%8E%E5%9B%BD%E5%AF%86%E6%90%AD%E5%BB%BA%E5%8F%8C%E5%90%91%E8%AE%A4%E8%AF%81Web%E6%9C%8D%E5%8A%A1%E5%99%A8.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>基于国密搭建双向认证Web服务器 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E5%9F%BA%E4%BA%8E%E5%9B%BD%E5%AF%86%E6%90%AD%E5%BB%BA%E5%8F%8C%E5%90%91%E8%AE%A4%E8%AF%81Web%E6%9C%8D%E5%8A%A1%E5%99%A8.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          基于国密搭建双向认证Web服务器
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-16 23:45:11" itemprop="dateCreated datePublished" datetime="2020-05-16T23:45:11+08:00">2020-05-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-17 00:02:34" itemprop="dateModified" datetime="2020-05-17T00:02:34+08:00">2020-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/WEB-experiment/" itemprop="url" rel="index"><span itemprop="name">WEB experiment</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h2><ol>
+<li>搭建一个Web服务器；</li>
+<li>配置https访问，并且支持双向认证访问，即客户端和服务器端均需要提供证书访问；</li>
+<li>所有的证书需要使用国密算法；<span id="more"></span></li>
+</ol>
+<h2 id="实验过程"><a href="#实验过程" class="headerlink" title="实验过程"></a>实验过程</h2><h3 id="Ubuntu安装Nginx"><a href="#Ubuntu安装Nginx" class="headerlink" title="Ubuntu安装Nginx"></a>Ubuntu安装Nginx</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install nginx</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514103205.png"></p>
+<ul>
+<li><p>Nginx相关命令</p>
+<ul>
+<li>启动<code>sudo systemctl start nginx</code></li>
+<li>关闭<code>sudo systemctl stop nginx</code></li>
+<li>重启<code>sudo systemctl restart nginx</code></li>
+</ul>
+</li>
+<li><p>设置防火墙，保证局域网可以访问该web服务器</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo ufw app list</span><br><span class="line">sudo ufw allow <span class="string">'Nginx HTTP'</span></span><br><span class="line">sudo ufw allow <span class="string">'Nginx HTTPS'</span></span><br><span class="line">sudo ufw status</span><br></pre></td></tr></table></figure>
+
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514103652.png" style="zoom:67%;">
+
+<p>局域网下另一台机器可以进行访问</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514104000.png"></p>
+</li>
+</ul>
+<h3 id="HTTPS双向认证分析"><a href="#HTTPS双向认证分析" class="headerlink" title="HTTPS双向认证分析"></a>HTTPS双向认证分析</h3><ol>
+<li><p>HTTPS单向认证流程</p>
+<p>单向认证流程中，服务器端保存着公钥证书和私钥两个文件，整个握手过程如下：</p>
+<ol>
+<li>客户端发起建立HTTPS连接请求，将SSL协议版本的信息发送给服务器端；</li>
+<li>服务器端将本机的公钥证书server.crt发送给客户端；</li>
+<li>客户端读取公钥证书server.crt，取出了服务端公钥；</li>
+<li>客户端生成一个随机数密钥R，用刚才得到的服务器公钥去加密这个随机数形成密文，发送给服务端；</li>
+<li>服务端用自己的私钥server.key去解密这个密文，得到了密钥R；</li>
+<li>服务端和客户端在后续通讯过程中就使用这个密钥R进行通信；</li>
+</ol>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514100800.png"></p>
+</li>
+<li><p>HTTPS双向认证流程</p>
+<p>双认证流程握手过程如下：</p>
+<ol>
+<li>客户端发起建立HTTPS连接请求，将SSL协议版本的信息发送给服务端；</li>
+<li>服务器端将本机的公钥证书server.crt发送给客户端；</li>
+<li>客户端读取公钥证书server.crt，取出了服务端公钥；</li>
+<li>客户端将客户端公钥证书client.crt发送给服务器端；</li>
+<li>服务器端解密客户端公钥证书，拿到客户端公钥；</li>
+<li>客户端发送自己支持的加密方案给服务器端；</li>
+<li>服务器端根据自己和客户端的能力，选择一个双方都能接受的加密方案，使用客户端的公钥加密后发送给客户端；</li>
+<li>客户端使用自己的私钥解密加密方案，生成一个随机数R，使用服务器公钥加密后传给服务器端；</li>
+<li>服务端用自己的私钥去解密这个密文，得到了密钥R；</li>
+<li>服务端和客户端在后续通讯过程中就使用这个密钥R进行通信；</li>
+</ol>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515014435.png"></p>
+</li>
+</ol>
+<h3 id="利用国密生成证书"><a href="#利用国密生成证书" class="headerlink" title="利用国密生成证书"></a>利用国密生成证书</h3><p>如果要把整个双向认证的流程跑通，最终需要4个证书文件：</p>
+<ol>
+<li>服务器端公钥证书：server.crt</li>
+<li>服务器端私钥文件：server.key</li>
+<li>客户端公钥证书：client.crt</li>
+<li>客户端私钥文件：client.key</li>
+</ol>
+<p>生成这一系列证书之前，需要先生成一个CA根证书，然后由这个CA根证书颁发服务器公钥证书和客户端公钥证书；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200513223122.png"></p>
+<p>全程使用GmSSL来生成一系列的自签名证书，自签名证书没有经过证书机构的认证，很多浏览器会认为不安全，但用来实验是足够的。</p>
+<ul>
+<li><p>安装GmSSL</p>
+<ol>
+<li><p>下载<a target="_blank" rel="noopener" href="https://github.com/guanzhi/GmSSL/archive/master.zip">源代码</a>并解压</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo unzip GmSSL-master.zip</span><br></pre></td></tr></table></figure></li>
+<li><p>编译安装</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./config no-saf no-sdf no-skf no-sof no-zuc</span><br><span class="line">sudo make</span><br><span class="line">sudo make install</span><br></pre></td></tr></table></figure></li>
+<li><p>执行<code>gmssl</code>命令行工具检查安装成功</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gmssl version</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514162828.png"></p>
+</li>
+</ol>
+</li>
+</ul>
+<h4 id="生成自签名根证书"><a href="#生成自签名根证书" class="headerlink" title="生成自签名根证书"></a>生成自签名根证书</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">sudo <span class="built_in">mkdir</span> /etc/nginx/keys/</span><br><span class="line"><span class="built_in">cd</span> /etc/nginx/keys/</span><br><span class="line"><span class="comment"># 利用SM2创建根证书私钥</span></span><br><span class="line">gmssl ecparam -genkey -name sm2p256v1 -out root.key</span><br><span class="line"><span class="comment"># 利用SM3创建根证书请求文件</span></span><br><span class="line">gmssl req -sm3 -new -out root.csr -key root.key</span><br><span class="line"><span class="comment"># 创建根证书</span></span><br><span class="line">gmssl x509 -req -<span class="keyword">in</span> root.csr -out root.crt -signkey root.key -CAcreateserial -days 3650</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514163616.png"></p>
+<p>经过上面的命令，可以得到一个签名有效期为10年的根证书root.crt，后续用这个根证书去颁发服务器证书和客户端证书。</p>
+<p>证书中的pub与root.key是一致的，这样输出的root.crt中,包含了会话的公钥，用于分发加密。而最后的sm3的数字签名，用于通过上面的公钥来验证证书的完整性。</p>
+<h4 id="生成自签名服务器端证书"><a href="#生成自签名服务器端证书" class="headerlink" title="生成自签名服务器端证书"></a>生成自签名服务器端证书</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 利用SM2生成服务器端证书私钥</span></span><br><span class="line">gmssl ecparam -genkey -name sm2p256v1 -out server.key</span><br><span class="line"><span class="comment"># 利用SM3生成服务器端证书请求文件</span></span><br><span class="line">gmssl req -sm3 -new -out server.csr -key server.key</span><br><span class="line"><span class="comment"># 生成服务器端公钥证书</span></span><br><span class="line">gmssl x509 -req -<span class="keyword">in</span> server.csr -out server.crt -signkey server.key -CA root.crt -CAkey root.key -CAcreateserial -days 3650</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514165203.png"></p>
+<p>经过上面命令得到：</p>
+<ul>
+<li>server.key：服务器端的秘钥文件</li>
+<li>server.crt：有效期十年的服务器端公钥证书(使用根证书和服务器端私钥文件一起生成)</li>
+</ul>
+<h4 id="生成自签名客户端证书"><a href="#生成自签名客户端证书" class="headerlink" title="生成自签名客户端证书"></a>生成自签名客户端证书</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 利用SM2生成客户端证书私钥</span></span><br><span class="line">gmssl ecparam -genkey -name sm2p256v1 -out client.key</span><br><span class="line"><span class="comment"># 利用SM3生成客户端证书请求文件</span></span><br><span class="line">gmssl req -sm3 -new -out client.csr -key client.key</span><br><span class="line"><span class="comment"># 生成客户端公钥证书</span></span><br><span class="line">gmssl x509 -req -<span class="keyword">in</span> client.csr -out client.crt -signkey client.key -CA root.crt -CAkey root.key -CAcreateserial -days 3650</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200514171605.png"></p>
+<p>经过上面的命令得到：</p>
+<ul>
+<li>client.key：客户端的私钥文件</li>
+<li>client.crt：有效期十年的客户端证书(使用根证书和客户端私钥一起生成)</li>
+</ul>
+<h3 id="Nginx配置"><a href="#Nginx配置" class="headerlink" title="Nginx配置"></a>Nginx配置</h3><ol>
+<li><p>创建Nginx配置文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /etc/nginx/sites-enabled</span><br><span class="line">vim https.conf</span><br></pre></td></tr></table></figure>
+
+<p>配置文件如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">server {</span><br><span class="line">        listen 443 ssl;</span><br><span class="line">        server_name 192.168.1.4;</span><br><span class="line">        ssl on;</span><br><span class="line">        ssl_certificate /etc/nginx/keys/server.crt;<span class="comment">#配置证书位置</span></span><br><span class="line">        ssl_certificate_key /etc/nginx/keys/server.key;<span class="comment">#配置秘钥位置</span></span><br><span class="line">        ssl_client_certificate /etc/nginx/keys/client.crt;<span class="comment">#双向认证</span></span><br><span class="line">        ssl_verify_client on; <span class="comment">#双向认证</span></span><br><span class="line">        ssl_session_timeout 5m;</span><br><span class="line">        root html;</span><br><span class="line">        index index.html;</span><br><span class="line">        location / {</span><br><span class="line">                try_files <span class="variable">$uri</span> <span class="variable">$uri</span>/ =404;</span><br><span class="line">        }</span><br><span class="line">}</span><br></pre></td></tr></table></figure></li>
+<li><p>重载配置</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nginx -s reload</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><ol>
+<li>使用同一局域网下的另一台机器访问该nginx服务器<a target="_blank" rel="noopener" href="https://192.168.1.4/%EF%BC%9B">https://192.168.1.4/；</a></li>
+</ol>
+<p>显示如下，需要提供证书才能访问</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515014308.png"></p>
+<ol start="2">
+<li><p>将密钥复制到另一个文件夹下，使用curl进行验证</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> -r /etc/nginx/keys/ /tmp/</span><br><span class="line"><span class="built_in">cd</span> /tmp/keys/</span><br><span class="line">curl --cert ./client.crt --key ./client.key https://192.168.1.4/ -k -v</span><br></pre></td></tr></table></figure>
+
+<p>服务器端与客户端的握手流程如下：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515013441.png"></p>
+<p>数据包相关参数如下图：</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515013715.png"></p>
+<p>返回的网页源代码如下，可以正常访问，说明双向认证的Web服务器搭建成功。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20200515013843.png"></p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E5%9F%BA%E4%BA%8E%E5%9B%BD%E5%AF%86%E6%90%AD%E5%BB%BA%E5%8F%8C%E5%90%91%E8%AE%A4%E8%AF%81Web%E6%9C%8D%E5%8A%A1%E5%99%A8.html" title="基于国密搭建双向认证Web服务器">https://leeyuxun.github.io/基于国密搭建双向认证Web服务器.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/SM2/" rel="tag"><i class="fa fa-tag"></i> SM2</a>
+              <a href="/tags/SM3/" rel="tag"><i class="fa fa-tag"></i> SM3</a>
+              <a href="/tags/web%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%8F%8C%E5%90%91%E8%AE%A4%E8%AF%81/" rel="tag"><i class="fa fa-tag"></i> web服务器双向认证</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E5%88%A4%E6%96%AD%E5%A4%A7%E6%95%B0%E4%BA%92%E7%B4%A0.html" rel="prev" title="判断大数互素">
+      <i class="fa fa-chevron-left"></i> 判断大数互素
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E5%9F%BA%E4%BA%8E%E5%9B%BD%E5%AF%86%E7%9A%84%E7%AE%80%E6%98%93%E5%AF%86%E9%92%A5%E5%8D%8F%E5%95%86%E5%8D%8F%E8%AE%AE.html" rel="next" title="基于国密的简易密钥协商协议">
+      基于国密的简易密钥协商协议 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E7%9A%84"><span class="nav-number">1.</span> <span class="nav-text">目的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">实验过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Ubuntu%E5%AE%89%E8%A3%85Nginx"><span class="nav-number">2.1.</span> <span class="nav-text">Ubuntu安装Nginx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HTTPS%E5%8F%8C%E5%90%91%E8%AE%A4%E8%AF%81%E5%88%86%E6%9E%90"><span class="nav-number">2.2.</span> <span class="nav-text">HTTPS双向认证分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E5%9B%BD%E5%AF%86%E7%94%9F%E6%88%90%E8%AF%81%E4%B9%A6"><span class="nav-number">2.3.</span> <span class="nav-text">利用国密生成证书</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E8%87%AA%E7%AD%BE%E5%90%8D%E6%A0%B9%E8%AF%81%E4%B9%A6"><span class="nav-number">2.3.1.</span> <span class="nav-text">生成自签名根证书</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E8%87%AA%E7%AD%BE%E5%90%8D%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%AB%AF%E8%AF%81%E4%B9%A6"><span class="nav-number">2.3.2.</span> <span class="nav-text">生成自签名服务器端证书</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E8%87%AA%E7%AD%BE%E5%90%8D%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%AF%81%E4%B9%A6"><span class="nav-number">2.3.3.</span> <span class="nav-text">生成自签名客户端证书</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Nginx%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.</span> <span class="nav-text">Nginx配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81"><span class="nav-number">2.5.</span> <span class="nav-text">验证</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

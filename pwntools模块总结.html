@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="前言pwntools 是一款专门用于CTF二进制Exploit编写的python库；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pwntools模块总结">
+<meta property="og:url" content="https://leeyuxun.github.io/pwntools%E6%A8%A1%E5%9D%97%E6%80%BB%E7%BB%93.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="前言pwntools 是一款专门用于CTF二进制Exploit编写的python库；">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-01-28T01:31:55.000Z">
+<meta property="article:modified_time" content="2021-01-30T09:53:33.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="pwntools">
+<meta property="article:tag" content="pwn">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://leeyuxun.github.io/pwntools%E6%A8%A1%E5%9D%97%E6%80%BB%E7%BB%93.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>pwntools模块总结 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/pwntools%E6%A8%A1%E5%9D%97%E6%80%BB%E7%BB%93.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          pwntools模块总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-01-28 09:31:55" itemprop="dateCreated datePublished" datetime="2021-01-28T09:31:55+08:00">2021-01-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-01-30 17:53:33" itemprop="dateModified" datetime="2021-01-30T17:53:33+08:00">2021-01-30</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tools/" itemprop="url" rel="index"><span itemprop="name">tools</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>pwntools 是一款专门用于CTF二进制Exploit编写的python库；<span id="more"></span></p>
+<h1 id="功能"><a href="#功能" class="headerlink" title="功能"></a>功能</h1><h2 id="环境变量设置"><a href="#环境变量设置" class="headerlink" title="环境变量设置"></a>环境变量设置</h2><p>由于二进制文件运行环境不同，需要进行环境设置才能够正常运行exp，比如有一些需要进行汇编，但是32的汇编和64的汇编不同；</p>
+<p>环境变量有目标架构、操作系统、字长、字节序，设置方式如下：</p>
+<ul>
+<li><p>通过设置全局变量<code>context</code>一次性进行设置、同时也可以设置：目标架构、操作系统、字长、字节序；</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>context.clear() 				<span class="comment"># 清空context</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>context.arch      = <span class="string">'i386'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>context.os        = <span class="string">'linux'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>context.endian    = <span class="string">'little'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>context.word_size = <span class="number">32</span></span><br></pre></td></tr></table></figure></li>
+<li><p>直接通过<code>context</code>这个函数来一次性设置所有需要设置的参数；</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>asm(<span class="string">'nop'</span>)</span><br><span class="line"><span class="string">'\x90'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>context(arch=<span class="string">'arm'</span>, os=<span class="string">'linux'</span>, endian=<span class="string">'big'</span>, word_size=<span class="number">32</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>asm(<span class="string">'nop'</span>)</span><br><span class="line"><span class="string">'\xe3 \xf0\x00'</span></span><br></pre></td></tr></table></figure></li>
+<li><p>将目标体系结构指定为函数定义的参数；</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>asm(<span class="string">'nop'</span>)</span><br><span class="line"><span class="string">'\x90'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>asm(<span class="string">'nop'</span>, arch=<span class="string">'amd64'</span>)</span><br><span class="line"><span class="string">'\x00\xf0 \xe3'</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="连接及信息传输"><a href="#连接及信息传输" class="headerlink" title="连接及信息传输"></a>连接及信息传输</h2><p>要进行漏洞利用，首先就需要与程序进行通信，pwntools提供的函数能够与本地或远程进行通信；</p>
+<h3 id="process-本地交互"><a href="#process-本地交互" class="headerlink" title="process()本地交互"></a><code>process()</code>本地交互</h3><p>使用<code>process()</code>函数创建了一个进程对象p，创建进程对象p之后可以使用它进行一系列的输入输出交互；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">p = process([<span class="string">'filename'</span>, <span class="string">'argv_1'</span>, <span class="string">'argv_2'</span>, …], cwd=<span class="string">"working_directory"</span>)</span><br><span class="line">eg.</span><br><span class="line">p = process(<span class="string">'/bin/sh'</span>)</span><br><span class="line">p.clean()	<span class="comment"># 清空消息缓存</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="remote-远程交互"><a href="#remote-远程交互" class="headerlink" title="remote()远程交互"></a><code>remote()</code>远程交互</h3><p>使用<code>remote()</code>函数创建了一个进程对象<code>conn</code>进行socket通信；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conn = remote(<span class="string">'ip_address'</span>, port_num)</span><br></pre></td></tr></table></figure>
+
+<p><code>Ip_address</code>可以是IP、域名或者本地0；</p>
+<h3 id="ssh-登陆并执行命令行"><a href="#ssh-登陆并执行命令行" class="headerlink" title="ssh()登陆并执行命令行"></a><code>ssh()</code>登陆并执行命令行</h3><p>pwntools同时提供ssh连接方式；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">s = ssh(host=<span class="string">'ip_address'</span>, user=<span class="string">'username'</span>, port=port_num, password=<span class="string">'password'</span>)</span><br><span class="line"><span class="comment"># 创建进程</span></span><br><span class="line">c = s.process(<span class="string">'command'</span>)</span><br><span class="line"><span class="comment"># 和正常的本地进程交互相同，可以接收、发送数据</span></span><br><span class="line">c.recv()</span><br><span class="line">c.send()</span><br><span class="line"><span class="comment"># 同时可以使用nc打开另外一个连接通道</span></span><br><span class="line">nc = s.run(<span class="string">'nc 127.0.0.1 8888'</span>) 	<span class="comment"># run()和process()功能相同</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="listen-本地监听"><a href="#listen-本地监听" class="headerlink" title="listen()本地监听"></a><code>listen()</code>本地监听</h3><p>pwntools提供<code>listen()</code>函数开启本地的监听端口；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>l = listen()</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>r = remote(<span class="string">'localhost'</span>, l.lport)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>conn = l.wait_for_connection()</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>r.send(<span class="string">'hello'</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>conn.recv()</span><br><span class="line"><span class="string">'hello'</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="数据接收"><a href="#数据接收" class="headerlink" title="数据接收"></a>数据接收</h3><p>实现数据的接收，首先建立起一个具备交互的对象，然后调用接收函数<code>recv()</code>、<code>recvline()</code>、<code>recvuntil()</code>接收数据；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">conn = process(<span class="string">'file_path'</span>)</span><br><span class="line">conn.recv(<span class="number">256</span>, timeout = default)			<span class="comment"># 接收到缓冲区中的256bytes的信息</span></span><br><span class="line">conn.recvline(keepends=<span class="literal">True</span>)				<span class="comment"># 接受一行数据，keepends为是否保留行尾的'\n'</span></span><br><span class="line">conn.recvuntil(<span class="string">'string'</span>, drop=fasle)		<span class="comment"># 接收数据直到'string'出现才会执行下一行代码</span></span><br><span class="line">conn.recvall()								<span class="comment"># 一直接收直到 EOF</span></span><br><span class="line">conn.recvrepeat(timeout = default)			<span class="comment"># 持续接受直到EOF或timeout</span></span><br><span class="line">conn.clear()								<span class="comment"># 清空消息缓存</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 直接进行交互，相当于回到shell的模式，在取得shell之后使用</span></span><br><span class="line">conn.interactive()</span><br></pre></td></tr></table></figure>
+
+<h3 id="数据发送"><a href="#数据发送" class="headerlink" title="数据发送"></a>数据发送</h3><p>与数据接收类似；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">conn = process(<span class="string">'file_path'</span>)</span><br><span class="line">conn.send(data)				<span class="comment"># 发送data数据</span></span><br><span class="line">conn.sendline(data)			<span class="comment"># 在data数据后自动添加一个'\n'换行符</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="打包与解包"><a href="#打包与解包" class="headerlink" title="打包与解包"></a>打包与解包</h2><p>在漏洞利用的过程当中，往往需要将输入的payload转化成8位、16位、32位或64位、大端或小端所对应格式；</p>
+<p>pwntools提供了一组函数用来对给定的数据按照一定的格式进行打包和解包，这些函数以p或u为开头，后面加上一个数字代表位数；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 打包一个整数，即将一个数字转换为字符</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>p8(<span class="number">0xde</span>)</span><br><span class="line"><span class="string">'\xde'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>p16(<span class="number">0xdead</span>)</span><br><span class="line"><span class="string">'\xad\xde'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>p32(<span class="number">0xdeadbeef</span>)</span><br><span class="line"><span class="string">'\xef\xbe\xad\xde'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>p64(<span class="number">0xdeadbeef</span>)</span><br><span class="line"><span class="string">'\xef\xbe\xad\xde\x00\x00\x00\x00'</span></span><br><span class="line"><span class="comment"># 由于linux编译的程序是小端序的，所以转换后的顺序是反的</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 解包一个字符串，得到整数</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">hex</span>(u8(<span class="string">'\xde'</span>))</span><br><span class="line"><span class="string">'0xde'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">hex</span>(u16(<span class="string">'\xad\xde'</span>))</span><br><span class="line"><span class="string">'0xdead'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">hex</span>(u32(<span class="string">'\xef\xbe\xad\xde'</span>))</span><br><span class="line"><span class="string">'0xdeadbeef'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">hex</span>(u64(<span class="string">'\xef\xbe\xad\xde\x00\x00\x00\x00'</span>))</span><br><span class="line"><span class="string">'0xdeadbeef'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">hex</span>(u64(<span class="string">'\x00\x00\x00\x00\xef\xbe\xad\xde'</span>))</span><br><span class="line"><span class="string">'0xdeadbeef00000000'</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="汇编与反汇编"><a href="#汇编与反汇编" class="headerlink" title="汇编与反汇编"></a>汇编与反汇编</h2><p>pwntools提供了<code>asm()</code>和<code>disasm()</code>两个函数进行汇编和反汇编的转换；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>asm(<span class="string">'mov eax, 0'</span>)</span><br><span class="line"><span class="string">'\xb8\x00\x00\x00\x00'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>asm(<span class="string">'mov eax, 0'</span>).encode(<span class="string">'hex'</span>)</span><br><span class="line"><span class="string">'b800000000'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span> disasm(<span class="string">'\xb8\x00\x00\x00\x00'</span>)</span><br><span class="line">   <span class="number">0</span>:   b8 <span class="number">00</span> <span class="number">00</span> <span class="number">00</span> <span class="number">00</span>          mov    eax, <span class="number">0x0</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span> disasm(<span class="string">'6a0258cd80ebf9'</span>.decode(<span class="string">'hex'</span>))</span><br><span class="line">   <span class="number">0</span>:   6a 02                   push   <span class="number">0x2</span></span><br><span class="line">   <span class="number">2</span>:   <span class="number">58</span>                      pop    eax</span><br><span class="line">   <span class="number">3</span>:   cd <span class="number">80</span>                   <span class="built_in">int</span>    <span class="number">0x80</span></span><br><span class="line">   <span class="number">5</span>:   eb f9                   jmp    <span class="number">0x0</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="ELF文件解析"><a href="#ELF文件解析" class="headerlink" title="ELF文件解析"></a>ELF文件解析</h2><p>在漏洞利用脚本的编写过程中，经常需要使用<strong>got表地址</strong>、<strong>plt表地址</strong>、或是<strong>system函数在libc中的偏移</strong>；</p>
+<p>pwntool的FLE模块能够快速找到相应的地址；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>elf = ELF(<span class="string">'bin-path'</span>)		<span class="comment"># 加载二进制文件</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>elf.address					<span class="comment"># 文件装载的基地址</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>elf.got[<span class="string">'fun_name'</span>] 		<span class="comment"># 获取对应函数的got表地址</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>elf.plt[<span class="string">'fun_name'</span>] 		<span class="comment"># 获取对应函数的plt表地址</span></span><br><span class="line"><span class="comment"># eg.</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>e = ELF(<span class="string">'/bin/bash'</span>)</span><br><span class="line">[*] <span class="string">'/bin/bash'</span></span><br><span class="line">    Arch:     amd64-<span class="number">64</span>-little</span><br><span class="line">    RELRO:    Full RELRO</span><br><span class="line">    Stack:    Canary found</span><br><span class="line">    NX:       NX enabled</span><br><span class="line">    PIE:      PIE enabled</span><br><span class="line">    FORTIFY:  Enabled</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span> <span class="built_in">hex</span>(e.address)</span><br><span class="line"><span class="number">0x0</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span> <span class="built_in">hex</span>(e.symbols[<span class="string">'write'</span>])</span><br><span class="line"><span class="number">0x2c0a0</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span> <span class="built_in">hex</span>(e.got[<span class="string">'write'</span>])</span><br><span class="line"><span class="number">0x306988</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span> <span class="built_in">hex</span>(e.plt[<span class="string">'write'</span>])</span><br><span class="line"><span class="number">0x2c0a0</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 同样，也可以打开一个libc.so来解析其中system的位置</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>libc = ELF(<span class="string">'libc-path'</span>)		<span class="comment"># 加载二进制文件</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>libc.symbols[<span class="string">'system'</span>]		<span class="comment"># 获取函数地址</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 修改ELF文件代码</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>e = ELF(<span class="string">'/bin/cat'</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>e.read(e.address+<span class="number">1</span>, <span class="number">3</span>)</span><br><span class="line"><span class="string">'ELF'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>e.asm(e.address, <span class="string">'ret'</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>e.save(<span class="string">'/tmp/quiet-cat'</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>disasm(file(<span class="string">'/tmp/quiet-cat'</span>,<span class="string">'rb'</span>).read(<span class="number">1</span>))</span><br><span class="line"><span class="string">'   0:   c3                      ret'</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="DynEFL泄漏函数地址"><a href="#DynEFL泄漏函数地址" class="headerlink" title="DynEFL泄漏函数地址"></a>DynEFL泄漏函数地址</h2><p>DynELF是pwntools中专门用来应对无libc情况的漏洞利用模块；</p>
+<p>在没有目标系统libc文件的情况下，可以使用DynELF模块来泄漏地址信息，从而获取到shell；</p>
+<p>在没有目标系统libc文件的情况下，DynEFL函数能够解析动态链接的ELF二进制文件的符号，给定一个函数可以泄漏任意地址信息，DynEFL函数进而能够解析加载的库中任意符号，使用lookup方法用来寻找函数符号的地址；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">p = process(<span class="string">'bin-path'</span>)</span><br><span class="line">elf = EFL(<span class="string">'bin-path'</span>)</span><br><span class="line"><span class="comment"># 声明一个只包含一个地址参数的函数leak()</span></span><br><span class="line"><span class="comment"># 并且这个函数能够泄漏至少位于这个地址的一字节的数据</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">leak</span>(<span class="params">address</span>):</span><br><span class="line">    data = p.read(address, <span class="number">4</span>)</span><br><span class="line">    log.debug(<span class="string">"%#x =&gt; %s"</span> % (address, (data <span class="keyword">or</span> <span class="string">''</span>).encode(<span class="string">'hex'</span>)))</span><br><span class="line">    <span class="keyword">return</span> data</span><br><span class="line">d = DynELF(leak,elf)</span><br><span class="line">system_addr = d.lookup(<span class="string">'system'</span>,<span class="string">'libc'</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="FmtStr格式化字符串"><a href="#FmtStr格式化字符串" class="headerlink" title="FmtStr格式化字符串"></a>FmtStr格式化字符串</h2><p>在格式化字符串利用中，攻击者往往需要通过漏洞实现任意内存地址写，但构造合适的payload往往需要占用大量的时间；</p>
+<p>FmtStr模块中实现了和格式化字符串漏洞利用相关的多个函数，极大的加速了漏洞利用脚本的开发速度；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">fmtstr_payload(offset, writes, numbwritten, write_size)</span><br><span class="line"><span class="comment"># eg.</span></span><br><span class="line">fmtstr_payload(<span class="number">5</span>, {<span class="number">0x8041337</span>:<span class="number">0xdeadbeef</span>}, write_size=<span class="string">'short'</span>)</span><br><span class="line"><span class="comment"># 生成一段payload实现修改0x8041337地址内容为 0xdeadbeef</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="ShellCraft构造shellcode"><a href="#ShellCraft构造shellcode" class="headerlink" title="ShellCraft构造shellcode"></a>ShellCraft构造shellcode</h2><p>shellcraft模块包含一些生成shellcode的函数，用于生成shellcode；</p>
+<p>其中的子模块声明架构，比如shellcraft.arm是ARM架构的、shellcraft.amd64是AMD64架构、shellcraft.i386是Intel 80386架构的、以及有一个shellcraft.common是所有架构通用的；</p>
+<p>有时需要在写exp的时候用到简单的shellcode，pwntools提供了对简单的shellcode的支持：<br>首先，常用的，也是最简单的shellcode，即调用<code>/bin/sh</code>可以通过shellcraft得到；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">print</span> shellcraft.sh()	<span class="comment"># 打印出shellcode</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>asm(shellcraft.sh())	<span class="comment"># 汇编后的shellcode</span></span><br></pre></td></tr></table></figure>
+
+<p>由于各个平台，特别是32位和64位的shellcode不一样，所以最好先设置context；</p>
+<h2 id="ROP链构造"><a href="#ROP链构造" class="headerlink" title="ROP链构造"></a>ROP链构造</h2><p>ROP原理：由于NX开启不能在栈上执行shellcode，但是可以在栈上布置一系列的返回地址与参数，这样可以进行多次的函数调用，通过函数尾部的ret语句控制程序的流程，而用程序中的一些<code>pop/ret</code>的代码块(称之为gadget)来平衡堆栈。其完成的事情无非就是放上<code>/bin/sh</code>，覆盖程序中某个函数的GOT为system的，然后ret到那个函数的plt就可以触发<code>system('/bin/sh')</code>。由于是利用ret指令的exploit，所以叫Return-Oriented Programming（如果没有开启ASLR，可以直接使用ret2libc技术）。</p>
+<p>实现ROP的难点是如何在栈上布置返回地址以及函数参数；</p>
+<p>而ROP模块的作用，是自动地寻找程序里的gadget，自动在栈上部署对应的参数；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>elf = ELF(<span class="string">'ropasaurusrex'</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>rop = ROP(elf)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>rop.read(<span class="number">0</span>, elf.bss(<span class="number">0x80</span>))</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>rop.dump()</span><br><span class="line">  [<span class="string">'0x0000:        0x80482fc (read)'</span>,</span><br><span class="line">   <span class="string">'0x0004:       0xdeadbeef'</span>,</span><br><span class="line">   <span class="string">'0x0008:              0x0'</span>,</span><br><span class="line">   <span class="string">'0x000c:        0x80496a8'</span>]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">str</span>(rop)</span><br><span class="line">  <span class="string">'\xfc\x82\x04\x08\xef\xbe\xad\xde\x00\x00\x00\x00\xa8\x96\x04\x08'</span></span><br></pre></td></tr></table></figure>
+
+<p>使用<code>ROP(elf)</code>来产生一个rop的对象，这时rop链还是空的，需要在其中添加函数；</p>
+<p>因为ROP对象实现了<code>__getattr__</code>的功能，可以直接通过<code>func call</code>的形式来添加函数；</p>
+<p><code>rop.read(0, elf.bss(0x80))</code>实际相当于<code>rop.call('read', (0, elf.bss(0x80)))</code>；</p>
+<p>通过多次添加函数调用，最后使用str将整个rop链dump出来就可以了；</p>
+<ul>
+<li>  <code>call(resolvable, arguments=())</code>：添加一个调用，resolvable可以是一个符号，也可以是一个int型地址，注意后面的参数必须是元组否则会报错，即使只有一个参数也要写成元组的形式(在后面加上一个逗号)；</li>
+<li>  <code>chain()</code>：返回当前的字节序列，即payload；</li>
+<li>  <code>dump()</code>：直观地展示出当前的rop链；</li>
+<li>  <code>raw()</code>：在rop链中加上一个整数或字符串；</li>
+<li>  <code>search(move=0, regs=None, order=’size’)</code>：按特定条件搜索gadget，没仔细研究过；</li>
+<li>  <code>unresolve(value)</code>：给出一个地址，反解析出符号；</li>
+</ul>
+<h2 id="cyclic字符串生成"><a href="#cyclic字符串生成" class="headerlink" title="cyclic字符串生成"></a>cyclic字符串生成</h2><p>可以按照一定规律生成指定长度的字符串，这个是一个在栈溢出或者各种需要找偏移的时候比较有用的函数；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>cyclic(<span class="number">30</span>)		<span class="comment"># 生成长度为30字节的字符串</span></span><br><span class="line"><span class="string">'aaaabaaacaaadaaaeaaafaaagaaaha'</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>cyclic_find(<span class="string">'abcd'</span>)		<span class="comment"># 寻找字符串'abcd'的偏移</span></span><br><span class="line"><span class="number">2807</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="gdb调试"><a href="#gdb调试" class="headerlink" title="gdb调试"></a>gdb调试</h2><p>pwntools提供了用于在程序运行中调用gdb的函数，配合gdb进行调试，设置断点之后便能够在运行过程中直接调用GDB；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gdb.attach(target, gdbscript = <span class="literal">None</span>, exe = <span class="literal">None</span>, arch = <span class="literal">None</span>)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>  target为所要调试的进程；</li>
+<li>  gdbscript为gdb脚本字符串，在启动gdb时，会先执行该脚本；</li>
+<li>  exe为所调试进程的二进制文件路径；</li>
+<li>  arch为架构；</li>
+</ul>
+<p>一般情况下，只需要使用前两个参数即可。</p>
+<h2 id="DEBUG日志"><a href="#DEBUG日志" class="headerlink" title="DEBUG日志"></a>DEBUG日志</h2><p>当context.log_level被设置为 “DEBUG”，输入和输出会被直接输出，显示栈信息；</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">context.log_level = <span class="string">'DEBUG'</span></span><br></pre></td></tr></table></figure>
+
+<p>参考：</p>
+<p>​    <a target="_blank" rel="noopener" href="https://pwntools-docs-zh.readthedocs.io/zh_CN/dev/intro.html">https://pwntools-docs-zh.readthedocs.io/zh_CN/dev/intro.html</a></p>
+<p>​    <a target="_blank" rel="noopener" href="http://brieflyx.me/2015/python-module/pwntools-intro/">http://brieflyx.me/2015/python-module/pwntools-intro/</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/pwntools%E6%A8%A1%E5%9D%97%E6%80%BB%E7%BB%93.html" title="pwntools模块总结">https://leeyuxun.github.io/pwntools模块总结.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/pwntools/" rel="tag"><i class="fa fa-tag"></i> pwntools</a>
+              <a href="/tags/pwn/" rel="tag"><i class="fa fa-tag"></i> pwn</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/IDA%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD%E6%80%BB%E7%BB%93.html" rel="prev" title="IDA基础功能总结">
+      <i class="fa fa-chevron-left"></i> IDA基础功能总结
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html" rel="next" title="二进制-栈溢出漏洞">
+      二进制-栈溢出漏洞 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD"><span class="nav-number">2.</span> <span class="nav-text">功能</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%E8%AE%BE%E7%BD%AE"><span class="nav-number">2.1.</span> <span class="nav-text">环境变量设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9E%E6%8E%A5%E5%8F%8A%E4%BF%A1%E6%81%AF%E4%BC%A0%E8%BE%93"><span class="nav-number">2.2.</span> <span class="nav-text">连接及信息传输</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#process-%E6%9C%AC%E5%9C%B0%E4%BA%A4%E4%BA%92"><span class="nav-number">2.2.1.</span> <span class="nav-text">process()本地交互</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#remote-%E8%BF%9C%E7%A8%8B%E4%BA%A4%E4%BA%92"><span class="nav-number">2.2.2.</span> <span class="nav-text">remote()远程交互</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ssh-%E7%99%BB%E9%99%86%E5%B9%B6%E6%89%A7%E8%A1%8C%E5%91%BD%E4%BB%A4%E8%A1%8C"><span class="nav-number">2.2.3.</span> <span class="nav-text">ssh()登陆并执行命令行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#listen-%E6%9C%AC%E5%9C%B0%E7%9B%91%E5%90%AC"><span class="nav-number">2.2.4.</span> <span class="nav-text">listen()本地监听</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%8E%A5%E6%94%B6"><span class="nav-number">2.2.5.</span> <span class="nav-text">数据接收</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%8F%91%E9%80%81"><span class="nav-number">2.2.6.</span> <span class="nav-text">数据发送</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%93%E5%8C%85%E4%B8%8E%E8%A7%A3%E5%8C%85"><span class="nav-number">2.3.</span> <span class="nav-text">打包与解包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E4%B8%8E%E5%8F%8D%E6%B1%87%E7%BC%96"><span class="nav-number">2.4.</span> <span class="nav-text">汇编与反汇编</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ELF%E6%96%87%E4%BB%B6%E8%A7%A3%E6%9E%90"><span class="nav-number">2.5.</span> <span class="nav-text">ELF文件解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DynEFL%E6%B3%84%E6%BC%8F%E5%87%BD%E6%95%B0%E5%9C%B0%E5%9D%80"><span class="nav-number">2.6.</span> <span class="nav-text">DynEFL泄漏函数地址</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FmtStr%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="nav-number">2.7.</span> <span class="nav-text">FmtStr格式化字符串</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ShellCraft%E6%9E%84%E9%80%A0shellcode"><span class="nav-number">2.8.</span> <span class="nav-text">ShellCraft构造shellcode</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ROP%E9%93%BE%E6%9E%84%E9%80%A0"><span class="nav-number">2.9.</span> <span class="nav-text">ROP链构造</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cyclic%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%94%9F%E6%88%90"><span class="nav-number">2.10.</span> <span class="nav-text">cyclic字符串生成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gdb%E8%B0%83%E8%AF%95"><span class="nav-number">2.11.</span> <span class="nav-text">gdb调试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DEBUG%E6%97%A5%E5%BF%97"><span class="nav-number">2.12.</span> <span class="nav-text">DEBUG日志</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="实验内容基本内容是修改Linux 0.11的终端设备处理代码，对键盘输入和字符显示进行非常规的控制.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="操作系统内核 实验六">
+<meta property="og:url" content="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E5%85%AD.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="实验内容基本内容是修改Linux 0.11的终端设备处理代码，对键盘输入和字符显示进行非常规的控制.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125205142.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125210842.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125211111.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125211543.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125215521786.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125215443319.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125215729781.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125234719.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125234858493.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125235053453.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125235327605.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125235516207.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191125235710080.png">
+<meta property="og:image" content="c:/Users/Levi/AppData/Roaming/Typora/typora-user-images/image-20191126000059618.png">
+<meta property="article:published_time" content="2019-12-20T14:41:57.000Z">
+<meta property="article:modified_time" content="2020-04-02T06:34:14.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="输入输出管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125205142.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E5%85%AD.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>操作系统内核 实验六 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E5%85%AD.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          操作系统内核 实验六
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-20 22:41:57" itemprop="dateCreated datePublished" datetime="2019-12-20T22:41:57+08:00">2019-12-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-02 14:34:14" itemprop="dateModified" datetime="2020-04-02T14:34:14+08:00">2020-04-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8%E5%AE%9E%E9%AA%8C/" itemprop="url" rel="index"><span itemprop="name">操作系统内核实验</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="实验内容"><a href="#实验内容" class="headerlink" title="实验内容"></a>实验内容</h1><p>基本内容是修改Linux 0.11的终端设备处理代码，对键盘输入和字符显示进行非常规的控制.</p>
+<span id="more"></span>
+
+<h1 id="实验要求"><a href="#实验要求" class="headerlink" title="实验要求"></a>实验要求</h1><p>修改内核中I/O设备代码，实现按F12，ls命令显示的信息替换成<code>*</code>，再按F12恢复正常，如此反复。</p>
+<h1 id="准备知识"><a href="#准备知识" class="headerlink" title="准备知识"></a>准备知识</h1><h2 id="安装虚拟机qemu环境"><a href="#安装虚拟机qemu环境" class="headerlink" title="安装虚拟机qemu环境"></a>安装虚拟机<code>qemu</code>环境</h2><p>安装<code>build-essential</code>软件包和<code>qemu</code>包</p>
+<p>其中<code>build-essential</code>软件包的作用是<strong>提供编译程序必须软件包的列表信息</strong>.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install build-essential</span><br><span class="line">sudo apt-get install qemu</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125205142.png"></p>
+<h2 id="对文件进行编译运行"><a href="#对文件进行编译运行" class="headerlink" title="对文件进行编译运行"></a>对文件进行编译运行</h2><ol>
+<li><p>输入<code>make</code>编译</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125210842.png"></p>
+</li>
+<li><p>输入<code>make start</code>开始运行</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125211111.png"></p>
+</li>
+<li><p>在虚拟机中按下F12，跳出四个进程信息<br><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125211543.png"></p>
+</li>
+<li><p>输入<code>ls</code>命令显示文件夹内容</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125215521786.png" alt="image-20191125215521786"></p>
+</li>
+</ol>
+<h1 id="实验过程"><a href="#实验过程" class="headerlink" title="实验过程"></a>实验过程</h1><h2 id="修改kernel-chr-drv-keyboard-S的文件"><a href="#修改kernel-chr-drv-keyboard-S的文件" class="headerlink" title="修改kernel/chr_drv/keyboard.S的文件"></a>修改<code>kernel/chr_drv/keyboard.S</code>的文件</h2><ol>
+<li><p>F12功能</p>
+<p>键盘I/O是典型的中断驱动，在kernel/chr_drv/console.c文件中，控制台进行初始化，代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">con_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	set_trap_gate(<span class="number">0x21</span>,&amp;keyboard_interrupt); </span><br><span class="line">			<span class="comment">//键盘中断响应函数设为keyboard_interrupt</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>所以每次按键有动作，<code>keyboard_interrupt</code>函数就会被调用，它在文件<code>kernel/chr_drv/keyboard.S</code>中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">func:		<span class="comment">/*将功能键转化成转义字符存取到读队列中*/</span></span><br><span class="line">    pushl %eax</span><br><span class="line">    pushl %ecx</span><br><span class="line">    pushl %edx</span><br><span class="line">    call show_stat  </span><br><span class="line">    popl %edx</span><br><span class="line">    popl %ecx</span><br><span class="line">    popl %eax</span><br></pre></td></tr></table></figure></li>
+<li><p>分析上述代码，会调用<code>show_stat</code>函数,显示当前进程状态，如下图</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125215443319.png" alt="image-20191125215443319"></p>
+</li>
+<li><p>将<code>call show_stat</code>注释掉，即可屏蔽掉<code>show_sart</code>函数从而实现要实现的目标功能；</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125215729781.png" alt="image-20191125215729781"></p>
+</li>
+</ol>
+<h2 id="修改kernel-chr-drv-tty-io-c文件"><a href="#修改kernel-chr-drv-tty-io-c文件" class="headerlink" title="修改kernel/chr_drv/tty_io.c文件"></a>修改<code>kernel/chr_drv/tty_io.c</code>文件</h2><ol>
+<li><p>键盘每次输入一个字符，操作系统都会将这个字符送到字符缓冲区进行处理，F12是一个功能键，它的扫描码是<code>esc,[,[,L</code> ，分别对应<code>ASCII</code>码的<code>27,91,91,76</code>，所以要连续判断四次字符。如果判断这几个字符的时候输出了一个其他的字符，它应该显示这个其他字符， 这段处理程序就应该写在操作系统判断字符做出功能的代码之前。</p>
+</li>
+<li><p>修改<code>copy_to_cooked</code>函数，添加处理程序如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 增加的全局变量 */</span></span><br><span class="line"><span class="type">int</span> judge=<span class="number">-1</span>;</span><br><span class="line"><span class="type">int</span> f1=<span class="number">0</span>,f2=<span class="number">0</span>,f3=<span class="number">0</span>;</span><br><span class="line"><span class="type">long</span> j=<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">copy_to_cooked</span><span class="params">(<span class="keyword">struct</span> tty_struct * tty)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">signed</span> <span class="type">char</span> c;</span><br><span class="line">	<span class="comment">//now用来判断当前时间戳</span></span><br><span class="line">	<span class="type">long</span> now;</span><br><span class="line">    </span><br><span class="line">	<span class="keyword">while</span> (!EMPTY(tty-&gt;read_q) &amp;&amp; !FULL(tty-&gt;secondary)) &#123;</span><br><span class="line">		GETCH(tty-&gt;read_q,c);</span><br><span class="line">		<span class="comment">//开始添加代码</span></span><br><span class="line">		<span class="keyword">if</span>(c==<span class="number">27</span>)</span><br><span class="line">	    &#123;   </span><br><span class="line">			f1=<span class="number">1</span>;</span><br><span class="line">			j=jiffies;</span><br><span class="line">			<span class="comment">//获取当前函数的CPU心跳数,用来计时</span></span><br><span class="line">		&#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(f1==<span class="number">1</span>&amp;&amp;f2==<span class="number">0</span>&amp;&amp;c==<span class="number">91</span>)</span><br><span class="line">			f2=<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(f1==<span class="number">1</span>&amp;&amp;f2==<span class="number">1</span>&amp;&amp;c==<span class="number">91</span>)</span><br><span class="line">			f3=<span class="number">1</span>;</span><br><span class="line">	    <span class="keyword">else</span> <span class="keyword">if</span>(f1==<span class="number">1</span>&amp;&amp;f2==<span class="number">1</span>&amp;&amp;f3==<span class="number">1</span>&amp;&amp;c==<span class="number">76</span>)</span><br><span class="line">	    &#123;</span><br><span class="line">			now=jiffies;</span><br><span class="line">			<span class="keyword">if</span>((now-j)&gt;<span class="number">10</span>)</span><br><span class="line">			<span class="comment">//比如人为的输入esc,[,[,L 也会认为是F12,</span></span><br><span class="line">            <span class="comment">//所以要根据四个字符的到达的时间判断是一次输入还是多次输入的</span></span><br><span class="line">	        &#123;</span><br><span class="line">            	printk(<span class="string">&quot;%ld \t %ld \n&quot;</span>,j,now);</span><br><span class="line">            	<span class="keyword">break</span>;</span><br><span class="line">        	&#125;</span><br><span class="line">            judge*=<span class="number">-1</span>;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        	f1=f2=f3=<span class="number">0</span>;</span><br><span class="line">		<span class="comment">//添加代码结束</span></span><br><span class="line">		<span class="keyword">if</span> (c==<span class="number">13</span>)</span><br><span class="line">			<span class="keyword">if</span> (I_CRNL(tty))</span><br><span class="line">				c=<span class="number">10</span>;</span><br><span class="line">			<span class="keyword">else</span> <span class="keyword">if</span> (I_NOCR(tty))</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			<span class="keyword">else</span> ;</span><br><span class="line">		<span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="number">10</span> &amp;&amp; I_NLCR(tty))</span><br><span class="line">			c=<span class="number">13</span>;</span><br><span class="line">		<span class="keyword">if</span> (I_UCLC(tty))</span><br><span class="line">			c=<span class="built_in">tolower</span>(c);</span><br><span class="line">		<span class="keyword">if</span> (L_CANON(tty)) &#123;</span><br><span class="line">			<span class="keyword">if</span> (c==KILL_CHAR(tty)) &#123;</span><br><span class="line">				<span class="comment">/* deal with killing the input line */</span></span><br><span class="line">				<span class="keyword">while</span>(!(EMPTY(tty-&gt;secondary) ||</span><br><span class="line">				        (c=LAST(tty-&gt;secondary))==<span class="number">10</span> ||</span><br><span class="line">				        c==EOF_CHAR(tty))) &#123;</span><br><span class="line">					<span class="keyword">if</span> (L_ECHO(tty)) &#123;</span><br><span class="line">						<span class="keyword">if</span> (c&lt;<span class="number">32</span>)</span><br><span class="line">							PUTCH(<span class="number">127</span>,tty-&gt;write_q);</span><br><span class="line">						PUTCH(<span class="number">127</span>,tty-&gt;write_q);</span><br><span class="line">						tty-&gt;write(tty);</span><br><span class="line">					&#125;</span><br><span class="line">					DEC(tty-&gt;secondary.head);</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (c==ERASE_CHAR(tty)) &#123;</span><br><span class="line">				<span class="keyword">if</span> (EMPTY(tty-&gt;secondary) ||</span><br><span class="line">				   (c=LAST(tty-&gt;secondary))==<span class="number">10</span> ||</span><br><span class="line">				   c==EOF_CHAR(tty))</span><br><span class="line">					<span class="keyword">continue</span>;</span><br><span class="line">				<span class="keyword">if</span> (L_ECHO(tty)) &#123;</span><br><span class="line">					<span class="keyword">if</span> (c&lt;<span class="number">32</span>)</span><br><span class="line">						PUTCH(<span class="number">127</span>,tty-&gt;write_q);</span><br><span class="line">					PUTCH(<span class="number">127</span>,tty-&gt;write_q);</span><br><span class="line">					tty-&gt;write(tty);</span><br><span class="line">				&#125;</span><br><span class="line">				DEC(tty-&gt;secondary.head);</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (c==STOP_CHAR(tty)) &#123;</span><br><span class="line">				tty-&gt;stopped=<span class="number">1</span>;</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (c==START_CHAR(tty)) &#123;</span><br><span class="line">				tty-&gt;stopped=<span class="number">0</span>;</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (L_ISIG(tty)) &#123;</span><br><span class="line">			<span class="keyword">if</span> (c==INTR_CHAR(tty)) &#123;</span><br><span class="line">				tty_intr(tty,INTMASK);</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (c==QUIT_CHAR(tty)) &#123;</span><br><span class="line">				tty_intr(tty,QUITMASK);</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> (c==<span class="number">10</span> || c==EOF_CHAR(tty))</span><br><span class="line">			tty-&gt;secondary.data++;</span><br><span class="line">		<span class="keyword">if</span> (L_ECHO(tty)) &#123;</span><br><span class="line">			<span class="keyword">if</span> (c==<span class="number">10</span>) &#123;</span><br><span class="line">				PUTCH(<span class="number">10</span>,tty-&gt;write_q);</span><br><span class="line">				PUTCH(<span class="number">13</span>,tty-&gt;write_q);</span><br><span class="line">			&#125; <span class="keyword">else</span> <span class="keyword">if</span> (c&lt;<span class="number">32</span>) &#123;</span><br><span class="line">				<span class="keyword">if</span> (L_ECHOCTL(tty)) &#123;</span><br><span class="line">					PUTCH(<span class="string">&#x27;^&#x27;</span>,tty-&gt;write_q);</span><br><span class="line">					PUTCH(c+<span class="number">64</span>,tty-&gt;write_q);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125; <span class="keyword">else</span></span><br><span class="line">				PUTCH(c,tty-&gt;write_q);</span><br><span class="line">			tty-&gt;write(tty);</span><br><span class="line">		&#125;</span><br><span class="line">		PUTCH(c,tty-&gt;secondary);</span><br><span class="line">	&#125;</span><br><span class="line">	wake_up(&amp;tty-&gt;secondary.proc_list);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="修改kernel-chr-drv-console-c文件"><a href="#修改kernel-chr-drv-console-c文件" class="headerlink" title="修改kernel/chr_drv/console.c文件"></a>修改<code>kernel/chr_drv/console.c</code>文件</h2><ol>
+<li><p><code>tty_io.c</code>文件只是捕捉到了按下F12的状态，还需要在控制程序中添加改变输出的代码，即把所有的字符都变成<code>*</code>；</p>
+</li>
+<li><p>修改<code>con_write</code>函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="type">int</span> judge;	<span class="comment">//引用代码tty_io.c中的judge变量</span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">con_write</span><span class="params">(<span class="keyword">struct</span> tty_struct * tty)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> nr;</span><br><span class="line">    <span class="type">char</span> c;</span><br><span class="line"></span><br><span class="line">    nr = CHARS(tty-&gt;write_q);</span><br><span class="line">    <span class="keyword">while</span> (nr--) &#123;</span><br><span class="line">        GETCH(tty-&gt;write_q,c);</span><br><span class="line">        <span class="keyword">switch</span>(state) &#123;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">                <span class="keyword">if</span> (c&gt;<span class="number">31</span> &amp;&amp; c&lt;<span class="number">127</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (x&gt;=video_num_columns) &#123;</span><br><span class="line">                        x -= video_num_columns;</span><br><span class="line">                        pos -= video_size_row;</span><br><span class="line">                        lf();</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">if</span>(judge==<span class="number">1</span>)	</span><br><span class="line">                        <span class="comment">//通过判断judge是否为1判断是否进行中断</span></span><br><span class="line">                        <span class="comment">//从而判断是否全部输出 *</span></span><br><span class="line">                        c=<span class="string">&#x27;*&#x27;</span>;</span><br><span class="line">                    __asm__(<span class="string">&quot;movb attr,%%ah\n\t&quot;</span></span><br><span class="line">                        <span class="string">&quot;movw %%ax,%1\n\t&quot;</span></span><br><span class="line">                        ::<span class="string">&quot;a&quot;</span> (c),<span class="string">&quot;m&quot;</span> (*(<span class="type">short</span> *)pos)</span><br><span class="line">                        );</span><br><span class="line">                    pos += <span class="number">2</span>;</span><br><span class="line">                    x++;</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="number">27</span>)</span><br><span class="line">                    state=<span class="number">1</span>;</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="number">10</span> || c==<span class="number">11</span> || c==<span class="number">12</span>)</span><br><span class="line">                    lf();</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="number">13</span>)</span><br><span class="line">                    cr();</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (c==ERASE_CHAR(tty))</span><br><span class="line">                    del();</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="number">8</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (x) &#123;</span><br><span class="line">                        x--;</span><br><span class="line">                        pos -= <span class="number">2</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="number">9</span>) &#123;</span><br><span class="line">                    c=<span class="number">8</span>-(x&amp;<span class="number">7</span>);</span><br><span class="line">                    x += c;</span><br><span class="line">                    pos += c&lt;&lt;<span class="number">1</span>;</span><br><span class="line">                    <span class="keyword">if</span> (x&gt;video_num_columns) &#123;</span><br><span class="line">                        x -= video_num_columns;</span><br><span class="line">                        pos -= video_size_row;</span><br><span class="line">                        lf();</span><br><span class="line">                    &#125;</span><br><span class="line">                    c=<span class="number">9</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="number">7</span>)</span><br><span class="line">                    sysbeep();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">1</span>:</span><br><span class="line">                state=<span class="number">0</span>;</span><br><span class="line">                <span class="keyword">if</span> (c==<span class="string">&#x27;[&#x27;</span>)</span><br><span class="line">                    state=<span class="number">2</span>;</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="string">&#x27;E&#x27;</span>)</span><br><span class="line">                    gotoxy(<span class="number">0</span>,y+<span class="number">1</span>);</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="string">&#x27;M&#x27;</span>)</span><br><span class="line">                    ri();</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="string">&#x27;D&#x27;</span>)</span><br><span class="line">                    lf();</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (c==<span class="string">&#x27;Z&#x27;</span>)</span><br><span class="line">                    respond(tty);</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (x==<span class="string">&#x27;7&#x27;</span>)</span><br><span class="line">                    save_cur();</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (x==<span class="string">&#x27;8&#x27;</span>)</span><br><span class="line">                    restore_cur();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">2</span>:</span><br><span class="line">                <span class="keyword">for</span>(npar=<span class="number">0</span>;npar&lt;NPAR;npar++)</span><br><span class="line">                    par[npar]=<span class="number">0</span>;</span><br><span class="line">                npar=<span class="number">0</span>;</span><br><span class="line">                state=<span class="number">3</span>;</span><br><span class="line">                <span class="keyword">if</span> ((ques=(c==<span class="string">&#x27;?&#x27;</span>)))</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">3</span>:</span><br><span class="line">                <span class="keyword">if</span> (c==<span class="string">&#x27;;&#x27;</span> &amp;&amp; npar&lt;NPAR<span class="number">-1</span>) &#123;</span><br><span class="line">                    npar++;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (c&gt;=<span class="string">&#x27;0&#x27;</span> &amp;&amp; c&lt;=<span class="string">&#x27;9&#x27;</span>) &#123;</span><br><span class="line">                    par[npar]=<span class="number">10</span>*par[npar]+c-<span class="string">&#x27;0&#x27;</span>;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> state=<span class="number">4</span>;</span><br><span class="line">            <span class="keyword">case</span> <span class="number">4</span>:</span><br><span class="line">                state=<span class="number">0</span>;</span><br><span class="line">                <span class="keyword">switch</span>(c) &#123;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;G&#x27;</span>: <span class="keyword">case</span> <span class="string">&#x27;`&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (par[<span class="number">0</span>]) par[<span class="number">0</span>]--;</span><br><span class="line">                        gotoxy(par[<span class="number">0</span>],y);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;A&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (!par[<span class="number">0</span>]) par[<span class="number">0</span>]++;</span><br><span class="line">                        gotoxy(x,y-par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;B&#x27;</span>: <span class="keyword">case</span> <span class="string">&#x27;e&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (!par[<span class="number">0</span>]) par[<span class="number">0</span>]++;</span><br><span class="line">                        gotoxy(x,y+par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;C&#x27;</span>: <span class="keyword">case</span> <span class="string">&#x27;a&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (!par[<span class="number">0</span>]) par[<span class="number">0</span>]++;</span><br><span class="line">                        gotoxy(x+par[<span class="number">0</span>],y);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;D&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (!par[<span class="number">0</span>]) par[<span class="number">0</span>]++;</span><br><span class="line">                        gotoxy(x-par[<span class="number">0</span>],y);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;E&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (!par[<span class="number">0</span>]) par[<span class="number">0</span>]++;</span><br><span class="line">                        gotoxy(<span class="number">0</span>,y+par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;F&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (!par[<span class="number">0</span>]) par[<span class="number">0</span>]++;</span><br><span class="line">                        gotoxy(<span class="number">0</span>,y-par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;d&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (par[<span class="number">0</span>]) par[<span class="number">0</span>]--;</span><br><span class="line">                        gotoxy(x,par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;H&#x27;</span>: <span class="keyword">case</span> <span class="string">&#x27;f&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (par[<span class="number">0</span>]) par[<span class="number">0</span>]--;</span><br><span class="line">                        <span class="keyword">if</span> (par[<span class="number">1</span>]) par[<span class="number">1</span>]--;</span><br><span class="line">                        gotoxy(par[<span class="number">1</span>],par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;J&#x27;</span>:</span><br><span class="line">                        csi_J(par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;K&#x27;</span>:</span><br><span class="line">                        csi_K(par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;L&#x27;</span>:</span><br><span class="line">                        csi_L(par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;M&#x27;</span>:</span><br><span class="line">                        csi_M(par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;P&#x27;</span>:</span><br><span class="line">                        csi_P(par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;@&#x27;</span>:</span><br><span class="line">                        csi_at(par[<span class="number">0</span>]);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;m&#x27;</span>:</span><br><span class="line">                        csi_m();</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;r&#x27;</span>:</span><br><span class="line">                        <span class="keyword">if</span> (par[<span class="number">0</span>]) par[<span class="number">0</span>]--;</span><br><span class="line">                        <span class="keyword">if</span> (!par[<span class="number">1</span>]) par[<span class="number">1</span>] = video_num_lines;</span><br><span class="line">                        <span class="keyword">if</span> (par[<span class="number">0</span>] &lt; par[<span class="number">1</span>] &amp;&amp;</span><br><span class="line">                            par[<span class="number">1</span>] &lt;= video_num_lines) &#123;</span><br><span class="line">                            top=par[<span class="number">0</span>];</span><br><span class="line">                            bottom=par[<span class="number">1</span>];</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;s&#x27;</span>:</span><br><span class="line">                        save_cur();</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> <span class="string">&#x27;u&#x27;</span>:</span><br><span class="line">                        restore_cur();</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    set_cursor();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="将更改后的文件重新编译"><a href="#将更改后的文件重新编译" class="headerlink" title="将更改后的文件重新编译"></a>将更改后的文件重新编译</h2><ol>
+<li><p>首先输入命令<code>make clean</code>清空编译；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20191125234719.png"></p>
+</li>
+<li><p>输入命令<code>make</code>和<code>make start</code>进行编译并运行；</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125234858493.png" alt="image-20191125234858493"></p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125235053453.png" alt="image-20191125235053453"></p>
+</li>
+<li><p>输入命令<code>ls</code>，发现输出正常；</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125235327605.png" alt="image-20191125235327605"></p>
+</li>
+<li><p>按下F12，输出四个进程；</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125235516207.png" alt="image-20191125235516207"></p>
+</li>
+<li><p>继续输入<code>ls</code>，输出全是<code>*</code>；</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191125235710080.png" alt="image-20191125235710080"></p>
+</li>
+<li><p>按下F12，输出得全是<code>*</code>；继续输入<code>ls</code>，输出正常。继续测试，按下F12，依次切换<code>*</code>，和正常输出，实验完成。</p>
+<p><img src="C:\Users\Levi\AppData\Roaming\Typora\typora-user-images\image-20191126000059618.png" alt="image-20191126000059618"></p>
+</li>
+</ol>
+<h1 id=""><a href="#" class="headerlink" title=""></a></h1>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E5%85%AD.html" title="操作系统内核 实验六">https://leeyuxun.github.io/操作系统内核-实验六.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA%E7%AE%A1%E7%90%86/" rel="tag"><i class="fa fa-tag"></i> 输入输出管理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%BA%94.html" rel="prev" title="操作系统内核 实验五">
+      <i class="fa fa-chevron-left"></i> 操作系统内核 实验五
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%83.html" rel="next" title="操作系统内核 实验七">
+      操作系统内核 实验七 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E5%86%85%E5%AE%B9"><span class="nav-number">1.</span> <span class="nav-text">实验内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E8%A6%81%E6%B1%82"><span class="nav-number">2.</span> <span class="nav-text">实验要求</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E7%9F%A5%E8%AF%86"><span class="nav-number">3.</span> <span class="nav-text">准备知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E8%99%9A%E6%8B%9F%E6%9C%BAqemu%E7%8E%AF%E5%A2%83"><span class="nav-number">3.1.</span> <span class="nav-text">安装虚拟机qemu环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E6%96%87%E4%BB%B6%E8%BF%9B%E8%A1%8C%E7%BC%96%E8%AF%91%E8%BF%90%E8%A1%8C"><span class="nav-number">3.2.</span> <span class="nav-text">对文件进行编译运行</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">4.</span> <span class="nav-text">实验过程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9kernel-chr-drv-keyboard-S%E7%9A%84%E6%96%87%E4%BB%B6"><span class="nav-number">4.1.</span> <span class="nav-text">修改kernel&#x2F;chr_drv&#x2F;keyboard.S的文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9kernel-chr-drv-tty-io-c%E6%96%87%E4%BB%B6"><span class="nav-number">4.2.</span> <span class="nav-text">修改kernel&#x2F;chr_drv&#x2F;tty_io.c文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9kernel-chr-drv-console-c%E6%96%87%E4%BB%B6"><span class="nav-number">4.3.</span> <span class="nav-text">修改kernel&#x2F;chr_drv&#x2F;console.c文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%86%E6%9B%B4%E6%94%B9%E5%90%8E%E7%9A%84%E6%96%87%E4%BB%B6%E9%87%8D%E6%96%B0%E7%BC%96%E8%AF%91"><span class="nav-number">4.4.</span> <span class="nav-text">将更改后的文件重新编译</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">5.</span> <span class="nav-text"></span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

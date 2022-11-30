@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="简单介绍网络层、传输层、应用层常用协议。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="网络层、传输层、应用层常用协议">
+<meta property="og:url" content="https://leeyuxun.github.io/%E7%BD%91%E7%BB%9C%E5%B1%82%E3%80%81%E4%BC%A0%E8%BE%93%E5%B1%82%E3%80%81%E5%BA%94%E7%94%A8%E5%B1%82%E5%B8%B8%E7%94%A8%E5%8D%8F%E8%AE%AE.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="简单介绍网络层、传输层、应用层常用协议。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022104317.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022111023.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022112425.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022111910.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022111814.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022112834.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022113051.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022113349.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022113630.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022113714.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022114312.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022114813.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022115058.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022120441.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022120548.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022121405.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022124216.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022140408.png">
+<meta property="article:published_time" content="2020-10-22T07:16:46.000Z">
+<meta property="article:modified_time" content="2020-11-02T10:24:15.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="TCP">
+<meta property="article:tag" content="UDP">
+<meta property="article:tag" content="IP">
+<meta property="article:tag" content="ICMP">
+<meta property="article:tag" content="RAP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022104317.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E7%BD%91%E7%BB%9C%E5%B1%82%E3%80%81%E4%BC%A0%E8%BE%93%E5%B1%82%E3%80%81%E5%BA%94%E7%94%A8%E5%B1%82%E5%B8%B8%E7%94%A8%E5%8D%8F%E8%AE%AE.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>网络层、传输层、应用层常用协议 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E7%BD%91%E7%BB%9C%E5%B1%82%E3%80%81%E4%BC%A0%E8%BE%93%E5%B1%82%E3%80%81%E5%BA%94%E7%94%A8%E5%B1%82%E5%B8%B8%E7%94%A8%E5%8D%8F%E8%AE%AE.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          网络层、传输层、应用层常用协议
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-22 15:16:46" itemprop="dateCreated datePublished" datetime="2020-10-22T15:16:46+08:00">2020-10-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-02 18:24:15" itemprop="dateModified" datetime="2020-11-02T18:24:15+08:00">2020-11-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/protocol/" itemprop="url" rel="index"><span itemprop="name">protocol</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>简单介绍网络层、传输层、应用层常用协议。<span id="more"></span></p>
+<h2 id="网络层"><a href="#网络层" class="headerlink" title="网络层"></a>网络层</h2><h3 id="IP协议"><a href="#IP协议" class="headerlink" title="IP协议"></a>IP协议</h3><p>IP协议（InternetProtocol，互联网协议）</p>
+<p>是TCP/IP协议栈中最核心的协议之一，通过IP地址，保证了联网设备的唯一性，实现了网络通信的面向无连接和不可靠的传输功能。</p>
+<ol>
+<li><p>协议头图解</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022104317.png"></p>
+<ol>
+<li><p>Version（版本号）：IP协议版本号。目前只有两个版本：IPv4和IPv6</p>
+</li>
+<li><p>HeaderLength（IP协议头部长度）：IP协议头部的长度，单位字节（32bit）需要这个值是因为任选字段的长度是可变的，这个字段占4bit（最多能表示15个32bit的的字，即4*15=60个字节的首部长度），因此IP头部最多有60字节长度。正常的长度是20字节；如果有额外的IP的options选项，还得加上option的长度。</p>
+</li>
+<li><p>TypeofService(服务类型)：标示包传输优先级。总共8位，是由3个优先权位（不再使用），4个TOS位，1个固定的0组成。<br>4个TOS位：最新延迟、最大吞吐量、最高可靠性、最小成本，只能4选一。</p>
+</li>
+<li><p>TotalLength（包长度）：整个IP包的长度，16位，最大可以标示65536个字节，TotalLength-HeaderLength=数据长度。通过HeaderLength和TotalLength就可以知道数据的起始位置和结束位置。</p>
+</li>
+<li><p>Identifier（标识符）：网络中转发的IP报文的长度可以不同，但如果报文长度超过了数据链路所支持的最大长度，则报文就需要分割成若干个小的片段才能在链路上传输。比如以太网帧中数据最大长度（MTU）为1500字节，大于MTU的都会被分割，被分割的每个包都有相同的一个值，表示这是同一个ip包。</p>
+</li>
+<li><p>Flag（标志位）：标志字段在IP报头中占3位。</p>
+<ul>
+<li>第1位作为保留；</li>
+<li>第2位，分段，是否允许分片;（如果不允许分片，包超过了数据连路支持的最大长度，则丢弃该包，返回发送者一个ICMP错误）</li>
+<li>第3位，更多分段。表示是否最后一个分片。<br>当目的主机接收到一个IP数据报时，会首先查看该数据报的标识符，并且检查标志位的第3位是置0或置1，以确定是否还有更多的分段。如果还有后续报文，接收主机则将接收到的报文放在缓存直到接收完所有具有相同标识符的数据报，然后再进行重组。</li>
+</ul>
+</li>
+<li><p>FragmentedOffset（偏移量）：当某个IP大包分成多片时，各个分片是不按顺序达到目的地的，IP包根据分片的偏移量进行重组包。（跟TCP原理一样）</p>
+</li>
+<li><p>（TimetoLive）生存时间：表示数据包经过的路由器个数。如果网络上有些路由器的路由表配置不合理，路由寻址可能会导致死循环，数据包会一直循环传输。IP包发送的时候可以设置一个TTL值，比如TTL=64，没经过一个路由器TTL减1，减到0还没到到目的地，路由器会抛弃这个IP包，并使用一个ICMP消息通知发送方。</p>
+</li>
+<li><p>Protocal（协议）：协议类型1：ICMP，2：IGMP，6：TCP，17：UDP。</p>
+</li>
+<li><p>HeaderCheckSum（首部校验和）：校验IP协议头，判断IP协议头是否正确传输。</p>
+</li>
+<li><p>SourceAddress（源IP）：请求方IP</p>
+</li>
+<li><p>DistinationAddress（目的IP）：响应方IP</p>
+</li>
+<li><p>Options（可选字段）：IP支持很多可选选项</p>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="ICMP协议"><a href="#ICMP协议" class="headerlink" title="ICMP协议"></a>ICMP协议</h3><p>Internet Control Message Protocol，Internet控制消息协议</p>
+<ol>
+<li><p>介绍</p>
+<ol>
+<li>ICMP属于TCP/IP协议族，用于在IP主机、路由器之间传递控制消息。</li>
+<li>控制消息是指网络通不通、主机是否可达、路由是否可用等网络本身的消息。这些控制消息虽然并不传输用户数据，但是对于用户数据的传递起着重要的作用。</li>
+<li>ICMP协议与ARP协议不同，ICMP靠IP协议来完成任务，所以ICMP报文中要封装IP头部。它与传输层协议（如TCP和UDP）的目的不同，一般不用来在端系统之间传送数据，不被用户网络程序直接使用，除了想Ping和Tracert这样的诊断程序。</li>
+<li>ICMP的主要作用是<strong>主机探测,路由维护,路由选择,流量控制</strong>。</li>
+<li>ICMP只能搭配IPv4使用，如果是IPv6的情况下, 需要是用ICMPv6</li>
+<li>ICMP报文通常被IP层或更高层协议(TCP或UDP)使用。<strong>ICMP报文是在IP数据报内部传输的</strong>。IP协议是不可靠协议，不能保证 IP数据报能够成功的到达目的主机，无法进行差错控制，当遇到IP数据无法访问目标、IP路由器无法按当前的传输速率转发数据包等情况时，会自动发送ICMP消息。</li>
+</ol>
+</li>
+<li><p>ICMP报文格式</p>
+<ol>
+<li><p>ICMP报文包含在IP数据报中，IP报头在ICMP报文的最前面。一个ICMP报文包括IP报头（至少20字节）、ICMP报头（至少八字节）和ICMP报文（属于ICMP报文的数据部分）。当IP报头中的协议字段值为1时，就说明这是一个ICMP报文。ICMP报头如下图所示。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022111023.png"></p>
+<ol>
+<li>类型：占8位</li>
+<li>代码：占8位</li>
+<li>检验和：占16位</li>
+</ol>
+<p>说明：ICMP所有报文的前4个字节都是一样的，但是剩下的其他字节则互不相同。其它字段都ICMP报文类型不同而不同。</p>
+<p>ICMP报文的前4个字节是统一的格式，共有三个字段：即类型，代码和检验和。</p>
+<ol>
+<li>8位类型和8位代码字段一起决定了ICMP报文的类型。<ol>
+<li>类型8，代码0：表示回显请求(ping请求)。</li>
+<li>类型0，代码0：表示回显应答(ping应答)</li>
+<li>类型11，代码0：超时</li>
+</ol>
+</li>
+<li>16位的检验和字段：包括数据在内的整个ICMP数据包的检验和；其计算方法和IP头部检验和的计算方法一样的。</li>
+</ol>
+<p>ICMP报文具体分为<strong>查询报文</strong>和<strong>差错报文</strong>(对ICMP差错报文有时需要做特殊处理，因此要对其进行区分。如：对ICMP差错报文进行响应时，永远不会生成另一份ICMP差错报文，否则会出现死循环)</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022112425.png"></p>
+</li>
+</ol>
+</li>
+<li><p>ICMP查询报文</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022111910.png"></p>
+<ol>
+<li><p>ICMP询问报文有四种回送请求和回答，时间戳请求和回答，掩码地址请求和回答，以及路由器询问和通过。</p>
+<ol>
+<li>ICMP回送请求报文是由主机或路由器向一个特定的目的主机发出的询问。收到此报文的机器必须给源主机发送ICMP回送应答报文。这种询问报文用来测试目的站是否可达以及了解其有关状态。</li>
+<li>ICMP时间戳请求允许系统向另一个系统查询当前的时间。该ICMP报文的好处是它提供了毫秒级的分辨率，而利用其他方法从别的主机获取的时间只能提供秒级的分辨率。请求端填写发起时间，然后发送报文。应答系统收到请求报文时填写接收时间戳，在发送应答时填写发送时间戳。大多数的实现是把后面两个字段都设成相同的值。</li>
+<li>主机使用ICMP地址掩码请求报文可向子网掩码服务器得到某个接口的地址掩码。系统广播它的ICMP请求报文。ICMP报文中的标识符和序列号字段由发送端任意选择设定，这些值在应答中将被返回，这样，发送端就可以把应答与请求进行匹配。</li>
+<li>主机使用ICMP路由器询问和通过报文可了解连接在本网络上的路由器是否正常工作。主机将路由器询问报文进行广播（或多播）。收到询问报文的一个或几个路由器就使用路由器通过报文广播其路由选择信息。</li>
+</ol>
+<p>ping使用的是ICMP的查询报文的请求和回答。</p>
+</li>
+</ol>
+</li>
+<li><p>ICMP差错报文</p>
+<ol>
+<li><p>ICMP差错报告报文共有5种</p>
+<ol>
+<li><p>终点不可达：终点不可达分为:网络不可达，主机不可达，协议不可达，端口不可达，需要分片但DF比特已置为1，以及源路由失败等六种情况，其代码字段分别置为0至5。当出现以上六种情况时就向源站发送终点不可达报文。</p>
+<p>说明：端口不可达：UDP的规则之一是：如果收到UDP数据报而且目的端口与某个正在使用的进程不相符，那么UDP返回一个ICMP不可达报文。</p>
+</li>
+<li><p>源站抑制：当路由器或主机由于拥塞而丢弃数据报时，就向源站发送源站抑制报文，使源站知道应当将数据报的发送速率放慢。</p>
+</li>
+<li><p> 时间超过：当路由器收到生存时间为零的数据报时，除丢弃该数据报外，还要向源站发送时间超过报文。当目的站在预先规定的时间内不能收到一个数据报的全部数据报片时，就将已收到的数据报片都丢弃，并向源站发送时间超过报文。</p>
+</li>
+<li><p>参数问题：当路由器或目的主机收到的数据报的首部中的字段的值不正确时，就丢弃该数据报，并向源站发送参数问题报文。</p>
+</li>
+<li><p>改变路由（重定向）路由器将改变路由报文发送给主机，让主机知道下次应将数据报发送给另外的路由器。</p>
+</li>
+</ol>
+</li>
+<li><p>说明:</p>
+<p>以下几种情况都不会导致产生ICMP差错报文</p>
+<ol>
+<li>ICMP差错报文（但是，ICMP查询报文可能会产生ICMP差错报文）</li>
+<li>目的地址是广播地址或多播地址的IP数据报</li>
+<li>作为链路层广播的数据报</li>
+<li>不是IP分片的第一片</li>
+<li>源地址不是单个主机的数据报。即源地址不能为零地址、环回地址、广播地址或多播地址。</li>
+</ol>
+<p>这些规则是为了防止过去允许ICMP差错报文对广播分组响应所带来的广播风暴。</p>
+</li>
+<li><p>所有的ICMP差错报告报文中的数据字段都具有同样的格式。将收到的需要进行差错报告IP数据报的首部和数据字段的前8个字节提取出来，作为ICMP报文的数据字段。再加上响应的ICMP差错报告报文的前8个字节，就构成了ICMP差错报告报文。提取收到的数据报的数据字段的前8个字节是为了得到运输层的端口号（对于TCP和UDP）以及运输层报文的发送序号（对于TCP）。一般情况下不发送ICMP差错报告报文。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022111814.png"></p>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="IGMP协议"><a href="#IGMP协议" class="headerlink" title="IGMP协议"></a>IGMP协议</h3><p>Internet Group Management Protocol，Internet组管理协议</p>
+<ol>
+<li><p>介绍</p>
+<ol>
+<li><p>IGMP也是IP协议的一个补充，位于TCP/IP体系中的网络层，是用于管理网路协议多播组成员的一种通信协议。</p>
+</li>
+<li><p>该协议用来在ip主机和与其直接相邻的组播路由器之间建立、维护<strong>组播组成员</strong>关系，但不包括组播路由器之间的组成员关系信息的传播与维护，这部分工作由各组播路由协议完成。所有参与组播的主机必须实现IGMP。</p>
+</li>
+<li><p>GMP目前有三个版本，目前用的最多的是IGMPv2。</p>
+<ol>
+<li>IGMPv1主要基于查询和响应机制来完成对组播组成员的管理；</li>
+<li>IGMPv2增加了查询器选举机制和离开组机制；</li>
+<li>IGMPv3在兼容和继承IGMPv1和IGMPv2的基础上，进一步增强了主机的控制能力，并增强了查询和报告报文的功能；</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>IGMP报文格式</p>
+<ol>
+<li><p>IGMPv1</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022112834.png"></p>
+<ol>
+<li><p>4位版本：目前IGMP有V1，V2，V3三个版本，比如是V1则该4位为1， V3则该4位为3。</p>
+</li>
+<li><p>4位类型：成员关系查询0x11和成员关系报告0x12两种类型。</p>
+</li>
+<li><p>16位校验和：8个字节的校验码。</p>
+</li>
+<li><p>32位组地址：</p>
+<ol>
+<li>当发送报文是成员关系报告时，该32位组地址即组播组地址。     </li>
+<li>当发送的报文是成员关系查询时，该32位为全0。V1版本只支持通用关系查询，不支持特定组查询。</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>IGMPv2</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022113051.png"></p>
+<ol>
+<li>8位类型：有三种类型；<ol>
+<li>成员关系查询0x11：在V2和V3中成员关系查询增加特定组查询：<ol>
+<li>常规查询：用于确定哪些组播组是活跃的，即改组是否还有成员在使用，常规查询组地址由全零表示。</li>
+<li>特定组查询：用于查询某具体组播组是否还有组成员。</li>
+</ol>
+</li>
+<li>成员关系报告0x16（版本1成员关系报告0x12）；</li>
+<li>离开组消息0x17；</li>
+</ol>
+</li>
+<li>8位最大响应时间：以0.1秒为单位，默认值是100，即10秒。</li>
+<li>16位校验和：报文段8个字节的校验码。</li>
+<li>32位组地址：<ol>
+<li>成员关系查询报文：常规查询组低位为全0，特定组查询则应设置对应的组地址；</li>
+<li>成员报告或离开组消息：组地址为要报告或要离开的组地址；</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>三种协议比较</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022113349.png"></p>
+</li>
+</ol>
+</li>
+<li><p>IGMP协议功能</p>
+<ol>
+<li><p>加入一个多播组</p>
+<p>多播的基础就是一个进程的概念（使用的术语进程是指操作系统执行的一个程序），该进程在一个主机的给定接口上加入了一个多播组。在一个给定接口上的多播组中的成员是动态的，它随时因进程加入和离开多播组而变化。</p>
+<p>这里所指的进程必须以某种方式在给定的接口上加入某个多播组。进程也能离开先前加入的多播组。这些是一个支持多播主机中任何API所必需的部分。使用限定词“接口”是因为多播组中的成员是与接口相关联的。一个进程可以在多个接口上加入同一多播组。</p>
+</li>
+<li><p>IGMP报告和查询</p>
+<p>多播路由器使用IGMP报文来记录与该路由器相连网络中组成员的变化情况。使用规则如下：</p>
+<ol>
+<li>当第一个进程加入一个组时，主机就发送一个IGMP报告。如果一个主机的多个进程加入同一组，只发送一个IGMP报告。这个报告被发送到进程加入组所在的同一接口上。</li>
+<li>进程离开一个组时，主机不发送IGMP报告，即便是组中的最后一个进程离开。主机知道在确定的组中已不再有组成员后，在随后收到的IGMP查询中就不再发送报告报文。</li>
+<li>多播路由器定时发送IGMP查询来了解是否还有任何主机包含有属于多播组的进程。多播路由器必须向每个接口发送一个IGMP查询。因为路由器希望主机对它加入的每个多播组均发回一个报告，因此IGMP查询报文中的组地址被设置为0。</li>
+<li>主机通过发送IGMP报告来响应一个IGMP查询，对每个至少还包含一个进程的组均要发回IGMP报告。</li>
+</ol>
+<p>使用这些查询和报告报文，多播路由器对每个接口保持一个表，表中记录接口上至少还包含一个主机的多播组。当路由器收到要转发的多播数据报时，它只将该数据报转发到（使用相应的多播链路层地址）还拥有属于那个组主机的接口上。</p>
+<p>下图显示了两个IGMP报文，一个是主机发送的报告，另一个是路由器发送的查询。该路由器正在要求那个接口上的每个主机说明它加入的每个多播组。</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022113630.png"></p>
+</li>
+<li><p>离开报文（仅限IGMPv2和v3）</p>
+<p>该报文由主机发出。当主机离开组播组时发送此报文，向组播路由器报告离开了特定的组播组。离开报文的目标IP为224.0.0.2（所有组播路由器），IGMP报头内的组播IP为特定离开组的IP。</p>
+</li>
+</ol>
+</li>
+<li><p>IGMP报文种类</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022113714.png"></p>
+</li>
+</ol>
+<h3 id="ARP协议"><a href="#ARP协议" class="headerlink" title="ARP协议"></a>ARP协议</h3><p>Address Resolution Protocol，地址解析协议</p>
+<ol>
+<li><p>功能：把网络层32位的IP转换成数据链路层48位的MAC地址，在这个过程中有一个很重要的表，<strong>ARP缓存表</strong>。该表的形式如下，也是一个映射；</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022114312.png"></p>
+<p>对于ARP缓存表的使用，有两种情况</p>
+<ul>
+<li><p>ARP缓存表中<strong>有</strong>缓存IP地址和MAC地址的映射关系</p>
+</li>
+<li><p>ARP缓存表中<strong>没有</strong>缓存IP地址和MAC地址的映射关系</p>
+</li>
+<li><p><strong>如果有缓存的情况</strong>，就像上篇文章中介绍的步骤一样，A可以<strong>直接告诉</strong>数据链路层，E的MAC地址。A会查询ARP缓存表，查看E的MAC地址是什么，然后告知数据链路层。</p>
+</li>
+<li><p><strong>如果没有缓存的情况</strong>，ARP会<strong>广播某一个IP的信息</strong>，收到这个广播的设备会回应一个包，表示我是不是这个IP地址。如果是，广播该IP地址的设备会记录对应设备的MAC地址</p>
+</li>
+</ul>
+<p>ARP缓存表是ARP协议和RARP协议运行的关键</p>
+<ul>
+<li>ARP缓存表缓存了<strong>IP地址到硬件地址之间的映射关系</strong>（在网络层进行数据转发的时候，需要数据链路层和物理层，因此网络层在进行数据发送的时候，首先需要通过ARP协议，把IP地址转化为MAC地址，然后告诉数据链路层，这时，数据链路层才能进行数据帧的传输）</li>
+<li>ARP缓存表中的记录并<strong>不是永久有效的</strong>，有一定的期限（因为MAC地址是永久不变的，但是IP地址是会变化的）</li>
+</ul>
+</li>
+<li><p>ARP报文格式</p>
+<p>ARP协议的报文信息是<strong>直接封装到数据链路层的数据帧中</strong>的</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022114813.png"></p>
+<p>最上边为数据链路层的数据帧格式，中间是ARP协议的报文信息，PAD是填充的内容</p>
+<p>虽然ARP协议是直接封装在数据链路层的数据帧中的，但ARP协议仍属于网络层，主要是因为ARP协议使用到了<strong>IP地址</strong>，所以它属于网络层的内容。所以ARP协议是数据链路层和网络层配合使用的一个协议。</p>
+</li>
+</ol>
+<h3 id="RARP协议"><a href="#RARP协议" class="headerlink" title="RARP协议"></a>RARP协议</h3><p>Reverse Address Resolution Protocol，逆地址解析协议</p>
+<p>和ARP协议做相反的工作，它是将48位的MAC地址转换为32位的IP地址</p>
+<ol>
+<li><p>RARP报文格式</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022115058.png"></p>
+</li>
+</ol>
+<h2 id="传输层"><a href="#传输层" class="headerlink" title="传输层"></a>传输层</h2><h3 id="TCP"><a href="#TCP" class="headerlink" title="TCP"></a>TCP</h3><p>Transmisson Control Protocol，传输控制协议</p>
+<ol>
+<li><p>介绍</p>
+<ol>
+<li>TCP协议为应用程序提供了稳定可靠的数据传输。它是一个滑动窗口协议，提供了超时和重传的处理。</li>
+<li>TCP 是在两个端点之间建立的全双工虚拟连接。每个端点由 IP 地址和端口号定义。</li>
+<li>数据以字节流的形式传输，字节流按段传输。窗口大小决定了在需要接收方确认之前可以发送的数据字节数。</li>
+<li>TCP的底层网络层并不是一个可靠服务，它只提供尽最大努力服务。要在一个不可靠的协议上建立一个可靠的协议，<strong>TCP采用了发送-确认机制：即接收方每发送一个报文，就向发送方发送一个确认，发送方只有收到这个报文的确认才认为这次发送才是成功的。</strong></li>
+</ol>
+</li>
+<li><p>TCP报文格式</p>
+<ol>
+<li><p>TCP封装</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022120441.png"></p>
+</li>
+<li><p>TCP头格式</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022120548.png"></p>
+<ol>
+<li><strong>源端口号/目标端口号</strong> 标记TCP连接通信双方主机的端口，而双方的IP地址在IP协议的报文首部中已经记录。端口号最大值为65535</li>
+<li><strong>32位序号</strong> 发送方报文数据段的起始序号，用于标记每一个发送字节；</li>
+<li><strong>32位确认序号</strong> 表示接收方已经成功接收（确认序号-1）的字节。假设B发送给A的TCP报文中，确认需要为700，则表示B已经成功接收了A发送的序号为700之前（不包括700）的所有数据 若确认序号 = N， 则表明：到需要N-1为止的所有数据都已经正确收到</li>
+<li><strong>4位首部长度</strong> TCP首部前20位是固定的，<code>选项</code>部分的长度是可选的，但是长度为4N（即4的倍数）。首部长度代表整个报文首部的长度，单位是4字节（32位）。4位首部长度最大值是15，即TCP报文首部最大长度是15 * 4 = 60 个字节，首部可选长度为 60 - 20 = 40 个字节</li>
+<li><strong>保留(6位)</strong> 保留今后使用，目前置为0</li>
+<li><strong>6个控制位</strong><ol>
+<li>URG: 表明该报文段的紧急指针字段有效，它告诉系统此报文段中有紧急数据，紧急指针指明了紧急数据的最后一个字节位于数据段中哪个序号</li>
+<li>ACK: 仅当ACK=1时，确认序号字段才生效；当ACK=0时，确认序号字段无效。TCP规定，在连接建立后所有传送的TCP报文段都必须把ACK置为1</li>
+<li>PSH: TCP接收方收到PSH=1的报文段时，会尽快的交付到给应用程序处理，而不需要等待整个接收缓存都填满了再向上交付</li>
+<li>RST: 当RST=1时，表明TCP连接出现严重差错，必须断开后重新建立连接，同时可以用于拒绝一个非法报文或拒绝打开一个连接</li>
+<li>SYN:SYN置为1时，表示这是一个连接请求或接受连接报文；</li>
+<li>FIN:用于释放一个连接，当FIN为1时，表示发送方的数据已经发送完毕，并要求释放连接</li>
+</ol>
+</li>
+<li><strong>16位窗口大小</strong> 接收窗口，窗口值告诉对方，当前报文确认序号算起，接收方允许发送的数据量 接收窗口值是发送发设置其发送窗口的依据，且该值是动态变化的</li>
+<li><strong>16位校验和</strong> 当接收方接收到一个报文段后，会使用该字段校验整个报文是否完整且正确</li>
+<li><strong>16位紧急指针</strong> 与控制位URG搭配使用</li>
+<li><strong>选项</strong> 长度可变，最大可达40字节。可以用于存放：<ol>
+<li>最大报文长度 MSS （maximum segment size）</li>
+<li>窗口扩大选项：解决高速网络下窗口字段不够用问题</li>
+<li>时间戳戳选项：用于计算往返时间和防止序号绕回</li>
+</ol>
+</li>
+<li><strong>数据</strong> 存放要发送的报文数据</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="UDP"><a href="#UDP" class="headerlink" title="UDP"></a>UDP</h3><p>User Data Protocol，用户数据包协议</p>
+<ol>
+<li><p>介绍</p>
+<p>UDP（用户数据报协议）是一个简单的面向数据报的传输层协议。提供的是非面向连接的、不可靠的数据流传输。UDP不提供可靠性，也不提供报文到达确认、排序以及流量控制等功能。它只是把应用程序传给IP层的数据报发送出去，但是并不能保证它们能到达目的地。因此报文可能会丢失、重复以及乱序等。但由于UDP在传输数据报前不用在客户和服务器之间建立一个连接，且没有超时重发等机制，故而传输速度很快。DNS解析使用UDP协议</p>
+</li>
+<li><p>UDP报文格式</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022121405.png"></p>
+<ol>
+<li>源端口：这个字段占据 UDP 报文头的前 16 位，通常包含发送数据报的应用程序所使用的 UDP 端口。接收端的应用程序利用这个字段的值作为发送响应的目的地址。这个字段是可选的，所以发送端的应用程序不一定会把自己的端口号写入该字段中。如果不写入端口号，则把这个字段设置为 0。这样，接收端的应用程序就不能发送响应了。</li>
+<li>目的端口：接收端计算机上 UDP 软件使用的端口，占据 16 位。</li>
+<li>长度：该字段占据 16 位，表示 UDP 数据报长度，包含 UDP 报文头和 UDP 数据长度。因为 UDP 报文头长度是 8 个字节，所以这个值最小为 8。</li>
+<li>校验值：该字段占据 16 位，可以检验数据在传输过程中是否被损坏。</li>
+</ol>
+</li>
+</ol>
+<h2 id="应用层"><a href="#应用层" class="headerlink" title="应用层"></a>应用层</h2><h3 id="HTTP"><a href="#HTTP" class="headerlink" title="HTTP"></a>HTTP</h3><p>Hyper Text Transfer Protocol，超文本传输协议</p>
+<p>HTTP是一个基于TCP/IP通信协议来传递数据（HTML 文件, 图片文件, 查询结果等）。</p>
+<p>HTTP是一个属于应用层的面向对象的协议，由于其简捷、快速的方式，适用于分布式超媒体信息系统。它于1990年提出，经过几年的使用与发展，得到不断地完善和扩展。目前在WWW中使用的是HTTP/1.0的第六版，HTTP/1.1的规范化工作正在进行之中，而且HTTP-NG(Next Generation of HTTP)的建议已经提出。</p>
+<p>HTTP协议工作于客户端-服务端架构为上。浏览器作为HTTP客户端通过URL向HTTP服务端即WEB服务器发送所有请求。Web服务器根据接收到的请求后，向客户端发送响应信息。</p>
+<ol>
+<li><p>请求报文</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022124216.png"></p>
+</li>
+<li><p>响应报文</p>
+<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201022140408.png"></p>
+</li>
+<li><p>常用状态码</p>
+<table>
+<thead>
+<tr>
+<th align="center">状态码</th>
+<th align="center">类比</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1xx</td>
+<td align="center">Informational (信息性状态码)</td>
+<td align="center">接收的请求正在处理</td>
+</tr>
+<tr>
+<td align="center">2xx</td>
+<td align="center">Success( 成功状态码)</td>
+<td align="center">请求正常处理完毕</td>
+</tr>
+<tr>
+<td align="center">3xx</td>
+<td align="center">Redirection( 重定向状态码)</td>
+<td align="center">需要进行附加操作以完成请求</td>
+</tr>
+<tr>
+<td align="center">4xx</td>
+<td align="center">Client Error (客户端错误状态码)</td>
+<td align="center">服务器无法处理请求</td>
+</tr>
+<tr>
+<td align="center">5xx</td>
+<td align="center">Server Error 服务器错误状态码</td>
+<td align="center">服务器处理请求出错</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>HTTP首部字段</p>
+<p>主要分为四种：</p>
+<ol>
+<li><p>通用首部字段</p>
+<p>请求报文和响应报文都可以使用的字段，以下是通用字段表：</p>
+<table>
+<thead>
+<tr>
+<th align="center">字段名</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">Cache-Control</td>
+<td align="center">控制缓存行为</td>
+</tr>
+<tr>
+<td align="center">Connection</td>
+<td align="center">逐跳首部、连接的管理</td>
+</tr>
+<tr>
+<td align="center">Date</td>
+<td align="center">创建报文的日期时间</td>
+</tr>
+<tr>
+<td align="center">Pragma</td>
+<td align="center">报文指令</td>
+</tr>
+<tr>
+<td align="center">Trailer</td>
+<td align="center">报文末端的首部一览</td>
+</tr>
+<tr>
+<td align="center">Transfer-Encoding</td>
+<td align="center">指定报文主体的传输编码方式</td>
+</tr>
+<tr>
+<td align="center">Upgrade</td>
+<td align="center">升级为其他协议</td>
+</tr>
+<tr>
+<td align="center">Warning</td>
+<td align="center">错误通知</td>
+</tr>
+<tr>
+<td align="center">Via</td>
+<td align="center">代理服务器的相关信息</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>请求首部字段</p>
+<p>请求报文可以使用的字段，以下是请求报文字段表：</p>
+<table>
+<thead>
+<tr>
+<th align="center">字段名</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">Accept</td>
+<td align="center">用户代理可处理的媒体类型</td>
+</tr>
+<tr>
+<td align="center">Accept-Charset</td>
+<td align="center">优先的字符集</td>
+</tr>
+<tr>
+<td align="center">Accept-Encoding</td>
+<td align="center">优先的内容编码</td>
+</tr>
+<tr>
+<td align="center">Accept-Language</td>
+<td align="center">优先的语言(自然语言)</td>
+</tr>
+<tr>
+<td align="center">Authorizabon</td>
+<td align="center">Web认证信息</td>
+</tr>
+<tr>
+<td align="center">Expect</td>
+<td align="center">期待服务器的特定行为</td>
+</tr>
+<tr>
+<td align="center">From</td>
+<td align="center">用户的电子邮箱地址</td>
+</tr>
+<tr>
+<td align="center">Host</td>
+<td align="center">请求资源所在服务器</td>
+</tr>
+<tr>
+<td align="center">If-Match</td>
+<td align="center">比较实体标记(ETag )</td>
+</tr>
+<tr>
+<td align="center">If-Modified-Since</td>
+<td align="center">比较资源的更新时间</td>
+</tr>
+<tr>
+<td align="center">If-None-Match</td>
+<td align="center">比较实体标记(与If-Match相反 )</td>
+</tr>
+<tr>
+<td align="center">lf-Range</td>
+<td align="center">资源未更新时发送实体Byte的范围请求</td>
+</tr>
+<tr>
+<td align="center">If-Unmodified-Since</td>
+<td align="center">比较资源的更新时间( 与If-Modified-Since 相反I</td>
+</tr>
+<tr>
+<td align="center">Max-Forwards</td>
+<td align="center">最大传输逐跳数</td>
+</tr>
+<tr>
+<td align="center">Proxy-Authorization</td>
+<td align="center">代理服务器要求客户端的认证信息</td>
+</tr>
+<tr>
+<td align="center">Range</td>
+<td align="center">实体的字节范围请求</td>
+</tr>
+<tr>
+<td align="center">Referer</td>
+<td align="center">对请求中URl的原始获取方</td>
+</tr>
+<tr>
+<td align="center">TE</td>
+<td align="center">传输编码的优先级</td>
+</tr>
+<tr>
+<td align="center">User-Agent</td>
+<td align="center">HTTP客户端程序的信息</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>响应首部字段</p>
+<p>响应报文可以使用的字段，以下是响应报文字段表：</p>
+<table>
+<thead>
+<tr>
+<th align="center">字段名</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">Accept-Ranges</td>
+<td align="center">是否接受字节范围请求</td>
+</tr>
+<tr>
+<td align="center">Age</td>
+<td align="center">推算资源创建经过时间</td>
+</tr>
+<tr>
+<td align="center">ETag</td>
+<td align="center">资源的匹配信息</td>
+</tr>
+<tr>
+<td align="center">Location</td>
+<td align="center">令客户端重定向至指定URI</td>
+</tr>
+<tr>
+<td align="center">Proxy-Authenticate</td>
+<td align="center">代理服务器对客户端的认证信息</td>
+</tr>
+<tr>
+<td align="center">Retry-After</td>
+<td align="center">对再次发起请求的时机要求</td>
+</tr>
+<tr>
+<td align="center">Server</td>
+<td align="center">HTTP服务器的安装信息</td>
+</tr>
+<tr>
+<td align="center">Vary</td>
+<td align="center">代理服务器缓存的管理信息</td>
+</tr>
+<tr>
+<td align="center">WWW-Authenticate</td>
+<td align="center">服务器对客户端的认证信息**</td>
+</tr>
+</tbody></table>
+</li>
+<li><p>实体首部字段</p>
+<p>针对请求报文和响应报文的实体部分使用的首部，主要是补充了实体资源相关信息，以下是实体首部字段表：</p>
+<table>
+<thead>
+<tr>
+<th align="center">字段名</th>
+<th align="center">说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">Allow</td>
+<td align="center">资源可支持的HTTP方法</td>
+</tr>
+<tr>
+<td align="center">Content-Encoding</td>
+<td align="center">实体主体适用的编码方式</td>
+</tr>
+<tr>
+<td align="center">Content-Language</td>
+<td align="center">实体主体的自然语言</td>
+</tr>
+<tr>
+<td align="center">Content-Length</td>
+<td align="center">实体主体的大小(单位字节)</td>
+</tr>
+<tr>
+<td align="center">Content-Location</td>
+<td align="center">替代对应资源的URI</td>
+</tr>
+<tr>
+<td align="center">Content-MD5</td>
+<td align="center">实体主体的报文摘要</td>
+</tr>
+<tr>
+<td align="center">Content-Range</td>
+<td align="center">实体主体的位置范围</td>
+</tr>
+<tr>
+<td align="center">Content-Type</td>
+<td align="center">实体主体的媒体类型</td>
+</tr>
+<tr>
+<td align="center">Expires</td>
+<td align="center">实体主体过期的日期时间</td>
+</tr>
+<tr>
+<td align="center">Last-Modified</td>
+<td align="center">资源的最后修改日期时间</td>
+</tr>
+</tbody></table>
+</li>
+</ol>
+</li>
+</ol>
+<p><strong>未完，抽时间再继续写</strong></p>
+<h3 id="FTP"><a href="#FTP" class="headerlink" title="FTP"></a>FTP</h3><h3 id="TFTP"><a href="#TFTP" class="headerlink" title="TFTP"></a>TFTP</h3><h3 id="TELNET"><a href="#TELNET" class="headerlink" title="TELNET"></a>TELNET</h3><h3 id="DNS"><a href="#DNS" class="headerlink" title="DNS"></a>DNS</h3><h3 id="SMTP"><a href="#SMTP" class="headerlink" title="SMTP"></a>SMTP</h3><h3 id="POP3"><a href="#POP3" class="headerlink" title="POP3"></a>POP3</h3><h3 id="IAMP"><a href="#IAMP" class="headerlink" title="IAMP"></a>IAMP</h3><h3 id="SNMP"><a href="#SNMP" class="headerlink" title="SNMP"></a>SNMP</h3><h3 id="SSL"><a href="#SSL" class="headerlink" title="SSL"></a>SSL</h3><h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/90abebfe0014">https://www.jianshu.com/p/90abebfe0014</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/4bd8758f9fbd">https://www.jianshu.com/p/4bd8758f9fbd</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/tigerjibo/article/details/7356936">https://blog.csdn.net/tigerjibo/article/details/7356936</a></li>
+<li><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000023255475">https://segmentfault.com/a/1190000023255475</a></li>
+<li><a target="_blank" rel="noopener" href="https://juejin.im/post/6844904033354776584">https://juejin.im/post/6844904033354776584</a></li>
+<li><a target="_blank" rel="noopener" href="http://c.biancheng.net/view/6440.html">http://c.biancheng.net/view/6440.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/80e25cb1d81a">https://www.jianshu.com/p/80e25cb1d81a</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/f5b3324b961f">https://www.jianshu.com/p/f5b3324b961f</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E7%BD%91%E7%BB%9C%E5%B1%82%E3%80%81%E4%BC%A0%E8%BE%93%E5%B1%82%E3%80%81%E5%BA%94%E7%94%A8%E5%B1%82%E5%B8%B8%E7%94%A8%E5%8D%8F%E8%AE%AE.html" title="网络层、传输层、应用层常用协议">https://leeyuxun.github.io/网络层、传输层、应用层常用协议.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/TCP/" rel="tag"><i class="fa fa-tag"></i> TCP</a>
+              <a href="/tags/UDP/" rel="tag"><i class="fa fa-tag"></i> UDP</a>
+              <a href="/tags/IP/" rel="tag"><i class="fa fa-tag"></i> IP</a>
+              <a href="/tags/ICMP/" rel="tag"><i class="fa fa-tag"></i> ICMP</a>
+              <a href="/tags/RAP/" rel="tag"><i class="fa fa-tag"></i> RAP</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/UChat-%E5%9F%BA%E4%BA%8Epython%E7%9A%84%E5%AE%89%E5%85%A8%E5%8D%B3%E6%97%B6%E9%80%9A%E8%AE%AF%E7%B3%BB%E7%BB%9F.html" rel="prev" title="UChat-基于python的安全即时通讯系统">
+      <i class="fa fa-chevron-left"></i> UChat-基于python的安全即时通讯系统
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/SQL%E5%85%A5%E9%97%A8%E8%AF%AD%E6%B3%95%E6%80%BB%E7%BB%93.html" rel="next" title="SQL入门语法总结">
+      SQL入门语法总结 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E5%B1%82"><span class="nav-number">1.</span> <span class="nav-text">网络层</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#IP%E5%8D%8F%E8%AE%AE"><span class="nav-number">1.1.</span> <span class="nav-text">IP协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ICMP%E5%8D%8F%E8%AE%AE"><span class="nav-number">1.2.</span> <span class="nav-text">ICMP协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IGMP%E5%8D%8F%E8%AE%AE"><span class="nav-number">1.3.</span> <span class="nav-text">IGMP协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ARP%E5%8D%8F%E8%AE%AE"><span class="nav-number">1.4.</span> <span class="nav-text">ARP协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RARP%E5%8D%8F%E8%AE%AE"><span class="nav-number">1.5.</span> <span class="nav-text">RARP协议</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%A0%E8%BE%93%E5%B1%82"><span class="nav-number">2.</span> <span class="nav-text">传输层</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#TCP"><span class="nav-number">2.1.</span> <span class="nav-text">TCP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UDP"><span class="nav-number">2.2.</span> <span class="nav-text">UDP</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%B1%82"><span class="nav-number">3.</span> <span class="nav-text">应用层</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#HTTP"><span class="nav-number">3.1.</span> <span class="nav-text">HTTP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FTP"><span class="nav-number">3.2.</span> <span class="nav-text">FTP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TFTP"><span class="nav-number">3.3.</span> <span class="nav-text">TFTP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TELNET"><span class="nav-number">3.4.</span> <span class="nav-text">TELNET</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DNS"><span class="nav-number">3.5.</span> <span class="nav-text">DNS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SMTP"><span class="nav-number">3.6.</span> <span class="nav-text">SMTP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#POP3"><span class="nav-number">3.7.</span> <span class="nav-text">POP3</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IAMP"><span class="nav-number">3.8.</span> <span class="nav-text">IAMP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SNMP"><span class="nav-number">3.9.</span> <span class="nav-text">SNMP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SSL"><span class="nav-number">3.10.</span> <span class="nav-text">SSL</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number"></span> <span class="nav-text">参考</span></a></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

