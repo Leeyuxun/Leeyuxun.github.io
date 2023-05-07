@@ -28,18 +28,18 @@
 <meta property="og:site_name" content="Leeyuxun の note">
 <meta property="og:description" content="实验目的 理解内存页面调度的机理； 掌握几种理论调度算法实现； 通过实验比较各种调度算法的优劣； 通过实验了解HASH表数据结构的使用；">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571155503183.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571062544372.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571157657346.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571070639492.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571190143264.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571280409171.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571155503183.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571062544372.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571157657346.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571070639492.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571190143264.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571280409171.png">
 <meta property="article:published_time" content="2019-10-17T04:54:21.000Z">
-<meta property="article:modified_time" content="2023-05-07T06:53:06.530Z">
+<meta property="article:modified_time" content="2023-05-07T07:37:53.569Z">
 <meta property="article:author" content="李钰璕">
 <meta property="article:tag" content="存储器管理">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571155503183.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571155503183.png">
 
 <link rel="canonical" href="https://leeyuxun.github.io/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%86%85%E6%A0%B8-%E5%AE%9E%E9%AA%8C%E4%B8%89.html">
 
@@ -247,7 +247,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-07 14:53:06" itemprop="dateModified" datetime="2023-05-07T14:53:06+08:00">2023-05-07</time>
+                <time title="修改时间：2023-05-07 15:37:53" itemprop="dateModified" datetime="2023-05-07T15:37:53+08:00">2023-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -309,7 +309,7 @@
 <li><p>假设某个进程在硬盘上被划分为5个页面(PP=5)，以<code>1、2、3、4、5</code>分别表示，处理机调用它们的顺序为：<code>1、4、2、5、3、3、2、4、2、5</code>；</p>
 </li>
 <li><p>假设内存控制的页面数为3(AP=3)，那么在FIFO算法时，这3个页面的内存使用情况如下图所示 </p>
-<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571155503183.png" alt="1571155503183"></p>
+<p><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571155503183.png" alt="1571155503183"></p>
 </li>
 <li><p>共换入页面8次，<code>diseffect=8</code>；</p>
 </li>
@@ -344,7 +344,7 @@
 <li><p>处理机调用它们的顺序不变：<code>1、4、2、5、3、3、2、4、2、5</code></p>
 </li>
 <li><p>使用LRU算法时，这3个页面的内存使用情况如下图所示</p>
-<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571062544372.png" alt="1571062544372"></p>
+<p><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571062544372.png" alt="1571062544372"></p>
 </li>
 <li><p>共换入页面7次，<code>diseffect=7</code>；</p>
 </li>
@@ -375,7 +375,7 @@
 <li><p>处理机调用它们的顺序不变：<code>1、4、2、5、3、3、2、4、2、5</code>；</p>
 </li>
 <li><p>使用NUR算法时，这3个页面的内存使用情况如下图所示；</p>
-<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571157657346.png" alt="1571157657346"></p>
+<p><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571157657346.png" alt="1571157657346"></p>
 </li>
 </ul>
 <h3 id="算法实现-2"><a href="#算法实现-2" class="headerlink" title="算法实现"></a>算法实现</h3><p>需要对数组设置“访问位”标识；</p>
@@ -390,7 +390,7 @@
 <li>如果CPU所有处理工作完成，就返回命中率的结果，算法结束。</li>
 </ol>
 <h2 id="OPT页面置换算法"><a href="#OPT页面置换算法" class="headerlink" title="OPT页面置换算法"></a>OPT页面置换算法</h2><h3 id="原理简述-3"><a href="#原理简述-3" class="headerlink" title="原理简述"></a>原理简述</h3><p>在分配的内存页面占满的情况下，最佳置换算法是一种理想状况下的算法，他要求先遍历所有的CPU待处理的进程页面序列（实际上，由于待处理的页面有取决于先前处理的页面，所有很多情况下不可能得到完整的待处理页面序列。在这个层面上，才说该算法足理想的。)，在这些页面中，如果有已经在内存当中，而不再处理的，就将其换出：如果页面在内存中，并待处理，就取从当前位置算起，最后处理到的页面，将其换出。比如待处理的页面序列号为：</p>
-<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571070639492.png" alt="1571070639492"></p>
+<p><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571070639492.png" alt="1571070639492"></p>
 <p>已经处理了5个页面，那么页面5是第一个待处理的页面：2是第二个；1是第四个；4是第五个；3是第六个。那么页面3就是针对当前位置而言，最后处理到的页面。</p>
 <h3 id="图表描述-3"><a href="#图表描述-3" class="headerlink" title="图表描述"></a>图表描述</h3><ul>
 <li><p>假设某个进程与内存可控制页面数不变：<code>AP=3，PP=5</code>；</p>
@@ -398,7 +398,7 @@
 <li><p>处理机调用它们的顺序不变：<code>1、4、2、5、3、3、2、4、2、5</code></p>
 </li>
 <li><p>使用OPT算法时，这3个页面的内存使用情况如下图所示；</p>
-<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571190143264.png" alt="1571190143264"></p>
+<p><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571190143264.png" alt="1571190143264"></p>
 </li>
 <li><p>一共发生了6次页面交换，<code>diseffect=6</code>；</p>
 </li>
@@ -436,7 +436,7 @@
 <li><p>在RED Hat Linux中通过输入以下命令执行程序；</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">g++ -o main mian.cpp</span><br><span class="line">./main</span><br></pre></td></tr></table></figure></li>
 <li><p>得到程序结果如下；</p>
-<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/1571280409171.png" alt="1571280409171"></p>
+<p><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/1571280409171.png" alt="1571280409171"></p>
 </li>
 <li><p>结果分析；</p>
 <ol>

@@ -28,14 +28,14 @@
 <meta property="og:site_name" content="Leeyuxun の note">
 <meta property="og:description" content="前言整理BugKuCTF中部分WEB题WriteUp；">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20210830210731.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20210830210731.png">
 <meta property="article:published_time" content="2021-08-30T13:04:03.000Z">
-<meta property="article:modified_time" content="2023-05-07T06:53:06.514Z">
+<meta property="article:modified_time" content="2023-05-07T07:37:53.556Z">
 <meta property="article:author" content="李钰璕">
 <meta property="article:tag" content="CTF">
 <meta property="article:tag" content="WEB">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20210830210731.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20210830210731.png">
 
 <link rel="canonical" href="https://leeyuxun.github.io/BugKu-Web-WP.html">
 
@@ -355,7 +355,7 @@ mjx-container[display="true"] + br {
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-07 14:53:06" itemprop="dateModified" datetime="2023-05-07T14:53:06+08:00">2023-05-07</time>
+                <time title="修改时间：2023-05-07 15:37:53" itemprop="dateModified" datetime="2023-05-07T15:37:53+08:00">2023-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -388,7 +388,7 @@ mjx-container[display="true"] + br {
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>整理BugKuCTF中部分WEB题WriteUp；<span id="more"></span></p>
 <h2 id="never-give-up"><a href="#never-give-up" class="headerlink" title="never_give_up"></a>never_give_up</h2><ol>
 <li><p>BurpSuite抓包发现<code>1p.html</code>文件；</p>
-  <img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20210830210731.png" style="zoom:50%;"></li>
+  <img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20210830210731.png" style="zoom:50%;"></li>
 <li><p>URL查看<code>1p.html</code>，会跳转到<code>https://www.bugku.com/</code>，BurpSuite查看返回数据包内容如下：</p>
   <figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">HTML</span>&gt;</span></span><br><span class="line">	<span class="tag">&lt;<span class="name">HEAD</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">SCRIPT</span> <span class="attr">LANGUAGE</span>=<span class="string">"Javascript"</span>&gt;</span><span class="language-handlebars"><span class="language-xml"></span></span></span><br><span class="line"><span class="language-xml"><span class="language-handlebars">            <span class="comment">&lt;!--</span></span></span></span><br><span class="line"><span class="comment"><span class="language-xml"><span class="language-handlebars">            var Words ="%3Cscript%3Ewindow.location.href%3D'http%3A%2F%2Fwww.bugku.com'%3B%3C%2Fscript%3E%20%0A%3C!--JTIyJTNCaWYoISUyNF9HRVQlNUInaWQnJTVEKSUwQSU3QiUwQSUwOWhlYWRlcignTG9jYXRpb24lM0ElMjBoZWxsby5waHAlM0ZpZCUzRDEnKSUzQiUwQSUwOWV4aXQoKSUzQiUwQSU3RCUwQSUyNGlkJTNEJTI0X0dFVCU1QidpZCclNUQlM0IlMEElMjRhJTNEJTI0X0dFVCU1QidhJyU1RCUzQiUwQSUyNGIlM0QlMjRfR0VUJTVCJ2InJTVEJTNCJTBBaWYoc3RyaXBvcyglMjRhJTJDJy4nKSklMEElN0IlMEElMDllY2hvJTIwJ25vJTIwbm8lMjBubyUyMG5vJTIwbm8lMjBubyUyMG5vJyUzQiUwQSUwOXJldHVybiUyMCUzQiUwQSU3RCUwQSUyNGRhdGElMjAlM0QlMjAlNDBmaWxlX2dldF9jb250ZW50cyglMjRhJTJDJ3InKSUzQiUwQWlmKCUyNGRhdGElM0QlM0QlMjJidWdrdSUyMGlzJTIwYSUyMG5pY2UlMjBwbGF0ZWZvcm0hJTIyJTIwYW5kJTIwJTI0aWQlM0QlM0QwJTIwYW5kJTIwc3RybGVuKCUyNGIpJTNFNSUyMGFuZCUyMGVyZWdpKCUyMjExMSUyMi5zdWJzdHIoJTI0YiUyQzAlMkMxKSUyQyUyMjExMTQlMjIpJTIwYW5kJTIwc3Vic3RyKCUyNGIlMkMwJTJDMSkhJTNENCklMEElN0IlMEElMDklMjRmbGFnJTIwJTNEJTIwJTIyZmxhZyU3QioqKioqKioqKioqJTdEJTIyJTBBJTdEJTBBZWxzZSUwQSU3QiUwQSUwOXByaW50JTIwJTIybmV2ZXIlMjBuZXZlciUyMG5ldmVyJTIwZ2l2ZSUyMHVwJTIwISEhJTIyJTNCJTBBJTdEJTBBJTBBJTBBJTNGJTNF--%3E" </span></span></span></span><br><span class="line"><span class="comment"><span class="language-xml"><span class="language-handlebars">			function OutWord()</span></span></span></span><br><span class="line"><span class="comment"><span class="language-xml"><span class="language-handlebars">			{</span></span></span></span><br><span class="line"><span class="comment"><span class="language-xml"><span class="language-handlebars">                var NewWords;</span></span></span></span><br><span class="line"><span class="comment"><span class="language-xml"><span class="language-handlebars">                NewWords = unescape(Words);</span></span></span></span><br><span class="line"><span class="comment"><span class="language-xml"><span class="language-handlebars">                document.write(NewWords);</span></span></span></span><br><span class="line"><span class="comment"><span class="language-xml"><span class="language-handlebars">            } </span></span></span></span><br><span class="line"><span class="comment"><span class="language-xml"><span class="language-handlebars">            OutWord();</span></span></span></span><br><span class="line"><span class="comment"><span class="language-xml"><span class="language-handlebars">            // --&gt;</span></span></span></span><br><span class="line"><span class="language-xml"><span class="language-handlebars">        </span></span><span class="tag">&lt;/<span class="name">SCRIPT</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">HEAD</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">BODY</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">BODY</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">HTML</span>&gt;</span></span><br></pre></td></tr></table></figure></li>
 <li><p>发现变量words通过URL和Base64编码，进行多次解码操作，最终页面代码如下；</p>

