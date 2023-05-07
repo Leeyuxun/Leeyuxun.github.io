@@ -28,18 +28,18 @@
 <meta property="og:site_name" content="Leeyuxun の note">
 <meta property="og:description" content="前言反射型XSS，通过web站点漏洞，向客户端交付恶意脚本代码，这些代码可以被浏览器成功的执行，从而实现对客户端的攻击； 反射型XSS一般可以盗取客户端cookie，将客户端重定向到第三方网站；">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118000241.png">
-<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118001326.png">
-<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118001523.png">
-<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118002004.png">
-<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118003332.png">
-<meta property="og:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118003749.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118000241.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118001326.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118001523.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118002004.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118003332.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118003749.png">
 <meta property="article:published_time" content="2019-11-17T15:33:42.000Z">
-<meta property="article:modified_time" content="2020-11-17T16:39:27.000Z">
+<meta property="article:modified_time" content="2023-05-07T06:53:06.500Z">
 <meta property="article:author" content="李钰璕">
 <meta property="article:tag" content="XSS">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118000241.png">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118000241.png">
 
 <link rel="canonical" href="https://leeyuxun.github.io/DVWA-XSS-Reflected.html">
 
@@ -359,7 +359,7 @@ mjx-container[display="true"] + br {
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-11-18 00:39:27" itemprop="dateModified" datetime="2020-11-18T00:39:27+08:00">2020-11-18</time>
+                <time title="修改时间：2023-05-07 14:53:06" itemprop="dateModified" datetime="2023-05-07T14:53:06+08:00">2023-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -397,15 +397,15 @@ mjx-container[display="true"] + br {
 <h2 id="XSS攻击测试"><a href="#XSS攻击测试" class="headerlink" title="XSS攻击测试"></a>XSS攻击测试</h2><ol>
 <li><p>判断是否存在XSS漏洞</p>
 <p> 输入框中输入<code>&lt;Script&gt;alert(123)&lt;/ScrIpt&gt;</code>，弹出弹框，表明存在XSS注入漏洞；</p>
-<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118000241.png"></p>
+<p> <img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118000241.png"></p>
 <p> 此时已经向页面中写入JS代码；</p>
-<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118001326.png"></p>
+<p> <img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118001326.png"></p>
 </li>
 <li><p>输入<code>&lt;scRIpT&gt;window.location="https://www.baidu.com/"&lt;/ScRipT&gt;</code>，重定向页面到百度首页；</p>
-<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118001523.png"></p>
+<p> <img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118001523.png"></p>
 </li>
 <li><p>输入<code>&lt;sCript&gt;alert(document.cookie)&lt;/scRipt&gt;</code>，弹出cookie数据；</p>
-<p> <img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118002004.png"></p>
+<p> <img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118002004.png"></p>
 </li>
 </ol>
 <h1 id="MEDIUM"><a href="#MEDIUM" class="headerlink" title="MEDIUM"></a>MEDIUM</h1><h3 id="源代码-1"><a href="#源代码-1" class="headerlink" title="源代码"></a>源代码</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="title function_ invoke__">header</span> (<span class="string">"X-XSS-Protection: 0"</span>);</span><br><span class="line">    <span class="comment">// Is there any input?</span></span><br><span class="line">    <span class="keyword">if</span>( <span class="title function_ invoke__">array_key_exists</span>( <span class="string">"name"</span>, <span class="variable">$_GET</span> ) &amp;&amp; <span class="variable">$_GET</span>[ <span class="string">'name'</span> ] != <span class="literal">NULL</span> ) {</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$name</span> = <span class="title function_ invoke__">str_replace</span>( <span class="string">'&lt;script&gt;'</span>, <span class="string">''</span>, <span class="variable">$_GET</span>[ <span class="string">'name'</span> ] );</span><br><span class="line">        <span class="comment">// Feedback for end user</span></span><br><span class="line">        <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;Hello ${name}&lt;/pre&gt;"</span>;</span><br><span class="line">    }</span><br><span class="line"><span class="meta">?&gt;</span> </span><br></pre></td></tr></table></figure>
@@ -422,12 +422,12 @@ mjx-container[display="true"] + br {
 
 <p>分析：采用<code>preg_replace</code>函数执行一个正则表达式的搜索和替换，其中<code>/&lt;(.*)s(.*)c(.*)r(.*)i(.*)p(.*)t/i</code>是正则表达式，<code>(.*)</code>表示贪婪匹配，<code>/i</code>表示不区分大小写，所有关于<code>&lt;script&gt;</code>标签均被过滤；</p>
 <h3 id="XSS攻击测试-2"><a href="#XSS攻击测试-2" class="headerlink" title="XSS攻击测试"></a>XSS攻击测试</h3><p>可以使用IMG标签进行注入，输入<code>&lt;IMG src=1 onerror=alert(document.cookie)&gt;</code>，成功获得cookie值；</p>
-<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118003332.png"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118003332.png"></p>
 <h1 id="IMPOSSIBLE"><a href="#IMPOSSIBLE" class="headerlink" title="IMPOSSIBLE"></a>IMPOSSIBLE</h1><h3 id="源代码-3"><a href="#源代码-3" class="headerlink" title="源代码"></a>源代码</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="comment">// Is there any input?</span></span><br><span class="line">    <span class="keyword">if</span>( <span class="title function_ invoke__">array_key_exists</span>( <span class="string">"name"</span>, <span class="variable">$_GET</span> ) &amp;&amp; <span class="variable">$_GET</span>[ <span class="string">'name'</span> ] != <span class="literal">NULL</span> ) {</span><br><span class="line">        <span class="comment">// Check Anti-CSRF token</span></span><br><span class="line">        <span class="title function_ invoke__">checkToken</span>( <span class="variable">$_REQUEST</span>[ <span class="string">'user_token'</span> ], <span class="variable">$_SESSION</span>[ <span class="string">'session_token'</span> ], <span class="string">'index.php'</span> );</span><br><span class="line">        <span class="comment">// Get input</span></span><br><span class="line">        <span class="variable">$name</span> = <span class="title function_ invoke__">htmlspecialchars</span>( <span class="variable">$_GET</span>[ <span class="string">'name'</span> ] );</span><br><span class="line">        <span class="comment">// Feedback for end user</span></span><br><span class="line">        <span class="keyword">echo</span> <span class="string">"&lt;pre&gt;Hello ${name}&lt;/pre&gt;"</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="comment">// Generate Anti-CSRF token</span></span><br><span class="line">    <span class="title function_ invoke__">generateSessionToken</span>();</span><br><span class="line"><span class="meta">?&gt;</span> </span><br></pre></td></tr></table></figure>
 
 <p>分析：使用<code>htmlspecialchars</code>函数把预定义的字符&amp;、”、’、&lt;、&gt;转换为 HTML 实体，防止浏览器将其作为HTML元素。还加入了<code>Anti-CSRF token</code>，防止结合<code>csrf</code>攻击；</p>
 <p>使用IMG标签进行注入后显示的源码中的预定义字符已经被转换为HTML实体；</p>
-<p><img src="https://leeyuxun-1258157351.cos.ap-beijing.myqcloud.com/img/20201118003749.png"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/Leeyuxun/pic-storage@master/img/20201118003749.png"></p>
 
     </div>
 
@@ -597,7 +597,7 @@ mjx-container[display="true"] + br {
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2022</span>
+  <span itemprop="copyrightYear">2023</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
